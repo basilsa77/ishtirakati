@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/subscription.dart';
 import '../services/notification_service.dart';
@@ -20,6 +21,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _budget;
+  late final TextEditingController _aiKey;
 
   @override
   void initState() {
@@ -28,11 +30,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _budget = TextEditingController(
       text: b <= 0 ? '' : (b == b.roundToDouble() ? b.toStringAsFixed(0) : '$b'),
     );
+    _aiKey = TextEditingController(
+      text: SubscriptionStore.instance.aiApiKey,
+    );
   }
 
   @override
   void dispose() {
     _budget.dispose();
+    _aiKey.dispose();
     super.dispose();
   }
 
@@ -276,6 +282,84 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
+                    'الذكاء الاصطناعي (مجاني)',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'يجعل استيراد البريد والنصوص أذكى بكثير: يلتقط كل '
+                    'الاشتراكات حتى غير المعروفة، بأسعارها وتواريخها. '
+                    'أنشئ مفتاحًا مجانيًا من Google AI Studio والصقه هنا '
+                    '(يبقى على جهازك).',
+                    style: TextStyle(
+                      color: AppColors.muted,
+                      fontSize: 12.5,
+                      height: 1.7,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _aiKey,
+                    obscureText: true,
+                    textDirection: TextDirection.ltr,
+                    decoration: const InputDecoration(
+                      labelText: 'مفتاح Gemini API',
+                      hintText: 'AIza...',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(46),
+                          ),
+                          onPressed: () => launchUrl(
+                            Uri.parse('https://aistudio.google.com/apikey'),
+                            mode: LaunchMode.externalApplication,
+                          ),
+                          icon: const Icon(Icons.open_in_new_rounded,
+                              size: 18),
+                          label: const Text('إنشاء مفتاح مجاني'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(90, 46),
+                        ),
+                        onPressed: () async {
+                          await store.setAiApiKey(_aiKey.text);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  _aiKey.text.trim().isEmpty
+                                      ? 'تم إيقاف الذكاء الاصطناعي'
+                                      : 'تم حفظ المفتاح — الاستيراد الآن أذكى',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: const Text('حفظ'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
                     'النسخ الاحتياطي',
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
@@ -376,7 +460,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 10),
                   const _AboutRow(label: 'الاسم', value: 'اشتراكاتي'),
-                  const _AboutRow(label: 'الإصدار', value: '4.0.0'),
+                  const _AboutRow(label: 'الإصدار', value: '4.1.0'),
                   const _AboutRow(label: 'المطوّر', value: 'باسل'),
                   const _AboutRow(
                     label: 'الخصوصية',
@@ -384,7 +468,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'صُنع بحب في السعودية',
+                    'صُنع بحب في السعودية 🇸🇦',
                     style: TextStyle(
                       color: AppColors.muted,
                       fontSize: 12.5,

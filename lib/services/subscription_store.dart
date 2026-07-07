@@ -20,12 +20,14 @@ class SubscriptionStore extends ChangeNotifier {
   static const String _budgetKey = 'ishtirakati_monthly_budget';
   static const String _notifKey = 'ishtirakati_notifications_enabled';
   static const String _lockKey = 'ishtirakati_app_lock';
+  static const String _aiKeyKey = 'ishtirakati_ai_api_key';
 
   final List<Subscription> _items = [];
   String _defaultCurrency = 'SAR';
   double _monthlyBudget = 0; // 0 = غير مفعّلة
   bool _notificationsEnabled = true;
   bool _appLockEnabled = false;
+  String _aiApiKey = '';
   bool _loaded = false;
 
   List<Subscription> get items => List.unmodifiable(_items);
@@ -33,6 +35,7 @@ class SubscriptionStore extends ChangeNotifier {
   double get monthlyBudget => _monthlyBudget;
   bool get notificationsEnabled => _notificationsEnabled;
   bool get appLockEnabled => _appLockEnabled;
+  String get aiApiKey => _aiApiKey;
   bool get isLoaded => _loaded;
 
   Future<void> load() async {
@@ -41,6 +44,7 @@ class SubscriptionStore extends ChangeNotifier {
     _monthlyBudget = prefs.getDouble(_budgetKey) ?? 0;
     _notificationsEnabled = prefs.getBool(_notifKey) ?? true;
     _appLockEnabled = prefs.getBool(_lockKey) ?? false;
+    _aiApiKey = prefs.getString(_aiKeyKey) ?? '';
     _items.clear();
     for (final raw in prefs.getStringList(_subsKey) ?? const <String>[]) {
       try {
@@ -66,6 +70,13 @@ class SubscriptionStore extends ChangeNotifier {
     // ignore: unawaited_futures
     NotificationService.instance
         .rescheduleAll(_items, enabled: _notificationsEnabled);
+  }
+
+  Future<void> setAiApiKey(String value) async {
+    _aiApiKey = value.trim();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_aiKeyKey, _aiApiKey);
+    notifyListeners();
   }
 
   Future<void> setAppLockEnabled(bool value) async {

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/subscription.dart';
+import '../services/ai_extractor.dart';
 import '../services/import_parser.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
@@ -25,6 +26,8 @@ class _ImportScreenState extends State<ImportScreen> {
   List<ImportCandidate> _candidates = [];
   final Set<String> _selected = {};
   bool _analyzed = false;
+  bool _aiBusy = false;
+  String? _aiNote;
 
   @override
   void initState() {
@@ -42,15 +45,70 @@ class _ImportScreenState extends State<ImportScreen> {
     super.dispose();
   }
 
-  void _analyze() {
-    final results = parseSubscriptionsText(_text.text);
+  Future<void> _analyze() async {
+    final apiKey = SubscriptionStore.instance.aiApiKey;
+    final local = parseSubscriptionsText(_text.text);
+
+    if (apiKey.isEmpty || _text.text.trim().length < 4) {
+      setState(() {
+        _candidates = local;
+        _selected
+          ..clear()
+          ..addAll(local.map((c) => c.name));
+        _analyzed = true;
+        _aiNote = apiKey.isEmpty
+            ? 'تحليل سريع (محلي). لتحليل أذكى يلتقط كل الخدمات: '
+                'أضف مفتاح الذكاء الاصطناعي المجاني من الإعدادات.'
+            : null;
+      });
+      return;
+    }
+
     setState(() {
-      _candidates = results;
-      _selected
-        ..clear()
-        ..addAll(results.map((c) => c.name));
-      _analyzed = true;
+      _aiBusy = true;
+      _aiNote = null;
     });
+    try {
+      final ai = await AiExtractor.extract(_text.text, apiKey);
+      // دمج: نتائج الذكاء الاصطناعي أولًا، ثم المحلي لما لم يذكره.
+      final names = ai.map((c) => c.name).toSet();
+      final merged = [
+        ...ai,
+        ...local.where((c) => !names.contains(c.name)),
+      ];
+      if (!mounted) return;
+      setState(() {
+        _aiBusy = false;
+        _candidates = merged;
+        _selected
+          ..clear()
+          ..addAll(merged.map((c) => c.name));
+        _analyzed = true;
+        _aiNote = 'حُلل بالذكاء الاصطناعي — ${ai.length} اشتراكًا مكتشفًا';
+      });
+    } on AiExtractionException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _aiBusy = false;
+        _candidates = local;
+        _selected
+          ..clear()
+          ..addAll(local.map((c) => c.name));
+        _analyzed = true;
+        _aiNote = '${e.message} — عرضنا نتائج التحليل المحلي بدلًا منه.';
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _aiBusy = false;
+        _candidates = local;
+        _selected
+          ..clear()
+          ..addAll(local.map((c) => c.name));
+        _analyzed = true;
+        _aiNote = 'تعذر الاتصال بالذكاء الاصطناعي — عرضنا التحليل المحلي.';
+      });
+    }
   }
 
   Future<void> _pasteFromClipboard() async {
@@ -204,15 +262,35 @@ class _ImportScreenState extends State<ImportScreen> {
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
                     ),
-                    onPressed: _analyze,
-                    icon: const Icon(Icons.auto_awesome_rounded, size: 20),
-                    label: const Text('تحليل النص'),
+                    onPressed: _aiBusy ? null : _analyze,
+                    icon: _aiBusy
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Color(0xFF06231A),
+                            ),
+                          )
+                        : const Icon(Icons.auto_awesome_rounded, size: 20),
+                    label: Text(_aiBusy ? 'يحلل...' : 'تحليل النص'),
                   ),
                 ),
               ],
             ),
+            if (_aiNote != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                _aiNote!,
+                style: const TextStyle(
+                  color: AppColors.muted,
+                  fontSize: 12.5,
+                  height: 1.6,
+                ),
+              ),
+            ],
             const SizedBox(height: 18),
-            if (_analyzed && _candidates.isEmpty)
+            if (_analyzed && !_aiBusy && _candidates.isEmpty)
               const AppCard(
                 child: Row(
                   children: [
