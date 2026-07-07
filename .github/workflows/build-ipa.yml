@@ -30,6 +30,9 @@ jobs:
             || /usr/libexec/PlistBuddy -c 'Add :CFBundleDisplayName string اشتراكاتي' ios/Runner/Info.plist
           /usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' ios/Runner/Info.plist
 
+      - name: حذف اختبار القالب الذي يولّده flutter create
+        run: rm -f test/widget_test.dart
+
       - name: جلب الحزم
         run: flutter pub get
 
