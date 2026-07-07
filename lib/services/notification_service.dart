@@ -23,7 +23,10 @@ class NotificationService {
     try {
       tzdata.initializeTimeZones();
       try {
-        final name = await FlutterTimezone.getLocalTimezone();
+        // يدعم إصدارات flutter_timezone القديمة (String) والجديدة (TimezoneInfo).
+        final dynamic info = await FlutterTimezone.getLocalTimezone();
+        final String name =
+            info is String ? info : (info.identifier as String);
         tz.setLocalLocation(tz.getLocation(name));
       } catch (_) {
         // نبقى على المنطقة الافتراضية إن تعذر الاكتشاف.
