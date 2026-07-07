@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "updatedAt": "2026-07-07",
+  "services": [
+    {
+      "name": "شاهد VIP",
+      "emoji": "🎬",
+      "category": "ترفيه ومشاهدة",
+      "domain": "shahid.mbc.net",
+      "manageUrl": "https://shahid.mbc.net/ar/my-account",
+      "priceHint": 24.99
+    },
+    {
+      "name": "Netflix",
+      "emoji": "🍿",
+      "category": "ترفيه ومشاهدة",
+      "domain": "netflix.com",
+      "manageUrl": "https://www.netflix.com/account",
+      "priceHint": 55.99
+    },
+    {
+      "name": "Spotify Premium",
+      "emoji": "🎧",
+      "category": "موسيقى وبودكاست",
+      "domain": "spotify.com",
+      "manageUrl": "https://www.spotify.com/account/subscription/",
+      "priceHint": 21.99
+    },
+    {
+      "name": "أنغامي بلس",
+      "emoji": "🎵",
+      "category": "موسيقى وبودكاست",
+      "domain": "anghami.com",
+      "manageUrl": "https://www.anghami.com/account",
+      "priceHint": 19.99
+    },
+    {
+      "name": "YouTube Premium",
+      "emoji": "▶️",
+      "category": "ترفيه ومشاهدة",
+      "domain": "youtube.com",
+      "manageUrl": "https://www.youtube.com/paid_memberships",
+      "priceHint": 23.99
+    },
+    {
+      "name": "iCloud+ 50GB",
+      "emoji": "☁️",
+      "category": "تخزين سحابي",
+      "domain": "icloud.com",
+      "manageUrl": "https://support.apple.com/HT202039",
+      "priceHint": 3.99
+    },
+    {
+      "name": "iCloud+ 200GB",
+      "emoji": "☁️",
+      "category": "تخزين سحابي",
+      "domain": "icloud.com",
+      "manageUrl": "https://support.apple.com/HT202039",
+      "priceHint": 11.99
+    },
+    {
+      "name": "ChatGPT Plus",
+      "emoji": "🤖",
+      "category": "إنتاجية وذكاء اصطناعي",
+      "domain": "openai.com",
+      "manageUrl": "https://chatgpt.com/#settings/Subscription",
+      "priceHint": 75.0
+    },
+    {
+      "name": "Claude Pro",
+      "emoji": "✨",
+      "category": "إنتاجية وذكاء اصطناعي",
+      "domain": "claude.ai",
+      "manageUrl": "https://claude.ai/settings/billing",
+      "priceHint": 75.0
+    },
+    {
+      "name": "Xbox Game Pass Ultimate",
+      "emoji": "🕹️",
+      "category": "ألعاب",
+      "domain": "xbox.com",
+      "manageUrl": "https://account.microsoft.com/services",
+      "priceHint": 59.99
+    },
+    {
+      "name": "PlayStation Plus Essential",
+      "emoji": "🎮",
+      "category": "ألعاب",
+      "domain": "playstation.com",
+      "manageUrl": "https://www.playstation.com/acct/management",
+      "priceHint": 29.99
+    },
+    {
+      "name": "Amazon Prime",
+      "emoji": "📦",
+      "category": "تسوق وتوصيل",
+      "domain": "amazon.sa",
+      "manageUrl": "https://www.amazon.sa/mc",
+      "priceHint": 16.0
+    },
+    {
+      "name": "Snapchat+",
+      "emoji": "👻",
+      "category": "أخرى",
+      "domain": "snapchat.com",
+      "manageUrl": "https://accounts.snapchat.com",
+      "priceHint": 14.99
+    },
+    {
+      "name": "Duolingo Super",
+      "emoji": "🦉",
+      "category": "تعليم",
+      "domain": "duolingo.com",
+      "manageUrl": "https://www.duolingo.com/settings/super",
+      "priceHint": 36.99
+    },
+    {
+      "name": "Calm",
+      "emoji": "🧘",
+      "category": "رياضة وصحة",
+      "domain": "calm.com",
+      "manageUrl": "https://www.calm.com/account",
+      "priceHint": 18.99
+    }
+  ]
+}

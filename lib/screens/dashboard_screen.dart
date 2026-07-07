@@ -32,6 +32,7 @@ class DashboardScreen extends StatelessWidget {
         final lifetime = store.lifetimeTotals();
         final upcoming = store.upcoming(withinDays: 30);
         final savings = store.pausedSavingsMonthly();
+        final trials = store.activeTrials;
         final currency = store.dominantCurrency;
         final monthlyMain = monthly[currency] ?? 0;
         final budget = store.monthlyBudget;
@@ -46,6 +47,43 @@ class DashboardScreen extends StatelessWidget {
                 currency: currency,
               ),
             ),
+            if (trials.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              FadeSlideIn(
+                delayMs: 40,
+                child: AppCard(
+                  color: AppColors.dangerSoft,
+                  borderColor: AppColors.danger,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '⏳ تجارب مجانية على وشك التحول لمدفوعة',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14.5,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      for (final t in trials.take(3))
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            '• «${t.name}» تنتهي في ${fmtDate(t.trialEndDate!)} '
+                            'ثم يُخصم ${fmtMoney(t.price, t.currency)}',
+                            style: const TextStyle(
+                              color: AppColors.muted,
+                              fontSize: 12.5,
+                              height: 1.6,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             if (budget > 0) ...[
               const SizedBox(height: 12),
               FadeSlideIn(
@@ -475,15 +513,11 @@ class _UpcomingTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
-          Container(
-            width: 46,
-            height: 46,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: catColor.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Text(sub.emoji, style: const TextStyle(fontSize: 24)),
+          ServiceAvatar(
+            name: sub.name,
+            emoji: sub.emoji,
+            manageUrl: sub.manageUrl,
+            tint: catColor,
           ),
           const SizedBox(width: 12),
           Expanded(

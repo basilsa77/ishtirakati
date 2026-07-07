@@ -188,6 +188,14 @@ class InsightsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             FadeSlideIn(
+              delayMs: 60,
+              child: _HistoryCard(
+                history: store.monthlySpendHistory(currency, months: 6),
+                currency: currency,
+              ),
+            ),
+            const SizedBox(height: 12),
+            FadeSlideIn(
               delayMs: 80,
               child: Row(
                 children: [
@@ -354,6 +362,130 @@ class _DonutPainter extends CustomPainter {
       old.progress != progress ||
       old.total != total ||
       old.entries.length != entries.length;
+}
+
+class _HistoryCard extends StatelessWidget {
+  final List<MapEntry<String, double>> history;
+  final String currency;
+
+  const _HistoryCard({required this.history, required this.currency});
+
+  @override
+  Widget build(BuildContext context) {
+    final maxVal = history.fold<double>(
+      0,
+      (m, e) => e.value > m ? e.value : m,
+    );
+    final trendUp = history.length >= 2 &&
+        history.last.value > history[history.length - 2].value;
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text(
+                '📈 إنفاقك آخر ٦ أشهر',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                  color: AppColors.ink,
+                ),
+              ),
+              const Spacer(),
+              if (maxVal > 0)
+                Text(
+                  trendUp ? 'في ازدياد ↑' : 'مستقر ↓',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color:
+                        trendUp ? AppColors.warn : AppColors.primary,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 130,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                for (var i = 0; i < history.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          history[i].value <= 0
+                              ? ''
+                              : history[i].value.toStringAsFixed(0),
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        TweenAnimationBuilder<double>(
+                          tween: Tween(
+                            begin: 0,
+                            end: maxVal <= 0
+                                ? 0.02
+                                : (history[i].value / maxVal)
+                                    .clamp(0.02, 1.0),
+                          ),
+                          duration: Duration(
+                            milliseconds: 500 + i * 90,
+                          ),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, t, _) => Container(
+                            height: 80 * t,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                                colors: [
+                                  AppColors.primaryDeep,
+                                  AppColors.primary,
+                                ],
+                              ),
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(6),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          history[i].key,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.muted,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'محسوب من دفعات اشتراكاتك الفعلية بعملة '
+            '${currencySymbols[currency] ?? currency}',
+            style: const TextStyle(
+              color: AppColors.muted,
+              fontSize: 11.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _InsightChip extends StatelessWidget {

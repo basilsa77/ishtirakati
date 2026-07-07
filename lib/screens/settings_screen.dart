@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/subscription.dart';
+import '../services/notification_service.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
+import 'import_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -42,6 +44,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
+            AppCard(
+              child: SwitchListTile(
+                value: store.notificationsEnabled,
+                onChanged: (v) async {
+                  if (v) {
+                    final ok = await NotificationService.instance
+                        .requestPermission();
+                    if (!ok && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'فعّل الإشعارات لتطبيق «اشتراكاتي» من إعدادات iOS أولًا',
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                  await store.setNotificationsEnabled(v);
+                },
+                title: const Text(
+                  '🔔 إشعارات التجديد',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                    color: AppColors.ink,
+                  ),
+                ),
+                subtitle: const Text(
+                  'تذكير قبل كل خصم وقبل انتهاء التجارب المجانية '
+                  '(يُضبط لكل اشتراك من شاشة التعديل)',
+                  style: TextStyle(
+                    color: AppColors.muted,
+                    fontSize: 12.5,
+                    height: 1.6,
+                  ),
+                ),
+                activeColor: AppColors.primary,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            const SizedBox(height: 14),
             AppCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,6 +197,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
+                    '✨ الاستيراد الذكي',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'الصق رسائل البنك أو إيصالات Apple وسنستخرج '
+                    'اشتراكاتك بأسعارها تلقائيًا.',
+                    style: TextStyle(
+                      color: AppColors.muted,
+                      fontSize: 12.5,
+                      height: 1.6,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ImportScreen(),
+                      ),
+                    ),
+                    icon: const Icon(Icons.auto_awesome_rounded, size: 20),
+                    label: const Text('فتح الاستيراد الذكي'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
                     '💾 النسخ الاحتياطي',
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
@@ -232,7 +314,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 10),
                   const _AboutRow(label: 'الاسم', value: 'اشتراكاتي'),
-                  const _AboutRow(label: 'الإصدار', value: '2.0.0'),
+                  const _AboutRow(label: 'الإصدار', value: '3.0.0'),
                   const _AboutRow(label: 'المطوّر', value: 'باسل'),
                   const _AboutRow(
                     label: 'الخصوصية',

@@ -9,6 +9,7 @@ import '../models/subscription.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
 import 'edit_subscription_screen.dart';
+import 'import_screen.dart';
 
 enum SortMode { renewal, priceDesc, name }
 
@@ -160,6 +161,26 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                         ],
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.card,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: IconButton(
+                        tooltip: 'الاستيراد الذكي',
+                        icon: const Icon(
+                          Icons.auto_awesome_rounded,
+                          color: AppColors.gold,
+                        ),
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const ImportScreen(),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -309,17 +330,12 @@ class _SubTile extends StatelessWidget {
             onTap: () => showSubscriptionDetails(context, sub),
             child: Row(
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: catColor.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: catColor.withOpacity(0.35)),
-                  ),
-                  child:
-                      Text(sub.emoji, style: const TextStyle(fontSize: 24)),
+                ServiceAvatar(
+                  name: sub.name,
+                  emoji: sub.emoji,
+                  manageUrl: sub.manageUrl,
+                  tint: catColor,
+                  size: 48,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -339,6 +355,27 @@ class _SubTile extends StatelessWidget {
                               ),
                             ),
                           ),
+                          if (sub.isTrialActive()) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.dangerSoft,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Text(
+                                'تجربة ⏳',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.danger,
+                                ),
+                              ),
+                            ),
+                          ],
                           if (sub.isPaused) ...[
                             const SizedBox(width: 6),
                             Container(
@@ -436,20 +473,12 @@ Future<void> showSubscriptionDetails(
               const SizedBox(height: 18),
               Row(
                 children: [
-                  Container(
-                    width: 58,
-                    height: 58,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: catColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(18),
-                      border:
-                          Border.all(color: catColor.withOpacity(0.4)),
-                    ),
-                    child: Text(
-                      sub.emoji,
-                      style: const TextStyle(fontSize: 30),
-                    ),
+                  ServiceAvatar(
+                    name: sub.name,
+                    emoji: sub.emoji,
+                    manageUrl: sub.manageUrl,
+                    tint: catColor,
+                    size: 58,
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -521,6 +550,20 @@ Future<void> showSubscriptionDetails(
                       label: 'التكلفة الشهرية',
                       value: fmtMoney(sub.monthlyCost, sub.currency),
                     ),
+                    if (sub.isTrialActive())
+                      _DetailRow(
+                        icon: Icons.hourglass_bottom_rounded,
+                        label: 'التجربة المجانية تنتهي في',
+                        value: fmtDate(sub.trialEndDate!),
+                        valueColor: AppColors.danger,
+                      ),
+                    if (sub.reminderDays > 0)
+                      _DetailRow(
+                        icon: Icons.notifications_active_rounded,
+                        label: 'التذكير قبل التجديد',
+                        value: 'بـ ${sub.reminderDays} '
+                            '${sub.reminderDays == 1 ? "يوم" : "أيام"}',
+                      ),
                     if (sub.paymentMethod != 'غير محدد')
                       _DetailRow(
                         icon: Icons.credit_card_rounded,

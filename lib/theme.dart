@@ -4,6 +4,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'data/service_domains.dart';
+
 class AppColors {
   AppColors._();
 
@@ -360,3 +362,53 @@ class FadeSlideIn extends StatelessWidget {
 
 String fmtDate(DateTime d) =>
     '${d.year}/${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}';
+
+/// أيقونة الخدمة: الشعار الرسمي إن عُرف نطاقها، وإلا الإيموجي.
+class ServiceAvatar extends StatelessWidget {
+  final String name;
+  final String emoji;
+  final String manageUrl;
+  final Color tint;
+  final double size;
+
+  const ServiceAvatar({
+    super.key,
+    required this.name,
+    required this.emoji,
+    required this.manageUrl,
+    required this.tint,
+    this.size = 46,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final url = logoUrlFor(name, manageUrl);
+    final emojiText = Text(
+      emoji,
+      style: TextStyle(fontSize: size * 0.52),
+    );
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: tint.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(size * 0.3),
+        border: Border.all(color: tint.withOpacity(0.35)),
+      ),
+      child: url == null
+          ? emojiText
+          : ClipRRect(
+              borderRadius: BorderRadius.circular(size * 0.16),
+              child: Image.network(
+                url,
+                width: size * 0.58,
+                height: size * 0.58,
+                fit: BoxFit.cover,
+                gaplessPlayback: true,
+                errorBuilder: (_, __, ___) => emojiText,
+              ),
+            ),
+    );
+  }
+}

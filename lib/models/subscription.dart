@@ -72,6 +72,12 @@ class Subscription {
   /// رابط إدارة/إلغاء الاشتراك (اختياري).
   String manageUrl;
 
+  /// التذكير قبل التجديد بهذا العدد من الأيام (0 = بدون تذكير).
+  int reminderDays;
+
+  /// تاريخ انتهاء التجربة المجانية (null = ليست تجربة).
+  DateTime? trialEndDate;
+
   Subscription({
     required this.id,
     required this.name,
@@ -85,7 +91,26 @@ class Subscription {
     this.isPaused = false,
     this.paymentMethod = 'غير محدد',
     this.manageUrl = '',
+    this.reminderDays = 3,
+    this.trialEndDate,
   });
+
+  /// هل هو تجربة مجانية لم تنتهِ بعد؟
+  bool isTrialActive([DateTime? from]) {
+    final t = trialEndDate;
+    if (t == null) return false;
+    final ref = from ?? DateTime.now();
+    final today = DateTime(ref.year, ref.month, ref.day);
+    return !DateTime(t.year, t.month, t.day).isBefore(today);
+  }
+
+  /// عدد الدفعات التي وقعت داخل شهر معيّن.
+  int paymentsInMonth(int year, int month) {
+    final start = DateTime(year, month, 1);
+    final end = DateTime(year, month + 1, 0);
+    final before = start.subtract(const Duration(days: 1));
+    return paymentsMade(end) - paymentsMade(before);
+  }
 
   double get yearlyCost => price * cycle.cyclesPerYear;
 
@@ -196,6 +221,8 @@ class Subscription {
         'paused': isPaused,
         'payMethod': paymentMethod,
         'manageUrl': manageUrl,
+        'reminderDays': reminderDays,
+        'trialEnd': trialEndDate?.toIso8601String(),
       };
 
   factory Subscription.fromJson(Map<String, dynamic> json) {
@@ -216,6 +243,9 @@ class Subscription {
       isPaused: (json['paused'] as bool?) ?? false,
       paymentMethod: (json['payMethod'] as String?) ?? 'غير محدد',
       manageUrl: (json['manageUrl'] as String?) ?? '',
+      reminderDays: (json['reminderDays'] as num?)?.toInt() ?? 3,
+      trialEndDate:
+          DateTime.tryParse((json['trialEnd'] as String?) ?? ''),
     );
   }
 }

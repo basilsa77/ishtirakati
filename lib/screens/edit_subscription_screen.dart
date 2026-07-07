@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../data/presets.dart';
 import '../models/subscription.dart';
+import '../services/remote_catalog.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
 
@@ -33,8 +34,18 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   late String _category;
   late bool _paused;
   late String _payMethod;
+  late int _reminderDays;
+  late bool _trialOn;
+  late DateTime _trialEnd;
 
   bool get isEditing => widget.existing != null;
+
+  static const Map<int, String> kReminderOptions = {
+    0: 'بدون تذكير',
+    1: 'قبل يوم',
+    3: 'قبل ٣ أيام',
+    7: 'قبل أسبوع',
+  };
 
   @override
   void initState() {
@@ -56,6 +67,13 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     if (!kPaymentMethods.contains(_payMethod)) {
       _payMethod = 'أخرى';
     }
+    _reminderDays = e?.reminderDays ?? 3;
+    if (!kReminderOptions.containsKey(_reminderDays)) {
+      _reminderDays = 3;
+    }
+    _trialOn = e?.trialEndDate != null;
+    _trialEnd =
+        e?.trialEndDate ?? DateTime.now().add(const Duration(days: 7));
   }
 
   @override
@@ -72,6 +90,26 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
       _name.text = p.name;
       _emoji = p.emoji;
       _category = p.category;
+      final remote = RemoteCatalog.instance.byName(p.name);
+      if (remote != null) {
+        if (_url.text.trim().isEmpty) _url.text = remote.manageUrl;
+        if (_price.text.trim().isEmpty && remote.priceHint != null) {
+          _price.text = remote.priceHint.toString();
+        }
+      }
+    });
+  }
+
+  void _applyRemote(RemoteService r) {
+    setState(() {
+      _name.text = r.name;
+      _emoji = r.emoji;
+      _category =
+          kCategories.contains(r.category) ? r.category : 'أخرى';
+      if (_url.text.trim().isEmpty) _url.text = r.manageUrl;
+      if (_price.text.trim().isEmpty && r.priceHint != null) {
+        _price.text = r.priceHint.toString();
+      }
     });
   }
 
@@ -104,7 +142,40 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
+                      // خدمات القاعدة المحدّثة عن بُعد (بأسعار تقريبية).
+                      for (final r in RemoteCatalog.instance.services)
+                        InkWell(
+                          borderRadius: BorderRadius.circular(14),
+                          onTap: () {
+                            _applyRemote(r);
+                            Navigator.pop(ctx);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 9,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primarySoft,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: AppColors.primaryDeep,
+                              ),
+                            ),
+                            child: Text(
+                              r.priceHint == null
+                                  ? '${r.emoji} ${r.name}'
+                                  : '${r.emoji} ${r.name} • ${fmtMoney(r.priceHint!, 'SAR')}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13.5,
+                                color: AppColors.ink,
+                              ),
+                            ),
+                          ),
+                        ),
                       for (final p in kPresets)
+                        if (RemoteCatalog.instance.byName(p.name) == null)
                         InkWell(
                           borderRadius: BorderRadius.circular(14),
                           onTap: () {
@@ -174,6 +245,8 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
       isPaused: _paused,
       paymentMethod: _payMethod,
       manageUrl: _url.text.trim(),
+      reminderDays: _reminderDays,
+      trialEndDate: _trialOn ? _trialEnd : null,
     );
     await SubscriptionStore.instance.upsert(sub);
     if (!mounted) return;
@@ -394,6 +467,72 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     setState(() => _payMethod = v ?? _payMethod),
               ),
               const SizedBox(height: 14),
+              DropdownButtonFormField<int>(
+                value: _reminderDays,
+                dropdownColor: AppColors.cardAlt,
+                decoration: const InputDecoration(
+                  labelText: 'إشعار التذكير قبل التجديد 🔔',
+                ),
+                items: [
+                  for (final e in kReminderOptions.entries)
+                    DropdownMenuItem(value: e.key, child: Text(e.value)),
+                ],
+                onChanged: (v) =>
+                    setState(() => _reminderDays = v ?? _reminderDays),
+              ),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                value: _trialOn,
+                onChanged: (v) => setState(() => _trialOn = v),
+                title: const Text(
+                  'تجربة مجانية ⏳',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.ink,
+                  ),
+                ),
+                subtitle: const Text(
+                  'سنحذرك قبل تحولها لاشتراك مدفوع بيومين',
+                  style: TextStyle(color: AppColors.muted, fontSize: 12.5),
+                ),
+                activeColor: AppColors.primary,
+                contentPadding: EdgeInsets.zero,
+              ),
+              if (_trialOn) ...[
+                InkWell(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _trialEnd,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2100),
+                      helpText: 'متى تنتهي التجربة المجانية؟',
+                    );
+                    if (picked != null) {
+                      setState(() => _trialEnd = picked);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(14),
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'تاريخ انتهاء التجربة',
+                      suffixIcon: Icon(
+                        Icons.hourglass_bottom_rounded,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                    child: Text(
+                      fmtDate(_trialEnd),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+              ],
+              const SizedBox(height: 8),
               TextFormField(
                 controller: _url,
                 keyboardType: TextInputType.url,

@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/subscription.dart';
+import 'notification_service.dart';
 
 class SubscriptionStore extends ChangeNotifier {
   SubscriptionStore._();
@@ -17,21 +18,25 @@ class SubscriptionStore extends ChangeNotifier {
   static const String _subsKey = 'ishtirakati_subs_v1';
   static const String _currencyKey = 'ishtirakati_default_currency';
   static const String _budgetKey = 'ishtirakati_monthly_budget';
+  static const String _notifKey = 'ishtirakati_notifications_enabled';
 
   final List<Subscription> _items = [];
   String _defaultCurrency = 'SAR';
   double _monthlyBudget = 0; // 0 = غير مفعّلة
+  bool _notificationsEnabled = true;
   bool _loaded = false;
 
   List<Subscription> get items => List.unmodifiable(_items);
   String get defaultCurrency => _defaultCurrency;
   double get monthlyBudget => _monthlyBudget;
+  bool get notificationsEnabled => _notificationsEnabled;
   bool get isLoaded => _loaded;
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     _defaultCurrency = prefs.getString(_currencyKey) ?? 'SAR';
     _monthlyBudget = prefs.getDouble(_budgetKey) ?? 0;
+    _notificationsEnabled = prefs.getBool(_notifKey) ?? true;
     _items.clear();
     for (final raw in prefs.getStringList(_subsKey) ?? const <String>[]) {
       try {
@@ -53,6 +58,19 @@ class SubscriptionStore extends ChangeNotifier {
       _subsKey,
       _items.map((s) => jsonEncode(s.toJson())).toList(),
     );
+    // إعادة جدولة الإشعارات مع كل تغيير (لا ننتظرها).
+    // ignore: unawaited_futures
+    NotificationService.instance
+        .rescheduleAll(_items, enabled: _notificationsEnabled);
+  }
+
+  Future<void> setNotificationsEnabled(bool value) async {
+    _notificationsEnabled = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_notifKey, value);
+    await NotificationService.instance
+        .rescheduleAll(_items, enabled: value);
+    notifyListeners();
   }
 
   Future<void> upsert(Subscription sub) async {
@@ -205,6 +223,36 @@ class SubscriptionStore extends ChangeNotifier {
       ..sort(
         (a, b) => a.daysUntilRenewal(from).compareTo(b.daysUntilRenewal(from)),
       );
+    return list;
+  }
+
+  /// الإنفاق الفعلي شهرًا بشهر لآخر [months] شهرًا (لعملة محددة).
+  List<MapEntry<String, double>> monthlySpendHistory(
+    String currency, {
+    int months = 6,
+    DateTime? from,
+  }) {
+    const labels = [
+      'ينا', 'فبر', 'مار', 'أبر', 'ماي', 'يون',
+      'يول', 'أغس', 'سبت', 'أكت', 'نوف', 'ديس',
+    ];
+    final ref = from ?? DateTime.now();
+    final out = <MapEntry<String, double>>[];
+    for (var i = months - 1; i >= 0; i--) {
+      final d = DateTime(ref.year, ref.month - i, 1);
+      var total = 0.0;
+      for (final s in _items.where((s) => s.currency == currency)) {
+        total += s.paymentsInMonth(d.year, d.month) * s.price;
+      }
+      out.add(MapEntry(labels[d.month - 1], total));
+    }
+    return out;
+  }
+
+  /// التجارب المجانية النشطة مرتبة بالأقرب انتهاءً.
+  List<Subscription> get activeTrials {
+    final list = _items.where((s) => !s.isPaused && s.isTrialActive()).toList()
+      ..sort((a, b) => a.trialEndDate!.compareTo(b.trialEndDate!));
     return list;
   }
 

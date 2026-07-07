@@ -10,16 +10,30 @@ import 'screens/dashboard_screen.dart';
 import 'screens/insights_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/subscriptions_screen.dart';
+import 'services/notification_service.dart';
+import 'services/remote_catalog.dart';
 import 'services/subscription_store.dart';
 import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SubscriptionStore.instance.load();
+  final store = SubscriptionStore.instance;
+  await store.load();
+  await NotificationService.instance.init();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark),
   );
   runApp(const IshtirakatiApp());
+  // بعد الإقلاع: صلاحية الإشعارات وجدولتها + تحديث قاعدة الخدمات.
+  if (store.notificationsEnabled) {
+    // ignore: unawaited_futures
+    NotificationService.instance.requestPermission().then(
+          (_) => NotificationService.instance
+              .rescheduleAll(store.items, enabled: true),
+        );
+  }
+  // ignore: unawaited_futures
+  RemoteCatalog.instance.load();
 }
 
 class IshtirakatiApp extends StatelessWidget {
