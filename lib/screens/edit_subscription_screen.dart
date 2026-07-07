@@ -24,6 +24,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   late final TextEditingController _name;
   late final TextEditingController _price;
   late final TextEditingController _notes;
+  late final TextEditingController _url;
 
   late String _emoji;
   late String _currency;
@@ -31,6 +32,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   late DateTime _anchor;
   late String _category;
   late bool _paused;
+  late String _payMethod;
 
   bool get isEditing => widget.existing != null;
 
@@ -43,12 +45,17 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
       text: e == null ? '' : e.price.toString(),
     );
     _notes = TextEditingController(text: e?.notes ?? '');
+    _url = TextEditingController(text: e?.manageUrl ?? '');
     _emoji = e?.emoji ?? '🔖';
     _currency = e?.currency ?? SubscriptionStore.instance.defaultCurrency;
     _cycle = e?.cycle ?? BillingCycle.monthly;
     _anchor = e?.anchorDate ?? DateTime.now();
     _category = e?.category ?? 'أخرى';
     _paused = e?.isPaused ?? false;
+    _payMethod = e?.paymentMethod ?? 'غير محدد';
+    if (!kPaymentMethods.contains(_payMethod)) {
+      _payMethod = 'أخرى';
+    }
   }
 
   @override
@@ -56,6 +63,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     _name.dispose();
     _price.dispose();
     _notes.dispose();
+    _url.dispose();
     super.dispose();
   }
 
@@ -70,7 +78,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   Future<void> _openPresetPicker() async {
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppColors.bg,
+      backgroundColor: AppColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -109,7 +117,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                               vertical: 9,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: AppColors.cardAlt,
                               borderRadius: BorderRadius.circular(14),
                               border:
                                   Border.all(color: AppColors.border),
@@ -119,6 +127,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                               style: const TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13.5,
+                                color: AppColors.ink,
                               ),
                             ),
                           ),
@@ -163,6 +172,8 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
       category: _category,
       notes: _notes.text.trim(),
       isPaused: _paused,
+      paymentMethod: _payMethod,
+      manageUrl: _url.text.trim(),
     );
     await SubscriptionStore.instance.upsert(sub);
     if (!mounted) return;
@@ -285,6 +296,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     flex: 2,
                     child: DropdownButtonFormField<String>(
                       value: _currency,
+                      dropdownColor: AppColors.cardAlt,
                       decoration:
                           const InputDecoration(labelText: 'العملة'),
                       items: [
@@ -317,9 +329,11 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                       label: Text(c.labelAr),
                       selected: _cycle == c,
                       selectedColor: AppColors.primary,
-                      backgroundColor: Colors.white,
+                      backgroundColor: AppColors.card,
                       labelStyle: TextStyle(
-                        color: _cycle == c ? Colors.white : AppColors.ink,
+                        color: _cycle == c
+                            ? const Color(0xFF06231A)
+                            : AppColors.ink,
                         fontWeight: FontWeight.w700,
                       ),
                       side: BorderSide(
@@ -344,7 +358,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     ),
                   ),
                   child: Text(
-                    '${d.year}/${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}',
+                    fmtDate(d),
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       color: AppColors.ink,
@@ -355,6 +369,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               const SizedBox(height: 14),
               DropdownButtonFormField<String>(
                 value: _category,
+                dropdownColor: AppColors.cardAlt,
                 decoration: const InputDecoration(labelText: 'التصنيف'),
                 items: [
                   for (final c in kCategories)
@@ -364,6 +379,29 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     ),
                 ],
                 onChanged: (v) => setState(() => _category = v ?? _category),
+              ),
+              const SizedBox(height: 14),
+              DropdownButtonFormField<String>(
+                value: _payMethod,
+                dropdownColor: AppColors.cardAlt,
+                decoration:
+                    const InputDecoration(labelText: 'طريقة الدفع'),
+                items: [
+                  for (final m in kPaymentMethods)
+                    DropdownMenuItem(value: m, child: Text(m)),
+                ],
+                onChanged: (v) =>
+                    setState(() => _payMethod = v ?? _payMethod),
+              ),
+              const SizedBox(height: 14),
+              TextFormField(
+                controller: _url,
+                keyboardType: TextInputType.url,
+                textDirection: TextDirection.ltr,
+                decoration: const InputDecoration(
+                  labelText: 'رابط إدارة الاشتراك (اختياري)',
+                  hintText: 'netflix.com/account',
+                ),
               ),
               const SizedBox(height: 14),
               TextFormField(
@@ -381,7 +419,10 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   onChanged: (v) => setState(() => _paused = v),
                   title: const Text(
                     'إيقاف مؤقت',
-                    style: TextStyle(fontWeight: FontWeight.w800),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.ink,
+                    ),
                   ),
                   subtitle: const Text(
                     'لن يُحتسب في المصروف ولا في التجديدات',

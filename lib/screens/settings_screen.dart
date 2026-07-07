@@ -1,14 +1,37 @@
-/// الإعدادات: العملة الافتراضية، إدارة البيانات، وحول التطبيق.
+/// الإعدادات: العملة، الميزانية، النسخ الاحتياطي، وإدارة البيانات.
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/subscription.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  late final TextEditingController _budget;
+
+  @override
+  void initState() {
+    super.initState();
+    final b = SubscriptionStore.instance.monthlyBudget;
+    _budget = TextEditingController(
+      text: b <= 0 ? '' : (b == b.roundToDouble() ? b.toStringAsFixed(0) : '$b'),
+    );
+  }
+
+  @override
+  void dispose() {
+    _budget.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +42,76 @@ class SettingsScreen extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
+            AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '🎯 الميزانية الشهرية',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'حدد سقفًا لمصروفك الشهري وسيظهر لك شريط متابعة في الرئيسية.',
+                    style:
+                        TextStyle(color: AppColors.muted, fontSize: 12.5),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _budget,
+                          keyboardType:
+                              const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          textDirection: TextDirection.ltr,
+                          decoration: InputDecoration(
+                            hintText: 'مثال: 300',
+                            suffixText:
+                                currencySymbols[store.defaultCurrency],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(90, 52),
+                        ),
+                        onPressed: () async {
+                          final v = double.tryParse(
+                                _budget.text
+                                    .trim()
+                                    .replaceAll('،', '.')
+                                    .replaceAll(',', '.'),
+                              ) ??
+                              0;
+                          await store.setMonthlyBudget(v);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  v <= 0
+                                      ? 'تم إلغاء الميزانية'
+                                      : 'تم ضبط الميزانية على ${fmtMoney(v, store.defaultCurrency)}',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: const Text('حفظ'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
             AppCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,6 +133,7 @@ class SettingsScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     value: store.defaultCurrency,
+                    dropdownColor: AppColors.cardAlt,
                     items: [
                       for (final c in currencySymbols.keys)
                         DropdownMenuItem(
@@ -59,50 +153,66 @@ class SettingsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const Text(
+                    '💾 النسخ الاحتياطي',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'انسخ بياناتك واحفظها في الملاحظات أو الملفات، '
+                    'واستعدها متى شئت — حتى بعد إعادة تثبيت التطبيق.',
+                    style: TextStyle(
+                      color: AppColors.muted,
+                      fontSize: 12.5,
+                      height: 1.6,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Text('⭐', style: TextStyle(fontSize: 24)),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'النسخة الاحترافية',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 16,
-                          color: AppColors.ink,
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(48),
+                          ),
+                          onPressed: () async {
+                            await Clipboard.setData(
+                              ClipboardData(text: store.exportJson()),
+                            );
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'تم نسخ البيانات — ألصقها في الملاحظات لحفظها',
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.upload_rounded, size: 20),
+                          label: const Text('تصدير'),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primarySoft,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Text(
-                          'قريبًا',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.primaryDeep,
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(48),
+                            foregroundColor: AppColors.gold,
+                            side:
+                                const BorderSide(color: AppColors.goldDeep),
                           ),
+                          onPressed: () => _import(context, store),
+                          icon:
+                              const Icon(Icons.download_rounded, size: 20),
+                          label: const Text('استعادة'),
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    '• تنبيهات قبل موعد التجديد بيوم و٣ أيام\n'
-                    '• نسخ احتياطي واستعادة عبر iCloud\n'
-                    '• تقارير شهرية PDF قابلة للمشاركة\n'
-                    '• تحويل تلقائي بين العملات',
-                    style: TextStyle(
-                      color: AppColors.muted,
-                      height: 1.9,
-                      fontSize: 13.5,
-                    ),
                   ),
                 ],
               ),
@@ -122,7 +232,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   const _AboutRow(label: 'الاسم', value: 'اشتراكاتي'),
-                  const _AboutRow(label: 'الإصدار', value: '1.0.0'),
+                  const _AboutRow(label: 'الإصدار', value: '2.0.0'),
                   const _AboutRow(label: 'المطوّر', value: 'باسل'),
                   const _AboutRow(
                     label: 'الخصوصية',
@@ -169,6 +279,46 @@ class SettingsScreen extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  Future<void> _import(
+    BuildContext context,
+    SubscriptionStore store,
+  ) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('استعادة من الحافظة؟'),
+        content: const Text(
+          'انسخ نص النسخة الاحتياطية أولًا (من الملاحظات مثلًا)، '
+          'ثم اضغط «استعادة». سيتم دمج الاشتراكات مع الموجود حاليًا.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('إلغاء'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('استعادة'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final data = await Clipboard.getData('text/plain');
+    final raw = data?.text ?? '';
+    final count = raw.trim().isEmpty ? -1 : await store.importJson(raw);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          count >= 0
+              ? 'تمت استعادة $count اشتراكًا بنجاح ✅'
+              : 'الحافظة لا تحتوي نسخة احتياطية صالحة',
+        ),
+      ),
     );
   }
 

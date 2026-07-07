@@ -1,4 +1,4 @@
-/// الرئيسية: نظرة سريعة على المصروف الشهري/السنوي والتجديدات القادمة.
+/// الرئيسية: بطاقة المصروف المتحركة، الميزانية، الإحصائيات، والتجديدات.
 library;
 
 import 'package:flutter/material.dart';
@@ -29,69 +29,143 @@ class DashboardScreen extends StatelessWidget {
 
         final monthly = store.monthlyTotals();
         final yearly = store.yearlyTotals();
+        final lifetime = store.lifetimeTotals();
         final upcoming = store.upcoming(withinDays: 30);
         final savings = store.pausedSavingsMonthly();
+        final currency = store.dominantCurrency;
+        final monthlyMain = monthly[currency] ?? 0;
+        final budget = store.monthlyBudget;
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
-            _TotalsCard(monthly: monthly, yearly: yearly),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _StatChip(
-                    label: 'اشتراك نشط',
-                    value: '${store.active.length}',
-                    icon: Icons.check_circle_rounded,
-                    color: AppColors.primaryDeep,
-                    bg: AppColors.primarySoft,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _StatChip(
-                    label: 'موقوف مؤقتًا',
-                    value: '${store.paused.length}',
-                    icon: Icons.pause_circle_rounded,
-                    color: const Color(0xFF9A6E0C),
-                    bg: AppColors.sandSoft,
-                  ),
-                ),
-              ],
+            FadeSlideIn(
+              child: _HeroCard(
+                monthly: monthly,
+                yearly: yearly,
+                currency: currency,
+              ),
             ),
-            if (savings.isNotEmpty) ...[
+            if (budget > 0) ...[
               const SizedBox(height: 12),
-              AppCard(
-                color: AppColors.sandSoft,
-                child: Row(
-                  children: [
-                    const Text('👏', style: TextStyle(fontSize: 26)),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'إيقافك لبعض الاشتراكات يوفّر لك '
-                        '${_joinMoney(savings)} شهريًا',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.ink,
+              FadeSlideIn(
+                delayMs: 60,
+                child: _BudgetCard(
+                  spent: monthlyMain,
+                  budget: budget,
+                  currency: currency,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            FadeSlideIn(
+              delayMs: 120,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _StatChip(
+                      label: 'اشتراك نشط',
+                      value: '${store.active.length}',
+                      icon: Icons.check_circle_rounded,
+                      color: AppColors.primary,
+                      bg: AppColors.primarySoft,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _StatChip(
+                      label: 'موقوف مؤقتًا',
+                      value: '${store.paused.length}',
+                      icon: Icons.pause_circle_rounded,
+                      color: AppColors.gold,
+                      bg: AppColors.goldSoft,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (lifetime.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              FadeSlideIn(
+                delayMs: 160,
+                child: AppCard(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: AppColors.goldSoft,
+                          borderRadius: BorderRadius.circular(13),
+                        ),
+                        child: const Text('🧾',
+                            style: TextStyle(fontSize: 22)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'إجمالي ما دفعته منذ البداية',
+                              style: TextStyle(
+                                color: AppColors.muted,
+                                fontSize: 12.5,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              lifetime.entries
+                                  .map((e) => fmtMoney(e.value, e.key))
+                                  .join(' + '),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                                color: AppColors.gold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            if (savings.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              FadeSlideIn(
+                delayMs: 200,
+                child: AppCard(
+                  color: AppColors.primarySoft,
+                  borderColor: AppColors.primaryDeep,
+                  child: Row(
+                    children: [
+                      const Text('👏', style: TextStyle(fontSize: 26)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'إيقافك لبعض الاشتراكات يوفّر لك '
+                          '${savings.entries.map((e) => fmtMoney(e.value, e.key)).join(' + ')} شهريًا',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.ink,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
             const SizedBox(height: 20),
-            const Text(
-              'التجديدات القادمة (٣٠ يومًا)',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                color: AppColors.ink,
-              ),
-            ),
-            const SizedBox(height: 10),
+            const SectionTitle('التجديدات القادمة (٣٠ يومًا)', emoji: '⏰'),
             if (upcoming.isEmpty)
               const AppCard(
                 child: Row(
@@ -108,95 +182,223 @@ class DashboardScreen extends StatelessWidget {
                 ),
               )
             else
-              ...upcoming.take(6).map(
-                    (s) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: _UpcomingTile(sub: s),
-                    ),
+              ...List.generate(
+                upcoming.take(6).length,
+                (i) => FadeSlideIn(
+                  delayMs: 240 + i * 60,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _UpcomingTile(sub: upcoming[i]),
                   ),
+                ),
+              ),
           ],
         );
       },
     );
   }
-
-  static String _joinMoney(Map<String, double> totals) {
-    return totals.entries
-        .map((e) => fmtMoney(e.value, e.key))
-        .join(' + ');
-  }
 }
 
-class _TotalsCard extends StatelessWidget {
+class _HeroCard extends StatelessWidget {
   final Map<String, double> monthly;
   final Map<String, double> yearly;
+  final String currency;
 
-  const _TotalsCard({required this.monthly, required this.yearly});
+  const _HeroCard({
+    required this.monthly,
+    required this.yearly,
+    required this.currency,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final mainValue = monthly[currency] ?? 0;
+    final others =
+        monthly.entries.where((e) => e.key != currency).toList();
+    final daily = mainValue * 12 / 365;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primaryDeep, AppColors.primary],
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-        ),
-        borderRadius: BorderRadius.circular(22),
+        gradient: AppColors.heroGradient,
+        borderRadius: BorderRadius.circular(26),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x330A6B4C),
-            blurRadius: 18,
-            offset: Offset(0, 8),
+            color: Color(0x5514B886),
+            blurRadius: 26,
+            offset: Offset(0, 10),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'مصروفك الشهري على الاشتراكات',
-            style: TextStyle(color: Colors.white70, fontSize: 14),
-          ),
-          const SizedBox(height: 8),
-          if (monthly.isEmpty)
-            const Text(
-              '0',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 36,
-                fontWeight: FontWeight.w900,
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0x33062318),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'مصروفك الشهري',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-            )
-          else
-            ...monthly.entries.map(
-              (e) => Text(
-                fmtMoney(e.value, e.key),
+              const Spacer(),
+              const Text('💳', style: TextStyle(fontSize: 26)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          AnimatedMoney(
+            value: mainValue,
+            currency: currency,
+            style: const TextStyle(
+              color: Color(0xFF06231A),
+              fontSize: 40,
+              fontWeight: FontWeight.w900,
+              height: 1.1,
+            ),
+          ),
+          if (others.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                '+ ${others.map((e) => fmtMoney(e.value, e.key)).join(' + ')}',
                 style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 34,
-                  fontWeight: FontWeight.w900,
-                  height: 1.25,
+                  color: Color(0xCC06231A),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
-          const SizedBox(height: 10),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              'سنويًا ≈ ${yearly.entries.map((e) => fmtMoney(e.value, e.key)).join(' + ')}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              _HeroPill(
+                text:
+                    'سنويًا ≈ ${yearly.entries.map((e) => fmtMoney(e.value, e.key)).join(' + ')}',
               ),
+              const SizedBox(width: 8),
+              _HeroPill(text: 'يوميًا ≈ ${fmtMoney(daily, currency)}'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroPill extends StatelessWidget {
+  final String text;
+
+  const _HeroPill({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Flexible(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0x2E062318),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          text,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12.5,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BudgetCard extends StatelessWidget {
+  final double spent;
+  final double budget;
+  final String currency;
+
+  const _BudgetCard({
+    required this.spent,
+    required this.budget,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final ratio = budget <= 0 ? 0.0 : (spent / budget).clamp(0.0, 1.0);
+    final over = spent > budget;
+    final color = over
+        ? AppColors.danger
+        : ratio > 0.8
+            ? AppColors.warn
+            : AppColors.primary;
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text(
+                '🎯 الميزانية الشهرية',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 15,
+                  color: AppColors.ink,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${fmtMoney(spent, currency)} / ${fmtMoney(budget, currency)}',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              height: 12,
+              color: AppColors.cardAlt,
+              alignment: AlignmentDirectional.centerStart,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: ratio),
+                duration: const Duration(milliseconds: 800),
+                curve: Curves.easeOutCubic,
+                builder: (context, t, _) => FractionallySizedBox(
+                  widthFactor: t <= 0 ? 0.01 : t,
+                  child: Container(color: color),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            over
+                ? '⚠️ تجاوزت ميزانيتك بـ ${fmtMoney(spent - budget, currency)}'
+                : 'متبقي ${fmtMoney(budget - spent, currency)} من ميزانيتك',
+            style: TextStyle(
+              color: over ? AppColors.danger : AppColors.muted,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -227,6 +429,7 @@ class _StatChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
@@ -267,11 +470,21 @@ class _UpcomingTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final days = sub.daysUntilRenewal();
     final d = sub.nextRenewal();
+    final catColor = categoryColor(sub.category);
     return AppCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
-          Text(sub.emoji, style: const TextStyle(fontSize: 26)),
+          Container(
+            width: 46,
+            height: 46,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: catColor.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Text(sub.emoji, style: const TextStyle(fontSize: 24)),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -287,8 +500,7 @@ class _UpcomingTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  '${d.year}/${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}'
-                  ' • ${fmtMoney(sub.price, sub.currency)}',
+                  '${fmtDate(d)} • ${fmtMoney(sub.price, sub.currency)}',
                   style: const TextStyle(
                     color: AppColors.muted,
                     fontSize: 12.5,
@@ -317,8 +529,23 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('💳', style: TextStyle(fontSize: 64)),
-            const SizedBox(height: 16),
+            Container(
+              width: 110,
+              height: 110,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                gradient: AppColors.heroGradient,
+                shape: BoxShape.circle,
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x5514B886),
+                    blurRadius: 30,
+                  ),
+                ],
+              ),
+              child: const Text('💳', style: TextStyle(fontSize: 52)),
+            ),
+            const SizedBox(height: 22),
             const Text(
               'كم تدفع فعليًا كل شهر؟',
               textAlign: TextAlign.center,

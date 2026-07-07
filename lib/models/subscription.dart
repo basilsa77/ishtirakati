@@ -20,6 +20,18 @@ extension BillingCycleX on BillingCycle {
       };
 }
 
+/// طرق الدفع الشائعة.
+const List<String> kPaymentMethods = [
+  'غير محدد',
+  'بطاقة مدى',
+  'بطاقة ائتمانية',
+  'Apple Pay',
+  'STC Pay',
+  'PayPal',
+  'رصيد المتجر',
+  'أخرى',
+];
+
 /// رموز العملات المدعومة وعرضها بالعربية.
 const Map<String, String> currencySymbols = {
   'SAR': 'ر.س',
@@ -54,6 +66,12 @@ class Subscription {
   String notes;
   bool isPaused;
 
+  /// طريقة الدفع (اختياري).
+  String paymentMethod;
+
+  /// رابط إدارة/إلغاء الاشتراك (اختياري).
+  String manageUrl;
+
   Subscription({
     required this.id,
     required this.name,
@@ -65,6 +83,8 @@ class Subscription {
     required this.category,
     this.notes = '',
     this.isPaused = false,
+    this.paymentMethod = 'غير محدد',
+    this.manageUrl = '',
   });
 
   double get yearlyCost => price * cycle.cyclesPerYear;
@@ -118,6 +138,38 @@ class Subscription {
     return nextRenewal(ref).difference(today).inDays;
   }
 
+  /// عدد الدفعات التي حدثت منذ البداية حتى [from] (تشمل دفعة البداية).
+  int paymentsMade([DateTime? from]) {
+    final ref = from ?? DateTime.now();
+    final today = DateTime(ref.year, ref.month, ref.day);
+    final start =
+        DateTime(anchorDate.year, anchorDate.month, anchorDate.day);
+    if (start.isAfter(today)) return 0;
+
+    if (cycle == BillingCycle.weekly) {
+      return today.difference(start).inDays ~/ 7 + 1;
+    }
+
+    final step = switch (cycle) {
+      BillingCycle.monthly => 1,
+      BillingCycle.quarterly => 3,
+      BillingCycle.yearly => 12,
+      BillingCycle.weekly => 1,
+    };
+    var count = 0;
+    var k = 0;
+    var d = start;
+    while (!d.isAfter(today) && count < 1200) {
+      count += 1;
+      k += step;
+      d = addMonths(start, k);
+    }
+    return count;
+  }
+
+  /// إجمالي ما دُفع على هذا الاشتراك منذ البداية (تقديري).
+  double totalSpent([DateTime? from]) => paymentsMade(from) * price;
+
   /// إضافة أشهر مع تثبيت يوم الشهر الأصلي (مع القصّ لنهاية الشهر).
   static DateTime addMonths(DateTime d, int n) {
     final totalMonths = d.year * 12 + (d.month - 1) + n;
@@ -142,6 +194,8 @@ class Subscription {
         'category': category,
         'notes': notes,
         'paused': isPaused,
+        'payMethod': paymentMethod,
+        'manageUrl': manageUrl,
       };
 
   factory Subscription.fromJson(Map<String, dynamic> json) {
@@ -160,6 +214,8 @@ class Subscription {
       category: (json['category'] as String?) ?? 'أخرى',
       notes: (json['notes'] as String?) ?? '',
       isPaused: (json['paused'] as bool?) ?? false,
+      paymentMethod: (json['payMethod'] as String?) ?? 'غير محدد',
+      manageUrl: (json['manageUrl'] as String?) ?? '',
     );
   }
 }

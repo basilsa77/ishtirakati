@@ -1,13 +1,30 @@
-/// قائمة كل الاشتراكات: بحث وفلترة وإدارة كاملة.
+/// قائمة كل الاشتراكات: بحث، فلترة، فرز، وورقة تفاصيل كاملة.
 library;
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../data/presets.dart';
 import '../models/subscription.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
 import 'edit_subscription_screen.dart';
+
+enum SortMode { renewal, priceDesc, name }
+
+extension SortModeX on SortMode {
+  String get labelAr => switch (this) {
+        SortMode.renewal => 'الأقرب تجديدًا',
+        SortMode.priceDesc => 'الأعلى سعرًا',
+        SortMode.name => 'الاسم أبجديًا',
+      };
+
+  IconData get icon => switch (this) {
+        SortMode.renewal => Icons.schedule_rounded,
+        SortMode.priceDesc => Icons.trending_down_rounded,
+        SortMode.name => Icons.sort_by_alpha_rounded,
+      };
+}
 
 class SubscriptionsScreen extends StatefulWidget {
   const SubscriptionsScreen({super.key});
@@ -19,6 +36,7 @@ class SubscriptionsScreen extends StatefulWidget {
 class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   final TextEditingController _search = TextEditingController();
   String _category = 'الكل';
+  SortMode _sort = SortMode.renewal;
 
   @override
   void dispose() {
@@ -46,12 +64,23 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         builder: (context, _) {
           final query = _search.text.trim();
           var list = store.items.where((s) {
-            final matchesQuery =
-                query.isEmpty || s.name.contains(query);
+            final matchesQuery = query.isEmpty || s.name.contains(query);
             final matchesCat =
                 _category == 'الكل' || s.category == _category;
             return matchesQuery && matchesCat;
           }).toList();
+
+          switch (_sort) {
+            case SortMode.renewal:
+              list.sort((a, b) {
+                if (a.isPaused != b.isPaused) return a.isPaused ? 1 : -1;
+                return a.daysUntilRenewal().compareTo(b.daysUntilRenewal());
+              });
+            case SortMode.priceDesc:
+              list.sort((a, b) => b.monthlyCost.compareTo(a.monthlyCost));
+            case SortMode.name:
+              list.sort((a, b) => a.name.compareTo(b.name));
+          }
 
           final usedCategories = <String>{
             for (final s in store.items) s.category,
@@ -61,26 +90,77 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: TextField(
-                  controller: _search,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    hintText: 'ابحث باسم الاشتراك...',
-                    prefixIcon: const Icon(
-                      Icons.search_rounded,
-                      color: AppColors.muted,
-                    ),
-                    suffixIcon: query.isEmpty
-                        ? null
-                        : IconButton(
-                            icon: const Icon(Icons.close_rounded),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _search,
+                        onChanged: (_) => setState(() {}),
+                        decoration: InputDecoration(
+                          hintText: 'ابحث باسم الاشتراك...',
+                          prefixIcon: const Icon(
+                            Icons.search_rounded,
                             color: AppColors.muted,
-                            onPressed: () {
-                              _search.clear();
-                              setState(() {});
-                            },
                           ),
-                  ),
+                          suffixIcon: query.isEmpty
+                              ? null
+                              : IconButton(
+                                  icon: const Icon(Icons.close_rounded),
+                                  color: AppColors.muted,
+                                  onPressed: () {
+                                    _search.clear();
+                                    setState(() {});
+                                  },
+                                ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.card,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: PopupMenuButton<SortMode>(
+                        tooltip: 'فرز',
+                        color: AppColors.cardAlt,
+                        icon: const Icon(
+                          Icons.swap_vert_rounded,
+                          color: AppColors.primary,
+                        ),
+                        onSelected: (m) => setState(() => _sort = m),
+                        itemBuilder: (ctx) => [
+                          for (final m in SortMode.values)
+                            PopupMenuItem(
+                              value: m,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    m.icon,
+                                    size: 19,
+                                    color: _sort == m
+                                        ? AppColors.primary
+                                        : AppColors.muted,
+                                  ),
+                                  const SizedBox(width: 9),
+                                  Text(
+                                    m.labelAr,
+                                    style: TextStyle(
+                                      color: _sort == m
+                                          ? AppColors.primary
+                                          : AppColors.ink,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
               SizedBox(
@@ -152,10 +232,11 @@ class _CatChip extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.white,
+          color: selected ? AppColors.primary : AppColors.card,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected ? AppColors.primary : AppColors.border,
@@ -164,7 +245,7 @@ class _CatChip extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : AppColors.ink,
+            color: selected ? const Color(0xFF06231A) : AppColors.ink,
             fontWeight: FontWeight.w700,
             fontSize: 13,
           ),
@@ -182,6 +263,7 @@ class _SubTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = SubscriptionStore.instance;
+    final catColor = categoryColor(sub.category);
     return Dismissible(
       key: ValueKey(sub.id),
       direction: DismissDirection.endToStart,
@@ -190,7 +272,7 @@ class _SubTile extends StatelessWidget {
         padding: const EdgeInsetsDirectional.only(end: 22),
         decoration: BoxDecoration(
           color: AppColors.danger,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(20),
         ),
         child:
             const Icon(Icons.delete_rounded, color: Colors.white, size: 26),
@@ -224,20 +306,17 @@ class _SubTile extends StatelessWidget {
         child: AppCard(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: InkWell(
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => EditSubscriptionScreen(existing: sub),
-              ),
-            ),
+            onTap: () => showSubscriptionDetails(context, sub),
             child: Row(
               children: [
                 Container(
-                  width: 46,
-                  height: 46,
+                  width: 48,
+                  height: 48,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: AppColors.primarySoft,
-                    borderRadius: BorderRadius.circular(14),
+                    color: catColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(color: catColor.withOpacity(0.35)),
                   ),
                   child:
                       Text(sub.emoji, style: const TextStyle(fontSize: 24)),
@@ -268,7 +347,7 @@ class _SubTile extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.sandSoft,
+                                color: AppColors.goldSoft,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: const Text(
@@ -276,7 +355,7 @@ class _SubTile extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 10.5,
                                   fontWeight: FontWeight.w800,
-                                  color: Color(0xFF9A6E0C),
+                                  color: AppColors.gold,
                                 ),
                               ),
                             ),
@@ -302,7 +381,7 @@ class _SubTile extends StatelessWidget {
                       style: const TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 15,
-                        color: AppColors.primaryDeep,
+                        color: AppColors.primary,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -314,6 +393,265 @@ class _SubTile extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// ورقة تفاصيل الاشتراك الكاملة.
+Future<void> showSubscriptionDetails(
+  BuildContext context,
+  Subscription sub,
+) async {
+  final store = SubscriptionStore.instance;
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: AppColors.card,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+    ),
+    builder: (ctx) {
+      final catColor = categoryColor(sub.category);
+      final next = sub.nextRenewal();
+      final payments = sub.paymentsMade();
+      final spent = sub.totalSpent();
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Container(
+                    width: 58,
+                    height: 58,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: catColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(18),
+                      border:
+                          Border.all(color: catColor.withOpacity(0.4)),
+                    ),
+                    child: Text(
+                      sub.emoji,
+                      style: const TextStyle(fontSize: 30),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          sub.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 19,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          '${sub.category} • ${sub.cycle.labelAr}',
+                          style: const TextStyle(
+                            color: AppColors.muted,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    fmtMoney(sub.price, sub.currency),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.cardAlt,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    _DetailRow(
+                      icon: Icons.event_repeat_rounded,
+                      label: 'التجديد القادم',
+                      value:
+                          '${fmtDate(next)} (بعد ${sub.daysUntilRenewal()} يوم)',
+                    ),
+                    _DetailRow(
+                      icon: Icons.flag_rounded,
+                      label: 'تاريخ البداية',
+                      value: fmtDate(sub.anchorDate),
+                    ),
+                    _DetailRow(
+                      icon: Icons.receipt_long_rounded,
+                      label: 'عدد الدفعات حتى الآن',
+                      value: '$payments دفعة',
+                    ),
+                    _DetailRow(
+                      icon: Icons.savings_rounded,
+                      label: 'إجمالي ما دفعته',
+                      value: fmtMoney(spent, sub.currency),
+                      valueColor: AppColors.gold,
+                    ),
+                    _DetailRow(
+                      icon: Icons.payments_rounded,
+                      label: 'التكلفة الشهرية',
+                      value: fmtMoney(sub.monthlyCost, sub.currency),
+                    ),
+                    if (sub.paymentMethod != 'غير محدد')
+                      _DetailRow(
+                        icon: Icons.credit_card_rounded,
+                        label: 'طريقة الدفع',
+                        value: sub.paymentMethod,
+                      ),
+                    if (sub.notes.isNotEmpty)
+                      _DetailRow(
+                        icon: Icons.sticky_note_2_rounded,
+                        label: 'ملاحظات',
+                        value: sub.notes,
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (sub.manageUrl.isNotEmpty) ...[
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  onPressed: () async {
+                    var raw = sub.manageUrl.trim();
+                    if (!raw.startsWith('http')) raw = 'https://$raw';
+                    final uri = Uri.tryParse(raw);
+                    if (uri != null) {
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.open_in_new_rounded),
+                  label: const Text('فتح صفحة إدارة الاشتراك'),
+                ),
+                const SizedBox(height: 8),
+              ],
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                EditSubscriptionScreen(existing: sub),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.edit_rounded, size: 20),
+                      label: const Text('تعديل'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                        foregroundColor: AppColors.gold,
+                        side: const BorderSide(color: AppColors.goldDeep),
+                      ),
+                      onPressed: () async {
+                        await store.togglePause(sub.id);
+                        if (ctx.mounted) Navigator.pop(ctx);
+                      },
+                      icon: Icon(
+                        sub.isPaused
+                            ? Icons.play_arrow_rounded
+                            : Icons.pause_rounded,
+                        size: 20,
+                      ),
+                      label: Text(sub.isPaused ? 'استئناف' : 'إيقاف'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _DetailRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 19, color: AppColors.muted),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.muted,
+                fontSize: 13.5,
+              ),
+            ),
+          ),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.left,
+              style: TextStyle(
+                color: valueColor ?? AppColors.ink,
+                fontWeight: FontWeight.w800,
+                fontSize: 13.5,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

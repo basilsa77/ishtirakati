@@ -16,18 +16,22 @@ class SubscriptionStore extends ChangeNotifier {
 
   static const String _subsKey = 'ishtirakati_subs_v1';
   static const String _currencyKey = 'ishtirakati_default_currency';
+  static const String _budgetKey = 'ishtirakati_monthly_budget';
 
   final List<Subscription> _items = [];
   String _defaultCurrency = 'SAR';
+  double _monthlyBudget = 0; // 0 = غير مفعّلة
   bool _loaded = false;
 
   List<Subscription> get items => List.unmodifiable(_items);
   String get defaultCurrency => _defaultCurrency;
+  double get monthlyBudget => _monthlyBudget;
   bool get isLoaded => _loaded;
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     _defaultCurrency = prefs.getString(_currencyKey) ?? 'SAR';
+    _monthlyBudget = prefs.getDouble(_budgetKey) ?? 0;
     _items.clear();
     for (final raw in prefs.getStringList(_subsKey) ?? const <String>[]) {
       try {
@@ -90,6 +94,65 @@ class SubscriptionStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setMonthlyBudget(double value) async {
+    _monthlyBudget = value < 0 ? 0 : value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_budgetKey, _monthlyBudget);
+    notifyListeners();
+  }
+
+  // --------------------- نسخ احتياطي واستعادة ---------------------
+
+  /// تصدير كل البيانات كنص JSON واحد (للحفظ في الملاحظات أو الملفات).
+  String exportJson() {
+    return const JsonEncoder.withIndent('  ').convert({
+      'app': 'ishtirakati',
+      'version': 2,
+      'exportedAt': DateTime.now().toIso8601String(),
+      'defaultCurrency': _defaultCurrency,
+      'monthlyBudget': _monthlyBudget,
+      'subscriptions': _items.map((s) => s.toJson()).toList(),
+    });
+  }
+
+  /// استيراد بيانات من نص JSON مُصدَّر سابقًا.
+  /// يعيد عدد الاشتراكات المستوردة، أو -1 إذا كان النص غير صالح.
+  Future<int> importJson(String raw) async {
+    try {
+      final data = jsonDecode(raw);
+      if (data is! Map<String, dynamic>) return -1;
+      final list = data['subscriptions'];
+      if (list is! List) return -1;
+      var count = 0;
+      for (final e in list) {
+        if (e is Map<String, dynamic>) {
+          final sub = Subscription.fromJson(e);
+          final index = _items.indexWhere((s) => s.id == sub.id);
+          if (index >= 0) {
+            _items[index] = sub;
+          } else {
+            _items.add(sub);
+          }
+          count += 1;
+        }
+      }
+      final budget = (data['monthlyBudget'] as num?)?.toDouble();
+      if (budget != null && budget >= 0) _monthlyBudget = budget;
+      final currency = data['defaultCurrency'] as String?;
+      if (currency != null && currency.isNotEmpty) {
+        _defaultCurrency = currency;
+      }
+      await _persist();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(_budgetKey, _monthlyBudget);
+      await prefs.setString(_currencyKey, _defaultCurrency);
+      notifyListeners();
+      return count;
+    } catch (_) {
+      return -1;
+    }
+  }
+
   // ------------------------- إحصائيات -------------------------
 
   List<Subscription> get active =>
@@ -112,6 +175,15 @@ class SubscriptionStore extends ChangeNotifier {
     final totals = <String, double>{};
     for (final s in active) {
       totals[s.currency] = (totals[s.currency] ?? 0) + s.yearlyCost;
+    }
+    return totals;
+  }
+
+  /// إجمالي ما دُفع منذ البداية لكل عملة (كل الاشتراكات).
+  Map<String, double> lifetimeTotals([DateTime? from]) {
+    final totals = <String, double>{};
+    for (final s in _items) {
+      totals[s.currency] = (totals[s.currency] ?? 0) + s.totalSpent(from);
     }
     return totals;
   }

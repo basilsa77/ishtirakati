@@ -1,11 +1,12 @@
-/// تحليلات الإنفاق: توزيع التصنيفات، أغلى الاشتراكات، والتوقع السنوي.
+/// تحليلات الإنفاق: رسم دائري تفاعلي، مؤشرات ذكية، وأعلى الاشتراكات.
 library;
+
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../data/presets.dart';
-import '../services/subscription_store.dart';
 import '../models/subscription.dart';
+import '../services/subscription_store.dart';
 import '../theme.dart';
 
 class InsightsScreen extends StatelessWidget {
@@ -38,8 +39,8 @@ class InsightsScreen extends StatelessWidget {
         final byCategory = store.monthlyByCategory(currency);
         final sortedCats = byCategory.entries.toList()
           ..sort((a, b) => b.value.compareTo(a.value));
-        final maxVal =
-            sortedCats.isEmpty ? 1.0 : sortedCats.first.value;
+        final totalMonthly =
+            sortedCats.fold<double>(0, (sum, e) => sum + e.value);
 
         final top = store.active
             .where((s) => s.currency == currency)
@@ -52,102 +53,240 @@ class InsightsScreen extends StatelessWidget {
             .where((e) => e.key != currency)
             .toList();
 
+        final avgPerSub =
+            top.isEmpty ? 0.0 : totalMonthly / top.length;
+        final within7 = store.upcoming(withinDays: 7).length;
+        final heaviest = sortedCats.isEmpty ? null : sortedCats.first;
+
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'توزيع مصروفك الشهري حسب التصنيف',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                      color: AppColors.ink,
+            FadeSlideIn(
+              child: AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'توزيع مصروفك الشهري',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                        color: AppColors.ink,
+                      ),
                     ),
-                  ),
-                  Text(
-                    'بعملة ${currencySymbols[currency] ?? currency}',
-                    style: const TextStyle(
-                      color: AppColors.muted,
-                      fontSize: 12.5,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  for (final e in sortedCats) ...[
-                    _CategoryBar(
-                      label:
-                          '${kCategoryEmoji[e.key] ?? '🔖'} ${e.key}',
-                      value: e.value,
-                      maxValue: maxVal,
-                      currency: currency,
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  if (otherCurrencies.isNotEmpty) ...[
-                    const Divider(height: 20),
                     Text(
-                      'اشتراكات بعملات أخرى: '
-                      '${otherCurrencies.map((e) => fmtMoney(e.value, e.key)).join(' + ')} شهريًا',
+                      'بعملة ${currencySymbols[currency] ?? currency}',
                       style: const TextStyle(
                         color: AppColors.muted,
                         fontSize: 12.5,
                       ),
                     ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            AppCard(
-              color: AppColors.sandSoft,
-              child: Row(
-                children: [
-                  const Text('📅', style: TextStyle(fontSize: 30)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 18),
+                    Row(
                       children: [
-                        const Text(
-                          'توقّع إنفاقك السنوي',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.ink,
+                        SizedBox(
+                          width: 150,
+                          height: 150,
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0, end: 1),
+                            duration: const Duration(milliseconds: 1000),
+                            curve: Curves.easeOutCubic,
+                            builder: (context, t, _) => CustomPaint(
+                              painter: _DonutPainter(
+                                entries: sortedCats,
+                                total: totalMonthly,
+                                progress: t,
+                              ),
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      fmtMoney(totalMonthly, currency),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 16,
+                                        color: AppColors.ink,
+                                      ),
+                                    ),
+                                    const Text(
+                                      'شهريًا',
+                                      style: TextStyle(
+                                        color: AppColors.muted,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          store
-                              .yearlyTotals()
-                              .entries
-                              .map((e) => fmtMoney(e.value, e.key))
-                              .join(' + '),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 20,
-                            color: Color(0xFF7A5A10),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (final e in sortedCats.take(6))
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 10,
+                                        height: 10,
+                                        decoration: BoxDecoration(
+                                          color: categoryColor(e.key),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 7),
+                                      Expanded(
+                                        child: Text(
+                                          e.key,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.ink,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                      Text(
+                                        totalMonthly <= 0
+                                            ? ''
+                                            : '${(e.value / totalMonthly * 100).round()}٪',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.muted,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       ],
+                    ),
+                    if (otherCurrencies.isNotEmpty) ...[
+                      const Divider(height: 24),
+                      Text(
+                        'اشتراكات بعملات أخرى: '
+                        '${otherCurrencies.map((e) => fmtMoney(e.value, e.key)).join(' + ')} شهريًا',
+                        style: const TextStyle(
+                          color: AppColors.muted,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            FadeSlideIn(
+              delayMs: 80,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _InsightChip(
+                      emoji: '⚖️',
+                      label: 'متوسط الاشتراك',
+                      value: fmtMoney(avgPerSub, currency),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _InsightChip(
+                      emoji: '⏳',
+                      label: 'تجديد خلال ٧ أيام',
+                      value: '$within7',
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-            const Text(
-              'أغلى اشتراكاتك (شهريًا)',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                color: AppColors.ink,
+            if (heaviest != null) ...[
+              const SizedBox(height: 10),
+              FadeSlideIn(
+                delayMs: 120,
+                child: AppCard(
+                  color: AppColors.goldSoft,
+                  borderColor: AppColors.goldDeep,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 13,
+                  ),
+                  child: Row(
+                    children: [
+                      const Text('👑', style: TextStyle(fontSize: 24)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'أثقل تصنيف على جيبك: «${heaviest.key}» '
+                          'بـ ${fmtMoney(heaviest.value, currency)} شهريًا',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.ink,
+                            fontSize: 13.5,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            FadeSlideIn(
+              delayMs: 160,
+              child: AppCard(
+                child: Row(
+                  children: [
+                    const Text('📅', style: TextStyle(fontSize: 30)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'توقّع إنفاقك السنوي',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            store
+                                .yearlyTotals()
+                                .entries
+                                .map((e) => fmtMoney(e.value, e.key))
+                                .join(' + '),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 20,
+                              color: AppColors.gold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 10),
-            for (final s in top.take(5)) ...[
-              _TopTile(sub: s),
+            const SizedBox(height: 20),
+            const SectionTitle('أغلى اشتراكاتك (شهريًا)', emoji: '💸'),
+            for (var i = 0; i < top.take(5).length; i++) ...[
+              FadeSlideIn(
+                delayMs: 200 + i * 60,
+                child: _TopTile(sub: top[i], rank: i),
+              ),
               const SizedBox(height: 10),
             ],
             const SizedBox(height: 6),
@@ -167,74 +306,110 @@ class InsightsScreen extends StatelessWidget {
   }
 }
 
-class _CategoryBar extends StatelessWidget {
-  final String label;
-  final double value;
-  final double maxValue;
-  final String currency;
+class _DonutPainter extends CustomPainter {
+  final List<MapEntry<String, double>> entries;
+  final double total;
+  final double progress;
 
-  const _CategoryBar({
+  _DonutPainter({
+    required this.entries,
+    required this.total,
+    required this.progress,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (total <= 0 || entries.isEmpty) return;
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2 - 10;
+    const stroke = 18.0;
+    const gap = 0.045; // فجوة صغيرة بين الشرائح (راديان)
+
+    var start = -math.pi / 2;
+    for (final e in entries) {
+      final sweep =
+          (e.value / total) * 2 * math.pi * progress - gap;
+      if (sweep <= 0) {
+        start += (e.value / total) * 2 * math.pi * progress;
+        continue;
+      }
+      final paint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke
+        ..strokeCap = StrokeCap.round
+        ..color = categoryColor(e.key);
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        start + gap / 2,
+        sweep,
+        false,
+        paint,
+      );
+      start += (e.value / total) * 2 * math.pi * progress;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DonutPainter old) =>
+      old.progress != progress ||
+      old.total != total ||
+      old.entries.length != entries.length;
+}
+
+class _InsightChip extends StatelessWidget {
+  final String emoji;
+  final String label;
+  final String value;
+
+  const _InsightChip({
+    required this.emoji,
     required this.label,
     required this.value,
-    required this.maxValue,
-    required this.currency,
   });
 
   @override
   Widget build(BuildContext context) {
-    final factor = maxValue <= 0 ? 0.0 : (value / maxValue).clamp(0.05, 1.0);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 13.5,
-                color: AppColors.ink,
-              ),
-            ),
-            Text(
-              fmtMoney(value, currency),
-              style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 13,
-                color: AppColors.primaryDeep,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            height: 10,
-            color: const Color(0xFFEDE7DA),
-            alignment: AlignmentDirectional.centerStart,
-            child: FractionallySizedBox(
-              widthFactor: factor,
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.primary, AppColors.primaryDeep],
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      child: Row(
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 22)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.primary,
                   ),
                 ),
-              ),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    color: AppColors.muted,
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
 class _TopTile extends StatelessWidget {
   final Subscription sub;
+  final int rank;
 
-  const _TopTile({required this.sub});
+  const _TopTile({required this.sub, required this.rank});
+
+  static const List<String> _medals = ['🥇', '🥈', '🥉'];
 
   @override
   Widget build(BuildContext context) {
@@ -242,8 +417,13 @@ class _TopTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
-          Text(sub.emoji, style: const TextStyle(fontSize: 24)),
-          const SizedBox(width: 12),
+          Text(
+            rank < _medals.length ? _medals[rank] : '💠',
+            style: const TextStyle(fontSize: 22),
+          ),
+          const SizedBox(width: 10),
+          Text(sub.emoji, style: const TextStyle(fontSize: 22)),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               sub.name,
@@ -257,7 +437,7 @@ class _TopTile extends StatelessWidget {
             '${fmtMoney(sub.monthlyCost, sub.currency)} / شهر',
             style: const TextStyle(
               fontWeight: FontWeight.w900,
-              color: AppColors.primaryDeep,
+              color: AppColors.primary,
             ),
           ),
         ],

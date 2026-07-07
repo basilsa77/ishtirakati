@@ -136,4 +136,34 @@ void main() {
       expect(fmtMoney(24.99, 'SAR'), '24.99 ر.س');
     });
   });
+
+  group('إجمالي المدفوع منذ البداية', () {
+    test('شهري: 3 دفعات بين 15 يناير و20 مارس', () {
+      final s = _sub(
+        cycle: BillingCycle.monthly,
+        anchor: DateTime(2026, 1, 15),
+        price: 50,
+      );
+      expect(s.paymentsMade(DateTime(2026, 3, 20)), 3);
+      expect(s.totalSpent(DateTime(2026, 3, 20)), closeTo(150, 0.001));
+    });
+
+    test('أسبوعي: دفعة واحدة قبل مرور أسبوع', () {
+      final s = _sub(
+        cycle: BillingCycle.weekly,
+        anchor: DateTime(2026, 7, 1),
+        price: 10,
+      );
+      expect(s.paymentsMade(DateTime(2026, 7, 7)), 1);
+    });
+
+    test('بداية مستقبلية: صفر دفعات', () {
+      final s = _sub(
+        cycle: BillingCycle.yearly,
+        anchor: DateTime(2027, 1, 1),
+      );
+      expect(s.paymentsMade(DateTime(2026, 7, 7)), 0);
+      expect(s.totalSpent(DateTime(2026, 7, 7)), 0);
+    });
+  });
 }
