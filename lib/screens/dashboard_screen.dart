@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../models/subscription.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
+import 'calendar_screen.dart';
 import 'edit_subscription_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -58,7 +59,7 @@ class DashboardScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        '⏳ تجارب مجانية على وشك التحول لمدفوعة',
+                        'تجارب مجانية على وشك التحول لمدفوعة',
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
                           fontSize: 14.5,
@@ -141,8 +142,11 @@ class DashboardScreen extends StatelessWidget {
                           color: AppColors.goldSoft,
                           borderRadius: BorderRadius.circular(13),
                         ),
-                        child: const Text('🧾',
-                            style: TextStyle(fontSize: 22)),
+                        child: const Icon(
+                          Icons.receipt_long_rounded,
+                          color: AppColors.gold,
+                          size: 22,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -184,7 +188,11 @@ class DashboardScreen extends StatelessWidget {
                   borderColor: AppColors.primaryDeep,
                   child: Row(
                     children: [
-                      const Text('👏', style: TextStyle(fontSize: 26)),
+                      const Icon(
+                        Icons.savings_rounded,
+                        color: AppColors.primary,
+                        size: 26,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -203,12 +211,31 @@ class DashboardScreen extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 20),
-            const SectionTitle('التجديدات القادمة (٣٠ يومًا)', emoji: '⏰'),
+            Row(
+              children: [
+                const Expanded(
+                  child: SectionTitle('التجديدات القادمة (٣٠ يومًا)'),
+                ),
+                TextButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const CalendarScreen(),
+                    ),
+                  ),
+                  icon: const Icon(Icons.calendar_month_rounded, size: 19),
+                  label: const Text('التقويم'),
+                ),
+              ],
+            ),
             if (upcoming.isEmpty)
               const AppCard(
                 child: Row(
                   children: [
-                    Text('🌙', style: TextStyle(fontSize: 24)),
+                    Icon(
+                      Icons.nightlight_round,
+                      color: AppColors.muted,
+                      size: 24,
+                    ),
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -293,7 +320,11 @@ class _HeroCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              const Text('💳', style: TextStyle(fontSize: 26)),
+              const Icon(
+                Icons.credit_card_rounded,
+                color: Colors.white,
+                size: 26,
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -392,7 +423,7 @@ class _BudgetCard extends StatelessWidget {
           Row(
             children: [
               const Text(
-                '🎯 الميزانية الشهرية',
+                'الميزانية الشهرية',
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 15,
@@ -577,7 +608,11 @@ class _EmptyState extends StatelessWidget {
                   ),
                 ],
               ),
-              child: const Text('💳', style: TextStyle(fontSize: 52)),
+              child: const Icon(
+                Icons.credit_card_rounded,
+                color: Colors.white,
+                size: 52,
+              ),
             ),
             const SizedBox(height: 22),
             const Text(

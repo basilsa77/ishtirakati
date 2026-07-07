@@ -6,7 +6,7 @@ git init
 git config user.name "basilsa77"
 git config user.email "basilsa77@users.noreply.github.com"
 git add .
-git commit -m "v3.0 fix: bump notifications plugin for new Xcode"
+git commit -m "v4.0: icon, email link, calendar, FaceID, price history, UI cleanup"
 git branch -M main
 git remote remove origin 2>nul
 git remote add origin https://github.com/basilsa77/ishtirakati.git

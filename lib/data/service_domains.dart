@@ -41,6 +41,21 @@ const Map<String, String> kServiceDomains = {
   'Careem Plus': 'careem.com',
   'HungerStation Plus': 'hungerstation.com',
   'Duolingo Super': 'duolingo.com',
+  'STARZPLAY': 'starzplay.com',
+  'Crunchyroll': 'crunchyroll.com',
+  'Apple Arcade': 'apple.com',
+  'Discord Nitro': 'discord.com',
+  'Twitch Turbo': 'twitch.tv',
+  'طلبات برو': 'talabat.com',
+  'نون VIP': 'noon.com',
+  'وقت اللياقة': 'fitnesstime.com.sa',
+  'Headspace': 'headspace.com',
+  'Calm': 'calm.com',
+  'Coursera Plus': 'coursera.org',
+  'NordVPN': 'nordvpn.com',
+  '1Password': '1password.com',
+  'Notion Plus': 'notion.so',
+  'Dropbox Plus': 'dropbox.com',
 };
 
 /// رابط شعار الخدمة، أو null إن لم نعرف نطاقها.

@@ -292,6 +292,8 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
         child: Form(
           key: _formKey,
           child: ListView(
+            keyboardDismissBehavior:
+                ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
               if (!isEditing)
@@ -471,7 +473,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 value: _reminderDays,
                 dropdownColor: AppColors.cardAlt,
                 decoration: const InputDecoration(
-                  labelText: 'إشعار التذكير قبل التجديد 🔔',
+                  labelText: 'إشعار التذكير قبل التجديد',
                 ),
                 items: [
                   for (final e in kReminderOptions.entries)
@@ -485,7 +487,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 value: _trialOn,
                 onChanged: (v) => setState(() => _trialOn = v),
                 title: const Text(
-                  'تجربة مجانية ⏳',
+                  'تجربة مجانية',
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     color: AppColors.ink,

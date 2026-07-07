@@ -8,9 +8,13 @@ import '../models/subscription.dart';
 import '../services/import_parser.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
+import 'email_link_screen.dart';
 
 class ImportScreen extends StatefulWidget {
-  const ImportScreen({super.key});
+  /// نص مبدئي (مثلًا من ربط البريد) يُحلَّل تلقائيًا عند الفتح.
+  final String? initialText;
+
+  const ImportScreen({super.key, this.initialText});
 
   @override
   State<ImportScreen> createState() => _ImportScreenState();
@@ -21,6 +25,16 @@ class _ImportScreenState extends State<ImportScreen> {
   List<ImportCandidate> _candidates = [];
   final Set<String> _selected = {};
   bool _analyzed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final t = widget.initialText;
+    if (t != null && t.trim().isNotEmpty) {
+      _text.text = t;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _analyze());
+    }
+  }
 
   @override
   void dispose() {
@@ -67,7 +81,7 @@ class _ImportScreenState extends State<ImportScreen> {
         content: Text(
           count == 0
               ? 'لم يُضف شيء — الاشتراكات المحددة موجودة مسبقًا'
-              : 'تمت إضافة $count اشتراكًا 🎉 — راجع الأسعار الناقصة',
+              : 'تمت إضافة $count اشتراكًا — راجع الأسعار الناقصة',
         ),
       ),
     );
@@ -76,9 +90,10 @@ class _ImportScreenState extends State<ImportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('الاستيراد الذكي ✨')),
+      appBar: AppBar(title: const Text('الاستيراد الذكي')),
       body: SafeArea(
         child: ListView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
             AppCard(
@@ -112,6 +127,14 @@ class _ImportScreenState extends State<ImportScreen> {
               ),
             ),
             const SizedBox(height: 10),
+            FilledButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const EmailLinkScreen()),
+              ),
+              icon: const Icon(Icons.alternate_email_rounded),
+              label: const Text('ربط بريدي وجلب الاشتراكات تلقائيًا'),
+            ),
+            const SizedBox(height: 10),
             AppCard(
               padding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -125,7 +148,7 @@ class _ImportScreenState extends State<ImportScreen> {
                   iconColor: AppColors.primary,
                   collapsedIconColor: AppColors.muted,
                   title: Text(
-                    '🍎 أين أجد اشتراكات App Store؟',
+                    'أين أجد اشتراكات App Store؟',
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 14,
@@ -193,7 +216,7 @@ class _ImportScreenState extends State<ImportScreen> {
               const AppCard(
                 child: Row(
                   children: [
-                    Text('🔍', style: TextStyle(fontSize: 24)),
+                    Icon(Icons.search_off_rounded, color: AppColors.muted, size: 26),
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -209,10 +232,7 @@ class _ImportScreenState extends State<ImportScreen> {
                 ),
               ),
             if (_candidates.isNotEmpty) ...[
-              SectionTitle(
-                'اكتشفنا ${_candidates.length} اشتراكًا',
-                emoji: '🎯',
-              ),
+              SectionTitle('اكتشفنا ${_candidates.length} اشتراكًا'),
               for (final c in _candidates)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),

@@ -23,7 +23,7 @@ class InsightsScreen extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.all(28),
               child: Text(
-                '📊\n\nأضف اشتراكات نشطة أولًا\nلتظهر لك تحليلات إنفاقك هنا.',
+                'أضف اشتراكات نشطة أولًا\nلتظهر لك تحليلات إنفاقك هنا.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: AppColors.muted,
@@ -201,7 +201,7 @@ class InsightsScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _InsightChip(
-                      emoji: '⚖️',
+                      icon: Icons.balance_rounded,
                       label: 'متوسط الاشتراك',
                       value: fmtMoney(avgPerSub, currency),
                     ),
@@ -209,7 +209,7 @@ class InsightsScreen extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _InsightChip(
-                      emoji: '⏳',
+                      icon: Icons.schedule_rounded,
                       label: 'تجديد خلال ٧ أيام',
                       value: '$within7',
                     ),
@@ -230,7 +230,11 @@ class InsightsScreen extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      const Text('👑', style: TextStyle(fontSize: 24)),
+                      const Icon(
+                        Icons.workspace_premium_rounded,
+                        color: AppColors.gold,
+                        size: 24,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -255,7 +259,11 @@ class InsightsScreen extends StatelessWidget {
               child: AppCard(
                 child: Row(
                   children: [
-                    const Text('📅', style: TextStyle(fontSize: 30)),
+                    const Icon(
+                      Icons.event_repeat_rounded,
+                      color: AppColors.gold,
+                      size: 30,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -289,7 +297,7 @@ class InsightsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            const SectionTitle('أغلى اشتراكاتك (شهريًا)', emoji: '💸'),
+            const SectionTitle('أغلى اشتراكاتك (شهريًا)'),
             for (var i = 0; i < top.take(5).length; i++) ...[
               FadeSlideIn(
                 delayMs: 200 + i * 60,
@@ -385,7 +393,7 @@ class _HistoryCard extends StatelessWidget {
           Row(
             children: [
               const Text(
-                '📈 إنفاقك آخر ٦ أشهر',
+                'إنفاقك آخر ٦ أشهر',
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 16,
@@ -489,12 +497,12 @@ class _HistoryCard extends StatelessWidget {
 }
 
 class _InsightChip extends StatelessWidget {
-  final String emoji;
+  final IconData icon;
   final String label;
   final String value;
 
   const _InsightChip({
-    required this.emoji,
+    required this.icon,
     required this.label,
     required this.value,
   });
@@ -505,7 +513,7 @@ class _InsightChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       child: Row(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 22)),
+          Icon(icon, color: AppColors.primary, size: 22),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -541,7 +549,7 @@ class _TopTile extends StatelessWidget {
 
   const _TopTile({required this.sub, required this.rank});
 
-  static const List<String> _medals = ['🥇', '🥈', '🥉'];
+
 
   @override
   Widget build(BuildContext context) {
@@ -549,9 +557,25 @@ class _TopTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
-          Text(
-            rank < _medals.length ? _medals[rank] : '💠',
-            style: const TextStyle(fontSize: 22),
+          Container(
+            width: 26,
+            height: 26,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: rank == 0 ? AppColors.goldSoft : AppColors.cardAlt,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: rank == 0 ? AppColors.goldDeep : AppColors.border,
+              ),
+            ),
+            child: Text(
+              '${rank + 1}',
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w900,
+                color: rank == 0 ? AppColors.gold : AppColors.muted,
+              ),
+            ),
           ),
           const SizedBox(width: 10),
           Text(sub.emoji, style: const TextStyle(fontSize: 22)),

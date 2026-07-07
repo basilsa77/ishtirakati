@@ -107,7 +107,7 @@ class NotificationService {
           if (remindAt.isAfter(now)) {
             await _schedule(
               id++,
-              'تجديد قريب: ${s.name} ⏰',
+              'تجديد قريب: ${s.name}',
               'سيُخصم ${fmtMoney(s.price, s.currency)} بعد ${s.reminderDays} '
               '${s.reminderDays == 1 ? "يوم" : "أيام"} — '
               'ألغِه الآن إن لم تعد تحتاجه.',
@@ -121,7 +121,7 @@ class NotificationService {
         if (dayOf.isAfter(now)) {
           await _schedule(
             id++,
-            'يتجدد اليوم: ${s.name} 💳',
+            'يتجدد اليوم: ${s.name}',
             'سيُخصم ${fmtMoney(s.price, s.currency)} اليوم.',
             dayOf,
           );
@@ -133,7 +133,7 @@ class NotificationService {
           if (warnAt.isAfter(now)) {
             await _schedule(
               id++,
-              'تجربتك المجانية تنتهي قريبًا ⏳',
+              'تجربتك المجانية تنتهي قريبًا',
               '«${s.name}» ستتحول لاشتراك مدفوع في '
               '${t.year}/${t.month}/${t.day} — ألغِها إن لم تعجبك.',
               warnAt,

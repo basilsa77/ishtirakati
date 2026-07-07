@@ -5,6 +5,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:local_auth/local_auth.dart';
 
 import 'screens/dashboard_screen.dart';
 import 'screens/insights_screen.dart';
@@ -52,7 +53,120 @@ class IshtirakatiApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: const RootShell(),
+      // إغلاق الكيبورد عند الضغط في أي مكان فارغ بالتطبيق.
+      builder: (context, child) => GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+        child: child ?? const SizedBox.shrink(),
+      ),
+      home: const LockGate(child: RootShell()),
+    );
+  }
+}
+
+/// بوابة القفل: تطلب Face ID عند فتح التطبيق إذا فعّل المستخدم القفل.
+class LockGate extends StatefulWidget {
+  final Widget child;
+
+  const LockGate({super.key, required this.child});
+
+  @override
+  State<LockGate> createState() => _LockGateState();
+}
+
+class _LockGateState extends State<LockGate>
+    with WidgetsBindingObserver {
+  late bool _locked;
+  bool _authInProgress = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _locked = SubscriptionStore.instance.appLockEnabled;
+    if (_locked) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _unlock());
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused &&
+        SubscriptionStore.instance.appLockEnabled) {
+      setState(() => _locked = true);
+    }
+  }
+
+  Future<void> _unlock() async {
+    if (_authInProgress) return;
+    _authInProgress = true;
+    try {
+      final auth = LocalAuthentication();
+      final ok = await auth.authenticate(
+        localizedReason: 'افتح «اشتراكاتي» ببصمة الوجه',
+        options: const AuthenticationOptions(
+          biometricOnly: false,
+          stickyAuth: true,
+        ),
+      );
+      if (ok && mounted) setState(() => _locked = false);
+    } catch (_) {
+      // إن تعذرت المصادقة (جهاز بدون بصمة) نفتح مباشرة حتى لا يُحبس المستخدم.
+      if (mounted) setState(() => _locked = false);
+    } finally {
+      _authInProgress = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_locked) return widget.child;
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 92,
+              height: 92,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                gradient: AppColors.heroGradient,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.lock_rounded,
+                color: Colors.white,
+                size: 44,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'اشتراكاتي مقفلة',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: AppColors.ink,
+              ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(220, 54),
+              ),
+              onPressed: _unlock,
+              icon: const Icon(Icons.face_rounded),
+              label: const Text('فتح ببصمة الوجه'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

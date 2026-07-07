@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "updatedAt": "2026-07-07",
   "services": [
     {
@@ -121,6 +121,286 @@
       "domain": "calm.com",
       "manageUrl": "https://www.calm.com/account",
       "priceHint": 18.99
+    },
+    {
+      "name": "OSN+",
+      "emoji": "🎞️",
+      "category": "ترفيه ومشاهدة",
+      "domain": "osnplus.com",
+      "manageUrl": "https://stream.osnplus.com/settings",
+      "priceHint": 30.0
+    },
+    {
+      "name": "stc tv",
+      "emoji": "📺",
+      "category": "ترفيه ومشاهدة",
+      "domain": "stctv.com",
+      "manageUrl": "https://stctv.com/account",
+      "priceHint": 20.0
+    },
+    {
+      "name": "Jawwy TV",
+      "emoji": "📡",
+      "category": "ترفيه ومشاهدة",
+      "domain": "jawwy.tv",
+      "manageUrl": "https://jawwy.tv",
+      "priceHint": 15.0
+    },
+    {
+      "name": "TOD",
+      "emoji": "⚽",
+      "category": "ترفيه ومشاهدة",
+      "domain": "tod.tv",
+      "manageUrl": "https://tod.tv/account",
+      "priceHint": 34.99
+    },
+    {
+      "name": "Yango Play",
+      "emoji": "🎥",
+      "category": "ترفيه ومشاهدة",
+      "domain": "yangoplay.com",
+      "manageUrl": "https://yangoplay.com",
+      "priceHint": 19.99
+    },
+    {
+      "name": "Disney+",
+      "emoji": "🏰",
+      "category": "ترفيه ومشاهدة",
+      "domain": "disneyplus.com",
+      "manageUrl": "https://disneyplus.com/account",
+      "priceHint": 29.99
+    },
+    {
+      "name": "STARZPLAY",
+      "emoji": "⭐",
+      "category": "ترفيه ومشاهدة",
+      "domain": "starzplay.com",
+      "manageUrl": "https://starzplay.com/account",
+      "priceHint": 24.99
+    },
+    {
+      "name": "Crunchyroll",
+      "emoji": "🍥",
+      "category": "ترفيه ومشاهدة",
+      "domain": "crunchyroll.com",
+      "manageUrl": "https://crunchyroll.com/account",
+      "priceHint": 29.99
+    },
+    {
+      "name": "Apple Music",
+      "emoji": "🎶",
+      "category": "موسيقى وبودكاست",
+      "domain": "music.apple.com",
+      "manageUrl": "https://support.apple.com/HT202039",
+      "priceHint": 21.99
+    },
+    {
+      "name": "Apple TV+",
+      "emoji": "🍏",
+      "category": "ترفيه ومشاهدة",
+      "domain": "tv.apple.com",
+      "manageUrl": "https://support.apple.com/HT202039",
+      "priceHint": 29.99
+    },
+    {
+      "name": "Apple One",
+      "emoji": "🅰️",
+      "category": "أخرى",
+      "domain": "apple.com",
+      "manageUrl": "https://support.apple.com/HT202039",
+      "priceHint": 36.95
+    },
+    {
+      "name": "Apple Arcade",
+      "emoji": "🕹️",
+      "category": "ألعاب",
+      "domain": "apple.com",
+      "manageUrl": "https://support.apple.com/HT202039",
+      "priceHint": 24.99
+    },
+    {
+      "name": "iCloud+ 2TB",
+      "emoji": "☁️",
+      "category": "تخزين سحابي",
+      "domain": "icloud.com",
+      "manageUrl": "https://support.apple.com/HT202039",
+      "priceHint": 34.99
+    },
+    {
+      "name": "Google One",
+      "emoji": "🗂️",
+      "category": "تخزين سحابي",
+      "domain": "one.google.com",
+      "manageUrl": "https://one.google.com/settings",
+      "priceHint": 9.99
+    },
+    {
+      "name": "Microsoft 365",
+      "emoji": "📊",
+      "category": "إنتاجية وذكاء اصطناعي",
+      "domain": "microsoft.com",
+      "manageUrl": "https://account.microsoft.com/services",
+      "priceHint": 29.99
+    },
+    {
+      "name": "Canva Pro",
+      "emoji": "🎨",
+      "category": "إنتاجية وذكاء اصطناعي",
+      "domain": "canva.com",
+      "manageUrl": "https://canva.com/settings/billing",
+      "priceHint": 40.0
+    },
+    {
+      "name": "Adobe Creative Cloud",
+      "emoji": "🖌️",
+      "category": "إنتاجية وذكاء اصطناعي",
+      "domain": "adobe.com",
+      "manageUrl": "https://account.adobe.com/plans",
+      "priceHint": 120.0
+    },
+    {
+      "name": "Notion Plus",
+      "emoji": "🗒️",
+      "category": "إنتاجية وذكاء اصطناعي",
+      "domain": "notion.so",
+      "manageUrl": "https://notion.so/my-account",
+      "priceHint": 45.0
+    },
+    {
+      "name": "Dropbox Plus",
+      "emoji": "📦",
+      "category": "تخزين سحابي",
+      "domain": "dropbox.com",
+      "manageUrl": "https://dropbox.com/account/plan",
+      "priceHint": 45.0
+    },
+    {
+      "name": "LinkedIn Premium",
+      "emoji": "💼",
+      "category": "إنتاجية وذكاء اصطناعي",
+      "domain": "linkedin.com",
+      "manageUrl": "https://linkedin.com/premium/manage",
+      "priceHint": 110.0
+    },
+    {
+      "name": "Telegram Premium",
+      "emoji": "✈️",
+      "category": "أخرى",
+      "domain": "telegram.org",
+      "manageUrl": "https://t.me/premium",
+      "priceHint": 18.99
+    },
+    {
+      "name": "X Premium",
+      "emoji": "✖️",
+      "category": "أخرى",
+      "domain": "x.com",
+      "manageUrl": "https://x.com/settings/subscriptions",
+      "priceHint": 32.0
+    },
+    {
+      "name": "Discord Nitro",
+      "emoji": "🎙️",
+      "category": "أخرى",
+      "domain": "discord.com",
+      "manageUrl": "https://discord.com/settings/subscriptions",
+      "priceHint": 37.99
+    },
+    {
+      "name": "Twitch Turbo",
+      "emoji": "🟣",
+      "category": "ترفيه ومشاهدة",
+      "domain": "twitch.tv",
+      "manageUrl": "https://twitch.tv/settings/subscriptions",
+      "priceHint": 44.99
+    },
+    {
+      "name": "Careem Plus",
+      "emoji": "🛵",
+      "category": "تسوق وتوصيل",
+      "domain": "careem.com",
+      "manageUrl": "https://careem.com",
+      "priceHint": 19.0
+    },
+    {
+      "name": "طلبات برو",
+      "emoji": "🛍️",
+      "category": "تسوق وتوصيل",
+      "domain": "talabat.com",
+      "manageUrl": "https://talabat.com",
+      "priceHint": 14.99
+    },
+    {
+      "name": "نون VIP",
+      "emoji": "🟡",
+      "category": "تسوق وتوصيل",
+      "domain": "noon.com",
+      "manageUrl": "https://noon.com",
+      "priceHint": 12.0
+    },
+    {
+      "name": "HungerStation Plus",
+      "emoji": "🍔",
+      "category": "تسوق وتوصيل",
+      "domain": "hungerstation.com",
+      "manageUrl": "https://hungerstation.com",
+      "priceHint": 15.0
+    },
+    {
+      "name": "وقت اللياقة",
+      "emoji": "🏋️",
+      "category": "رياضة وصحة",
+      "domain": "fitnesstime.com.sa",
+      "manageUrl": "https://fitnesstime.com.sa",
+      "priceHint": 250.0
+    },
+    {
+      "name": "Headspace",
+      "emoji": "🧠",
+      "category": "رياضة وصحة",
+      "domain": "headspace.com",
+      "manageUrl": "https://headspace.com/settings",
+      "priceHint": 24.99
+    },
+    {
+      "name": "Coursera Plus",
+      "emoji": "🎓",
+      "category": "تعليم",
+      "domain": "coursera.org",
+      "manageUrl": "https://coursera.org/account-settings",
+      "priceHint": 222.0
+    },
+    {
+      "name": "NordVPN",
+      "emoji": "🔒",
+      "category": "أخرى",
+      "domain": "nordvpn.com",
+      "manageUrl": "https://my.nordaccount.com",
+      "priceHint": 47.0
+    },
+    {
+      "name": "1Password",
+      "emoji": "🔑",
+      "category": "أخرى",
+      "domain": "1password.com",
+      "manageUrl": "https://my.1password.com",
+      "priceHint": 11.0
+    },
+    {
+      "name": "PlayStation Plus Extra",
+      "emoji": "🎮",
+      "category": "ألعاب",
+      "domain": "playstation.com",
+      "manageUrl": "https://playstation.com/acct/management",
+      "priceHint": 44.99
+    },
+    {
+      "name": "Shahid VIP سنوي",
+      "emoji": "🎬",
+      "category": "ترفيه ومشاهدة",
+      "domain": "shahid.mbc.net",
+      "manageUrl": "https://shahid.mbc.net/ar/my-account",
+      "priceHint": 249.0
     }
   ]
 }

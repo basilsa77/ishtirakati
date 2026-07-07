@@ -19,17 +19,20 @@ class SubscriptionStore extends ChangeNotifier {
   static const String _currencyKey = 'ishtirakati_default_currency';
   static const String _budgetKey = 'ishtirakati_monthly_budget';
   static const String _notifKey = 'ishtirakati_notifications_enabled';
+  static const String _lockKey = 'ishtirakati_app_lock';
 
   final List<Subscription> _items = [];
   String _defaultCurrency = 'SAR';
   double _monthlyBudget = 0; // 0 = غير مفعّلة
   bool _notificationsEnabled = true;
+  bool _appLockEnabled = false;
   bool _loaded = false;
 
   List<Subscription> get items => List.unmodifiable(_items);
   String get defaultCurrency => _defaultCurrency;
   double get monthlyBudget => _monthlyBudget;
   bool get notificationsEnabled => _notificationsEnabled;
+  bool get appLockEnabled => _appLockEnabled;
   bool get isLoaded => _loaded;
 
   Future<void> load() async {
@@ -37,6 +40,7 @@ class SubscriptionStore extends ChangeNotifier {
     _defaultCurrency = prefs.getString(_currencyKey) ?? 'SAR';
     _monthlyBudget = prefs.getDouble(_budgetKey) ?? 0;
     _notificationsEnabled = prefs.getBool(_notifKey) ?? true;
+    _appLockEnabled = prefs.getBool(_lockKey) ?? false;
     _items.clear();
     for (final raw in prefs.getStringList(_subsKey) ?? const <String>[]) {
       try {
@@ -64,6 +68,13 @@ class SubscriptionStore extends ChangeNotifier {
         .rescheduleAll(_items, enabled: _notificationsEnabled);
   }
 
+  Future<void> setAppLockEnabled(bool value) async {
+    _appLockEnabled = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_lockKey, value);
+    notifyListeners();
+  }
+
   Future<void> setNotificationsEnabled(bool value) async {
     _notificationsEnabled = value;
     final prefs = await SharedPreferences.getInstance();
@@ -76,6 +87,17 @@ class SubscriptionStore extends ChangeNotifier {
   Future<void> upsert(Subscription sub) async {
     final index = _items.indexWhere((s) => s.id == sub.id);
     if (index >= 0) {
+      // تسجيل تغيّر السعر في السجل قبل الاستبدال.
+      final old = _items[index];
+      if ((old.price - sub.price).abs() > 0.001) {
+        sub.priceHistory = [
+          ...old.priceHistory,
+          PriceChange(oldPrice: old.price, changedAt: DateTime.now()),
+        ];
+      } else if (sub.priceHistory.isEmpty &&
+          old.priceHistory.isNotEmpty) {
+        sub.priceHistory = old.priceHistory;
+      }
       _items[index] = sub;
     } else {
       _items.insert(0, sub);

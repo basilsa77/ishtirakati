@@ -4,6 +4,27 @@ library;
 /// دورة الفوترة.
 enum BillingCycle { weekly, monthly, quarterly, yearly }
 
+/// تغيير سعر سابق: السعر القديم وتاريخ استبداله.
+class PriceChange {
+  final double oldPrice;
+  final DateTime changedAt;
+
+  const PriceChange({required this.oldPrice, required this.changedAt});
+
+  Map<String, dynamic> toJson() => {
+        'p': oldPrice,
+        'd': changedAt.toIso8601String(),
+      };
+
+  static PriceChange? fromJson(dynamic json) {
+    if (json is! Map<String, dynamic>) return null;
+    final p = (json['p'] as num?)?.toDouble();
+    final d = DateTime.tryParse((json['d'] as String?) ?? '');
+    if (p == null || d == null) return null;
+    return PriceChange(oldPrice: p, changedAt: d);
+  }
+}
+
 extension BillingCycleX on BillingCycle {
   String get labelAr => switch (this) {
         BillingCycle.weekly => 'أسبوعي',
@@ -44,6 +65,30 @@ const Map<String, String> currencySymbols = {
   'EUR': '€',
 };
 
+/// يبني ملف CSV من قائمة اشتراكات (للتصدير إلى Excel/Numbers).
+String buildCsv(List<Subscription> subs) {
+  String esc(String s) => '"${s.replaceAll('"', '""')}"';
+  final b = StringBuffer(
+    'الاسم,السعر,العملة,الدورة,التصنيف,التجديد القادم,'
+    'إجمالي المدفوع,طريقة الدفع,ملاحظات\n',
+  );
+  for (final s in subs) {
+    final d = s.nextRenewal();
+    b.writeln([
+      esc(s.name),
+      s.price.toStringAsFixed(2),
+      s.currency,
+      esc(s.cycle.labelAr),
+      esc(s.category),
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}',
+      s.totalSpent().toStringAsFixed(2),
+      esc(s.paymentMethod),
+      esc(s.notes),
+    ].join(','));
+  }
+  return b.toString();
+}
+
 String fmtMoney(double v, String currency) {
   final rounded = double.parse(v.toStringAsFixed(2));
   final s = rounded == rounded.roundToDouble()
@@ -78,6 +123,9 @@ class Subscription {
   /// تاريخ انتهاء التجربة المجانية (null = ليست تجربة).
   DateTime? trialEndDate;
 
+  /// سجل تغيّرات السعر: كل عنصر سعر قديم وتاريخ استبداله.
+  List<PriceChange> priceHistory;
+
   Subscription({
     required this.id,
     required this.name,
@@ -93,7 +141,8 @@ class Subscription {
     this.manageUrl = '',
     this.reminderDays = 3,
     this.trialEndDate,
-  });
+    List<PriceChange>? priceHistory,
+  }) : priceHistory = priceHistory ?? [];
 
   /// هل هو تجربة مجانية لم تنتهِ بعد؟
   bool isTrialActive([DateTime? from]) {
@@ -110,6 +159,56 @@ class Subscription {
     final end = DateTime(year, month + 1, 0);
     final before = start.subtract(const Duration(days: 1));
     return paymentsMade(end) - paymentsMade(before);
+  }
+
+  /// تواريخ التجديد الواقعة داخل شهر معيّن (لعرض التقويم).
+  List<DateTime> renewalsInMonth(int year, int month) {
+    final start =
+        DateTime(anchorDate.year, anchorDate.month, anchorDate.day);
+    final monthStart = DateTime(year, month, 1);
+    final monthEnd = DateTime(year, month + 1, 0);
+    if (start.isAfter(monthEnd)) return const [];
+
+    final out = <DateTime>[];
+    if (cycle == BillingCycle.weekly) {
+      var days = monthStart.difference(start).inDays;
+      var k = days <= 0 ? 0 : days ~/ 7;
+      var d = start.add(Duration(days: 7 * k));
+      var guard = 0;
+      while (!d.isAfter(monthEnd) && guard++ < 10) {
+        if (!d.isBefore(monthStart)) out.add(d);
+        k += 1;
+        d = start.add(Duration(days: 7 * k));
+      }
+      return out;
+    }
+
+    final step = switch (cycle) {
+      BillingCycle.monthly => 1,
+      BillingCycle.quarterly => 3,
+      BillingCycle.yearly => 12,
+      BillingCycle.weekly => 1,
+    };
+    final diffMonths =
+        (monthStart.year - start.year) * 12 + (monthStart.month - start.month);
+    var k = (diffMonths ~/ step) * step;
+    if (k < 0) k = 0;
+    var d = addMonths(start, k);
+    var guard = 0;
+    while (!d.isAfter(monthEnd) && guard++ < 30) {
+      if (!d.isBefore(monthStart)) out.add(d);
+      k += step;
+      d = addMonths(start, k);
+    }
+    return out;
+  }
+
+  /// نسبة تغيّر السعر منذ أول سعر معروف (null إن لم يتغير).
+  double? get priceChangePercent {
+    if (priceHistory.isEmpty) return null;
+    final first = priceHistory.first.oldPrice;
+    if (first <= 0) return null;
+    return (price - first) / first * 100;
   }
 
   double get yearlyCost => price * cycle.cyclesPerYear;
@@ -223,6 +322,7 @@ class Subscription {
         'manageUrl': manageUrl,
         'reminderDays': reminderDays,
         'trialEnd': trialEndDate?.toIso8601String(),
+        'priceHistory': priceHistory.map((e) => e.toJson()).toList(),
       };
 
   factory Subscription.fromJson(Map<String, dynamic> json) {
@@ -246,6 +346,11 @@ class Subscription {
       reminderDays: (json['reminderDays'] as num?)?.toInt() ?? 3,
       trialEndDate:
           DateTime.tryParse((json['trialEnd'] as String?) ?? ''),
+      priceHistory: [
+        if (json['priceHistory'] is List)
+          for (final e in json['priceHistory'] as List)
+            if (PriceChange.fromJson(e) != null) PriceChange.fromJson(e)!,
+      ],
     );
   }
 }

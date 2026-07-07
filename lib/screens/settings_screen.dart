@@ -8,6 +8,7 @@ import '../models/subscription.dart';
 import '../services/notification_service.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
+import 'email_link_screen.dart';
 import 'import_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -42,6 +43,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       listenable: store,
       builder: (context, _) {
         return ListView(
+          keyboardDismissBehavior:
+              ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
             AppCard(
@@ -64,7 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   await store.setNotificationsEnabled(v);
                 },
                 title: const Text(
-                  '🔔 إشعارات التجديد',
+                  'إشعارات التجديد',
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 16,
@@ -86,11 +89,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 14),
             AppCard(
+              child: SwitchListTile(
+                value: store.appLockEnabled,
+                onChanged: (v) => store.setAppLockEnabled(v),
+                title: const Text(
+                  'قفل التطبيق ببصمة الوجه',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                    color: AppColors.ink,
+                  ),
+                ),
+                subtitle: const Text(
+                  'يُطلب Face ID عند فتح التطبيق أو العودة إليه',
+                  style: TextStyle(
+                    color: AppColors.muted,
+                    fontSize: 12.5,
+                  ),
+                ),
+                activeColor: AppColors.primary,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            const SizedBox(height: 14),
+            AppCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    '🎯 الميزانية الشهرية',
+                    'الميزانية الشهرية',
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 16,
@@ -197,7 +224,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    '✨ الاستيراد الذكي',
+                    'الاستيراد الذكي وربط البريد',
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 16,
@@ -227,6 +254,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: const Icon(Icons.auto_awesome_rounded, size: 20),
                     label: const Text('فتح الاستيراد الذكي'),
                   ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const EmailLinkScreen(),
+                      ),
+                    ),
+                    icon: const Icon(Icons.alternate_email_rounded, size: 20),
+                    label: const Text('ربط البريد وجلب الاشتراكات'),
+                  ),
                 ],
               ),
             ),
@@ -236,7 +276,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    '💾 النسخ الاحتياطي',
+                    'النسخ الاحتياطي',
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 16,
@@ -296,6 +336,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                    onPressed: () async {
+                      await Clipboard.setData(
+                        ClipboardData(text: buildCsv(store.items)),
+                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'تم نسخ جدول CSV — ألصقه في Excel أو Numbers',
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.table_chart_rounded, size: 20),
+                    label: const Text('تصدير جدول CSV'),
+                  ),
                 ],
               ),
             ),
@@ -314,7 +376,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 10),
                   const _AboutRow(label: 'الاسم', value: 'اشتراكاتي'),
-                  const _AboutRow(label: 'الإصدار', value: '3.0.0'),
+                  const _AboutRow(label: 'الإصدار', value: '4.0.0'),
                   const _AboutRow(label: 'المطوّر', value: 'باسل'),
                   const _AboutRow(
                     label: 'الخصوصية',
@@ -322,7 +384,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'صُنع بحب في السعودية 🇸🇦',
+                    'صُنع بحب في السعودية',
                     style: TextStyle(
                       color: AppColors.muted,
                       fontSize: 12.5,

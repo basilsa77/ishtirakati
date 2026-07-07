@@ -220,6 +220,8 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                         ),
                       )
                     : ListView.separated(
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
                         padding:
                             const EdgeInsets.fromLTRB(16, 4, 16, 96),
                         itemCount: list.length,
@@ -367,7 +369,7 @@ class _SubTile extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: const Text(
-                                'تجربة ⏳',
+                                'تجربة',
                                 style: TextStyle(
                                   fontSize: 10.5,
                                   fontWeight: FontWeight.w800,
@@ -570,6 +572,18 @@ Future<void> showSubscriptionDetails(
                         label: 'طريقة الدفع',
                         value: sub.paymentMethod,
                       ),
+                    if (sub.priceHistory.isNotEmpty) ...[
+                      _DetailRow(
+                        icon: Icons.trending_up_rounded,
+                        label: 'تغيّر السعر منذ البداية',
+                        value:
+                            '${sub.priceHistory.first.oldPrice == sub.price ? '' : '${fmtMoney(sub.priceHistory.first.oldPrice, sub.currency)} ← ${fmtMoney(sub.price, sub.currency)}'}'
+                            '${sub.priceChangePercent == null ? '' : ' (${sub.priceChangePercent! >= 0 ? '+' : ''}${sub.priceChangePercent!.toStringAsFixed(0)}٪)'}',
+                        valueColor: (sub.priceChangePercent ?? 0) > 0
+                            ? AppColors.warn
+                            : AppColors.primary,
+                      ),
+                    ],
                     if (sub.notes.isNotEmpty)
                       _DetailRow(
                         icon: Icons.sticky_note_2_rounded,

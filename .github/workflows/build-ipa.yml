@@ -30,6 +30,15 @@ jobs:
             || /usr/libexec/PlistBuddy -c 'Add :CFBundleDisplayName string اشتراكاتي' ios/Runner/Info.plist
           /usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' ios/Runner/Info.plist
 
+      - name: صلاحية Face ID
+        run: |
+          /usr/libexec/PlistBuddy -c 'Add :NSFaceIDUsageDescription string نستخدم بصمة الوجه لحماية بيانات اشتراكاتك' ios/Runner/Info.plist || true
+
+      - name: توليد أيقونة التطبيق
+        run: |
+          flutter pub get
+          dart run flutter_launcher_icons
+
       - name: حذف اختبار القالب الذي يولّده flutter create
         run: rm -f test/widget_test.dart
 
