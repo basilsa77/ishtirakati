@@ -1,0 +1,54 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build-ios:
+    name: بناء IPA غير موقّع (يُوقَّع من ويندوز عبر Sideloadly)
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: سحب الكود
+        uses: actions/checkout@v4
+
+      - name: تجهيز Flutter (قناة stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: توليد مجلد iOS
+        run: flutter create . --platforms=ios --org com.basil --project-name ishtirakati
+
+      - name: ضبط اسم التطبيق الظاهر على الجهاز
+        run: |
+          /usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName اشتراكاتي' ios/Runner/Info.plist \
+            || /usr/libexec/PlistBuddy -c 'Add :CFBundleDisplayName string اشتراكاتي' ios/Runner/Info.plist
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' ios/Runner/Info.plist
+
+      - name: جلب الحزم
+        run: flutter pub get
+
+      - name: تشغيل الاختبارات
+        run: flutter test
+
+      - name: بناء iOS بدون توقيع
+        run: flutter build ios --release --no-codesign
+
+      - name: تغليف IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -qr Ishtirakati-unsigned.ipa Payload
+          ls -lh Ishtirakati-unsigned.ipa
+
+      - name: رفع الملف الناتج
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ishtirakati-unsigned-ipa
+          path: Ishtirakati-unsigned.ipa
+          retention-days: 30
