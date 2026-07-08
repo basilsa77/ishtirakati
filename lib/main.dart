@@ -8,12 +8,14 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:local_auth/local_auth.dart';
 
 import 'screens/dashboard_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'screens/insights_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/subscriptions_screen.dart';
 import 'services/notification_service.dart';
 import 'services/remote_catalog.dart';
 import 'services/subscription_store.dart';
+import 'services/update_checker.dart';
 import 'theme.dart';
 
 Future<void> main() async {
@@ -35,6 +37,8 @@ Future<void> main() async {
   }
   // ignore: unawaited_futures
   RemoteCatalog.instance.load();
+  // ignore: unawaited_futures
+  UpdateChecker.check();
 }
 
 class IshtirakatiApp extends StatelessWidget {
@@ -59,7 +63,9 @@ class IshtirakatiApp extends StatelessWidget {
         onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
         child: child ?? const SizedBox.shrink(),
       ),
-      home: const LockGate(child: RootShell()),
+      home: SubscriptionStore.instance.hasOnboarded
+          ? const LockGate(child: RootShell())
+          : const OnboardingScreen(),
     );
   }
 }

@@ -370,6 +370,7 @@ class ServiceAvatar extends StatelessWidget {
   final String manageUrl;
   final Color tint;
   final double size;
+  final String iconUrl;
 
   const ServiceAvatar({
     super.key,
@@ -378,11 +379,12 @@ class ServiceAvatar extends StatelessWidget {
     required this.manageUrl,
     required this.tint,
     this.size = 46,
+    this.iconUrl = '',
   });
 
   @override
   Widget build(BuildContext context) {
-    final url = logoUrlFor(name, manageUrl);
+    final url = iconUrl.isNotEmpty ? iconUrl : logoUrlFor(name, manageUrl);
     final emojiText = Text(
       emoji,
       style: TextStyle(fontSize: size * 0.52),

@@ -309,6 +309,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         name: s.name,
                         emoji: s.emoji,
                         manageUrl: s.manageUrl,
+                        iconUrl: s.iconUrl,
                         tint: categoryColor(s.category),
                         size: 40,
                       ),

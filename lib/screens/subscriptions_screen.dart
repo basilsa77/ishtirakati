@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../data/presets.dart';
 import '../models/subscription.dart';
+import '../services/remote_catalog.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
 import 'edit_subscription_screen.dart';
@@ -336,6 +337,7 @@ class _SubTile extends StatelessWidget {
                   name: sub.name,
                   emoji: sub.emoji,
                   manageUrl: sub.manageUrl,
+                  iconUrl: sub.iconUrl,
                   tint: catColor,
                   size: 48,
                 ),
@@ -500,6 +502,7 @@ Future<void> showSubscriptionDetails(
                     name: sub.name,
                     emoji: sub.emoji,
                     manageUrl: sub.manageUrl,
+                    iconUrl: sub.iconUrl,
                     tint: catColor,
                     size: 58,
                   ),
@@ -586,6 +589,17 @@ Future<void> showSubscriptionDetails(
                         label: 'التذكير قبل التجديد',
                         value: 'بـ ${sub.reminderDays} '
                             '${sub.reminderDays == 1 ? "يوم" : "أيام"}',
+                      ),
+                    if (RemoteCatalog.instance.byName(sub.name)?.priceHint
+                        case final double hint
+                        when (hint - sub.price).abs() > hint * 0.05)
+                      _DetailRow(
+                        icon: Icons.sell_rounded,
+                        label: 'السعر المعتاد حاليًا',
+                        value: fmtMoney(hint, 'SAR'),
+                        valueColor: sub.price > hint
+                            ? AppColors.warn
+                            : AppColors.primary,
                       ),
                     if (sub.isFamily)
                       _DetailRow(

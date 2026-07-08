@@ -126,6 +126,9 @@ class Subscription {
   /// سجل تغيّرات السعر: كل عنصر سعر قديم وتاريخ استبداله.
   List<PriceChange> priceHistory;
 
+  /// رابط شعار مخصص (من البحث الذكي في iTunes مثلًا).
+  String iconUrl;
+
   /// اشتراك عائلي/مشترك مع آخرين.
   bool isFamily;
 
@@ -148,6 +151,7 @@ class Subscription {
     this.reminderDays = 3,
     this.trialEndDate,
     List<PriceChange>? priceHistory,
+    this.iconUrl = '',
     this.isFamily = false,
     this.familyMembers = 2,
   }) : priceHistory = priceHistory ?? [];
@@ -337,6 +341,7 @@ class Subscription {
         'priceHistory': priceHistory.map((e) => e.toJson()).toList(),
         'isFamily': isFamily,
         'familyMembers': familyMembers,
+        'iconUrl': iconUrl,
       };
 
   factory Subscription.fromJson(Map<String, dynamic> json) {
@@ -368,6 +373,7 @@ class Subscription {
       isFamily: (json['isFamily'] as bool?) ?? false,
       familyMembers:
           ((json['familyMembers'] as num?)?.toInt() ?? 2).clamp(1, 20),
+      iconUrl: (json['iconUrl'] as String?) ?? '',
     );
   }
 }

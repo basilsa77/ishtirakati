@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../data/presets.dart';
 import '../models/subscription.dart';
+import '../services/itunes_search.dart';
 import '../services/remote_catalog.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
@@ -39,6 +40,8 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   late DateTime _trialEnd;
   late bool _isFamily;
   late int _famCount;
+  String _iconUrl = '';
+  bool _searching = false;
 
   bool get isEditing => widget.existing != null;
 
@@ -78,6 +81,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
         e?.trialEndDate ?? DateTime.now().add(const Duration(days: 7));
     _isFamily = e?.isFamily ?? false;
     _famCount = (e?.familyMembers ?? 2).clamp(2, 20);
+    _iconUrl = e?.iconUrl ?? '';
   }
 
   @override
@@ -231,6 +235,98 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     }
   }
 
+  Future<void> _smartSearch() async {
+    final term = _name.text.trim();
+    if (term.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('اكتب اسم الخدمة أولًا ثم اضغط البحث')),
+      );
+      return;
+    }
+    setState(() => _searching = true);
+    List<AppSearchResult> results = const [];
+    try {
+      results = await ItunesSearch.search(term);
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() => _searching = false);
+    if (results.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('لم نجد نتائج — تأكد من الاسم أو الإنترنت'),
+        ),
+      );
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'اختر التطبيق الصحيح',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.ink,
+                ),
+              ),
+              const SizedBox(height: 12),
+              for (final r in results.take(5))
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: r.iconUrl.isEmpty
+                        ? const SizedBox(width: 44, height: 44)
+                        : Image.network(
+                            r.iconUrl,
+                            width: 44,
+                            height: 44,
+                            errorBuilder: (_, __, ___) =>
+                                const SizedBox(width: 44, height: 44),
+                          ),
+                  ),
+                  title: Text(
+                    r.name,
+                    style: const TextStyle(
+                      color: AppColors.ink,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14.5,
+                    ),
+                  ),
+                  subtitle: r.seller.isEmpty
+                      ? null
+                      : Text(
+                          r.seller,
+                          style: const TextStyle(
+                            color: AppColors.muted,
+                            fontSize: 12,
+                          ),
+                        ),
+                  onTap: () {
+                    setState(() {
+                      _name.text = r.name;
+                      _iconUrl = r.iconUrl;
+                    });
+                    Navigator.pop(ctx);
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final price =
@@ -253,6 +349,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
       trialEndDate: _trialOn ? _trialEnd : null,
       isFamily: _isFamily,
       familyMembers: _famCount,
+      iconUrl: _iconUrl,
     );
     await SubscriptionStore.instance.upsert(sub);
     if (!mounted) return;
@@ -331,9 +428,26 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     child: TextFormField(
                       controller: _name,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'اسم الاشتراك *',
                         hintText: 'مثال: شاهد VIP',
+                        suffixIcon: IconButton(
+                          tooltip: 'بحث ذكي عن التطبيق وشعاره',
+                          onPressed: _searching ? null : _smartSearch,
+                          icon: _searching
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: AppColors.primary,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.travel_explore_rounded,
+                                  color: AppColors.primary,
+                                ),
+                        ),
                       ),
                       validator: (v) => (v == null || v.trim().isEmpty)
                           ? 'أدخل اسم الاشتراك'

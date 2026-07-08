@@ -3,8 +3,12 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'package:url_launcher/url_launcher.dart';
+
 import '../models/subscription.dart';
+import '../services/remote_catalog.dart';
 import '../services/subscription_store.dart';
+import '../services/update_checker.dart';
 import '../theme.dart';
 import 'calendar_screen.dart';
 import 'edit_subscription_screen.dart';
@@ -38,9 +42,65 @@ class DashboardScreen extends StatelessWidget {
         final monthlyMain = monthly[currency] ?? 0;
         final budget = store.monthlyBudget;
 
+        // تنبيه فرق السعر مقابل الأسعار الرسمية في القاعدة.
+        final priceAlerts = <(Subscription, double)>[];
+        for (final sub in store.active) {
+          final hint =
+              RemoteCatalog.instance.byName(sub.name)?.priceHint;
+          if (hint == null || hint <= 0) continue;
+          if (sub.price > hint * 1.10) {
+            priceAlerts.add((sub, hint));
+          }
+        }
+
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
+            ValueListenableBuilder<String?>(
+              valueListenable: UpdateChecker.newVersion,
+              builder: (context, v, _) => v == null
+                  ? const SizedBox.shrink()
+                  : Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: AppCard(
+                        color: AppColors.goldSoft,
+                        borderColor: AppColors.goldDeep,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.system_update_alt_rounded,
+                              color: AppColors.gold,
+                              size: 22,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'نسخة أحدث متاحة ($v) — نزّلها وثبّتها عبر Sideloadly',
+                                style: const TextStyle(
+                                  color: AppColors.ink,
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => launchUrl(
+                                Uri.parse(
+                                  'https://github.com/basilsa77/ishtirakati/actions',
+                                ),
+                                mode: LaunchMode.externalApplication,
+                              ),
+                              child: const Text('تنزيل'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+            ),
             FadeSlideIn(
               child: _HeroCard(
                 monthly: monthly,
@@ -73,6 +133,44 @@ class DashboardScreen extends StatelessWidget {
                           child: Text(
                             '• «${t.name}» تنتهي في ${fmtDate(t.trialEndDate!)} '
                             'ثم يُخصم ${fmtMoney(t.price, t.currency)}',
+                            style: const TextStyle(
+                              color: AppColors.muted,
+                              fontSize: 12.5,
+                              height: 1.6,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            if (priceAlerts.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              FadeSlideIn(
+                delayMs: 50,
+                child: AppCard(
+                  color: AppColors.goldSoft,
+                  borderColor: AppColors.goldDeep,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'تدفع أكثر من السعر الرسمي الحالي',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14.5,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      for (final (sub, hint) in priceAlerts.take(2))
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            '• «${sub.name}»: تدفع ${fmtMoney(sub.price, sub.currency)} '
+                            'والسعر المعتاد ${fmtMoney(hint, 'SAR')} — '
+                            'راجع باقتك، قد توفر فرق السعر.',
                             style: const TextStyle(
                               color: AppColors.muted,
                               fontSize: 12.5,
@@ -640,6 +738,7 @@ class _TimelineRow extends StatelessWidget {
                       name: sub.name,
                       emoji: sub.emoji,
                       manageUrl: sub.manageUrl,
+                      iconUrl: sub.iconUrl,
                       tint: catColor,
                       size: 40,
                     ),

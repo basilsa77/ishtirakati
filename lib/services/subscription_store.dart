@@ -22,6 +22,7 @@ class SubscriptionStore extends ChangeNotifier {
   static const String _notifKey = 'ishtirakati_notifications_enabled';
   static const String _lockKey = 'ishtirakati_app_lock';
   static const String _aiKeyKey = 'ishtirakati_ai_api_key';
+  static const String _onboardKey = 'ishtirakati_onboarded_v1';
 
   final List<Subscription> _items = [];
   String _defaultCurrency = 'SAR';
@@ -29,6 +30,7 @@ class SubscriptionStore extends ChangeNotifier {
   bool _notificationsEnabled = true;
   bool _appLockEnabled = false;
   String _aiApiKey = '';
+  bool _hasOnboarded = false;
   bool _loaded = false;
 
   List<Subscription> get items => List.unmodifiable(_items);
@@ -37,6 +39,7 @@ class SubscriptionStore extends ChangeNotifier {
   bool get notificationsEnabled => _notificationsEnabled;
   bool get appLockEnabled => _appLockEnabled;
   String get aiApiKey => _aiApiKey;
+  bool get hasOnboarded => _hasOnboarded;
   bool get isLoaded => _loaded;
 
   Future<void> load() async {
@@ -45,6 +48,7 @@ class SubscriptionStore extends ChangeNotifier {
     _monthlyBudget = prefs.getDouble(_budgetKey) ?? 0;
     _notificationsEnabled = prefs.getBool(_notifKey) ?? true;
     _appLockEnabled = prefs.getBool(_lockKey) ?? false;
+    _hasOnboarded = prefs.getBool(_onboardKey) ?? false;
     // مفتاح الذكاء الاصطناعي: مخزن مشفّرًا في Keychain النظام.
     try {
       const secure = FlutterSecureStorage();
@@ -84,6 +88,12 @@ class SubscriptionStore extends ChangeNotifier {
     // ignore: unawaited_futures
     NotificationService.instance
         .rescheduleAll(_items, enabled: _notificationsEnabled);
+  }
+
+  Future<void> setOnboarded() async {
+    _hasOnboarded = true;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_onboardKey, true);
   }
 
   Future<void> setAiApiKey(String value) async {

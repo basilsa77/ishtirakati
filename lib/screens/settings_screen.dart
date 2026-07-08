@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/subscription.dart';
 import '../services/notification_service.dart';
+import '../services/update_checker.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
 import 'email_link_screen.dart';
@@ -460,7 +461,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 10),
                   const _AboutRow(label: 'الاسم', value: 'اشتراكاتي'),
-                  const _AboutRow(label: 'الإصدار', value: '4.1.0'),
+                  const _AboutRow(label: 'الإصدار', value: kAppVersion),
                   const _AboutRow(label: 'المطوّر', value: 'باسل'),
                   const _AboutRow(
                     label: 'الخصوصية',
