@@ -6,7 +6,7 @@ git init
 git config user.name "basilsa77"
 git config user.email "basilsa77@users.noreply.github.com"
 git add .
-git commit -m "v4.1: AI-powered email analysis (Gemini) + flag"
+git commit -m "v5.0: secure key, smart mail search, AI advisor, family, timeline"
 git branch -M main
 git remote remove origin 2>nul
 git remote add origin https://github.com/basilsa77/ishtirakati.git

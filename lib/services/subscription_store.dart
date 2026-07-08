@@ -5,6 +5,7 @@ library;
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/subscription.dart';
@@ -44,7 +45,20 @@ class SubscriptionStore extends ChangeNotifier {
     _monthlyBudget = prefs.getDouble(_budgetKey) ?? 0;
     _notificationsEnabled = prefs.getBool(_notifKey) ?? true;
     _appLockEnabled = prefs.getBool(_lockKey) ?? false;
-    _aiApiKey = prefs.getString(_aiKeyKey) ?? '';
+    // مفتاح الذكاء الاصطناعي: مخزن مشفّرًا في Keychain النظام.
+    try {
+      const secure = FlutterSecureStorage();
+      _aiApiKey = await secure.read(key: _aiKeyKey) ?? '';
+      // ترحيل من التخزين القديم غير المشفر إن وُجد.
+      final legacy = prefs.getString(_aiKeyKey) ?? '';
+      if (_aiApiKey.isEmpty && legacy.isNotEmpty) {
+        _aiApiKey = legacy;
+        await secure.write(key: _aiKeyKey, value: legacy);
+      }
+      if (legacy.isNotEmpty) await prefs.remove(_aiKeyKey);
+    } catch (_) {
+      _aiApiKey = prefs.getString(_aiKeyKey) ?? '';
+    }
     _items.clear();
     for (final raw in prefs.getStringList(_subsKey) ?? const <String>[]) {
       try {
@@ -74,8 +88,18 @@ class SubscriptionStore extends ChangeNotifier {
 
   Future<void> setAiApiKey(String value) async {
     _aiApiKey = value.trim();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_aiKeyKey, _aiApiKey);
+    try {
+      const secure = FlutterSecureStorage();
+      if (_aiApiKey.isEmpty) {
+        await secure.delete(key: _aiKeyKey);
+      } else {
+        await secure.write(key: _aiKeyKey, value: _aiApiKey);
+      }
+    } catch (_) {
+      // احتياط نادر: أجهزة لا تدعم Keychain.
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_aiKeyKey, _aiApiKey);
+    }
     notifyListeners();
   }
 

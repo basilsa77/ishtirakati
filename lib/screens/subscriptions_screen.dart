@@ -378,6 +378,27 @@ class _SubTile extends StatelessWidget {
                               ),
                             ),
                           ],
+                          if (sub.isFamily) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primarySoft,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Text(
+                                'عائلي',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          ],
                           if (sub.isPaused) ...[
                             const SizedBox(width: 6),
                             Container(
@@ -565,6 +586,13 @@ Future<void> showSubscriptionDetails(
                         label: 'التذكير قبل التجديد',
                         value: 'بـ ${sub.reminderDays} '
                             '${sub.reminderDays == 1 ? "يوم" : "أيام"}',
+                      ),
+                    if (sub.isFamily)
+                      _DetailRow(
+                        icon: Icons.group_rounded,
+                        label: 'عائلي — نصيبك من ${sub.familyMembers} أفراد',
+                        value: fmtMoney(sub.pricePerMember, sub.currency),
+                        valueColor: AppColors.primary,
                       ),
                     if (sub.paymentMethod != 'غير محدد')
                       _DetailRow(

@@ -97,4 +97,20 @@ void main() {
       );
     });
   });
+
+  group('الاشتراك العائلي', () {
+    test('roundtrip JSON ونصيب الفرد', () {
+      final s = _sub(
+        cycle: BillingCycle.monthly,
+        anchor: DateTime(2026, 1, 1),
+        price: 60,
+      )
+        ..isFamily = true
+        ..familyMembers = 4;
+      expect(s.pricePerMember, closeTo(15, 0.001));
+      final back = Subscription.fromJson(s.toJson());
+      expect(back.isFamily, isTrue);
+      expect(back.familyMembers, 4);
+    });
+  });
 }

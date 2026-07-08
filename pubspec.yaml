@@ -1,7 +1,7 @@
 name: ishtirakati
 description: "اشتراكاتي - تتبّع اشتراكاتك الرقمية وتحكّم بمصروفك | تطبيق عربي أولًا للسوق السعودي والخليجي"
 publish_to: 'none'
-version: 4.1.0+6
+version: 5.0.0+7
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -20,6 +20,7 @@ dependencies:
   timezone: ^0.10.0
   enough_mail: ^2.1.6
   local_auth: ^2.3.0
+  flutter_secure_storage: ^9.2.0
 
 dev_dependencies:
   flutter_test:

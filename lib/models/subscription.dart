@@ -90,11 +90,11 @@ String buildCsv(List<Subscription> subs) {
 }
 
 String fmtMoney(double v, String currency) {
+  // بطلب المستخدم: المبلغ فقط بدون اسم/رمز العملة.
   final rounded = double.parse(v.toStringAsFixed(2));
-  final s = rounded == rounded.roundToDouble()
+  return rounded == rounded.roundToDouble()
       ? rounded.toStringAsFixed(0)
       : rounded.toStringAsFixed(2);
-  return '$s ${currencySymbols[currency] ?? currency}';
 }
 
 class Subscription {
@@ -126,6 +126,12 @@ class Subscription {
   /// سجل تغيّرات السعر: كل عنصر سعر قديم وتاريخ استبداله.
   List<PriceChange> priceHistory;
 
+  /// اشتراك عائلي/مشترك مع آخرين.
+  bool isFamily;
+
+  /// عدد الأفراد المشاركين في الاشتراك العائلي (أنت منهم).
+  int familyMembers;
+
   Subscription({
     required this.id,
     required this.name,
@@ -142,7 +148,13 @@ class Subscription {
     this.reminderDays = 3,
     this.trialEndDate,
     List<PriceChange>? priceHistory,
+    this.isFamily = false,
+    this.familyMembers = 2,
   }) : priceHistory = priceHistory ?? [];
+
+  /// نصيب الفرد الواحد من الاشتراك العائلي.
+  double get pricePerMember =>
+      isFamily && familyMembers > 1 ? price / familyMembers : price;
 
   /// هل هو تجربة مجانية لم تنتهِ بعد؟
   bool isTrialActive([DateTime? from]) {
@@ -323,6 +335,8 @@ class Subscription {
         'reminderDays': reminderDays,
         'trialEnd': trialEndDate?.toIso8601String(),
         'priceHistory': priceHistory.map((e) => e.toJson()).toList(),
+        'isFamily': isFamily,
+        'familyMembers': familyMembers,
       };
 
   factory Subscription.fromJson(Map<String, dynamic> json) {
@@ -351,6 +365,9 @@ class Subscription {
           for (final e in json['priceHistory'] as List)
             if (PriceChange.fromJson(e) != null) PriceChange.fromJson(e)!,
       ],
+      isFamily: (json['isFamily'] as bool?) ?? false,
+      familyMembers:
+          ((json['familyMembers'] as num?)?.toInt() ?? 2).clamp(1, 20),
     );
   }
 }

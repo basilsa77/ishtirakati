@@ -6,6 +6,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../models/subscription.dart';
+import '../services/ai_advisor.dart';
+import '../services/ai_extractor.dart' show AiExtractionException;
 import '../services/subscription_store.dart';
 import '../theme.dart';
 
@@ -72,13 +74,6 @@ class InsightsScreen extends StatelessWidget {
                         fontWeight: FontWeight.w900,
                         fontSize: 16,
                         color: AppColors.ink,
-                      ),
-                    ),
-                    Text(
-                      'بعملة ${currencySymbols[currency] ?? currency}',
-                      style: const TextStyle(
-                        color: AppColors.muted,
-                        fontSize: 12.5,
                       ),
                     ),
                     const SizedBox(height: 18),
@@ -185,6 +180,11 @@ class InsightsScreen extends StatelessWidget {
                   ],
                 ),
               ),
+            ),
+            const SizedBox(height: 12),
+            const FadeSlideIn(
+              delayMs: 40,
+              child: _AdvisorCard(),
             ),
             const SizedBox(height: 12),
             FadeSlideIn(
@@ -318,6 +318,168 @@ class InsightsScreen extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+
+class _AdvisorCard extends StatefulWidget {
+  const _AdvisorCard();
+
+  @override
+  State<_AdvisorCard> createState() => _AdvisorCardState();
+}
+
+class _AdvisorCardState extends State<_AdvisorCard> {
+  bool _busy = false;
+
+  Future<void> _run() async {
+    final store = SubscriptionStore.instance;
+    if (store.aiApiKey.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'أضف مفتاح الذكاء الاصطناعي المجاني من الإعدادات أولًا',
+          ),
+        ),
+      );
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final advice =
+          await AiAdvisor.advise(store.items, store.aiApiKey);
+      if (!mounted) return;
+      setState(() => _busy = false);
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: AppColors.card,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        builder: (ctx) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Row(
+                  children: [
+                    Icon(
+                      Icons.psychology_rounded,
+                      color: AppColors.primary,
+                      size: 24,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'نصائح مستشارك الذكي',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 17,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Text(
+                      advice,
+                      style: const TextStyle(
+                        color: AppColors.ink,
+                        fontSize: 14.5,
+                        height: 1.9,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } on AiExtractionException catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر الاتصال — تأكد من الإنترنت')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      color: AppColors.primarySoft,
+      borderColor: AppColors.primaryDeep,
+      child: Row(
+        children: [
+          const Icon(
+            Icons.psychology_rounded,
+            color: AppColors.primary,
+            size: 30,
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'المستشار الذكي',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 15,
+                    color: AppColors.ink,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'تحليل اشتراكاتك: تكرارات، فرص توفير، وبدائل',
+                  style: TextStyle(
+                    color: AppColors.muted,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(84, 44),
+            ),
+            onPressed: _busy ? null : _run,
+            child: _busy
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Color(0xFF06231A),
+                    ),
+                  )
+                : const Text('حلّل'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -482,10 +644,9 @@ class _HistoryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            'محسوب من دفعات اشتراكاتك الفعلية بعملة '
-            '${currencySymbols[currency] ?? currency}',
-            style: const TextStyle(
+          const Text(
+            'محسوب من دفعات اشتراكاتك الفعلية',
+            style: TextStyle(
               color: AppColors.muted,
               fontSize: 11.5,
             ),

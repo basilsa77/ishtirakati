@@ -37,6 +37,8 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   late int _reminderDays;
   late bool _trialOn;
   late DateTime _trialEnd;
+  late bool _isFamily;
+  late int _famCount;
 
   bool get isEditing => widget.existing != null;
 
@@ -74,6 +76,8 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     _trialOn = e?.trialEndDate != null;
     _trialEnd =
         e?.trialEndDate ?? DateTime.now().add(const Duration(days: 7));
+    _isFamily = e?.isFamily ?? false;
+    _famCount = (e?.familyMembers ?? 2).clamp(2, 20);
   }
 
   @override
@@ -247,6 +251,8 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
       manageUrl: _url.text.trim(),
       reminderDays: _reminderDays,
       trialEndDate: _trialOn ? _trialEnd : null,
+      isFamily: _isFamily,
+      familyMembers: _famCount,
     );
     await SubscriptionStore.instance.upsert(sub);
     if (!mounted) return;
@@ -534,6 +540,63 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 ),
                 const SizedBox(height: 6),
               ],
+              SwitchListTile(
+                value: _isFamily,
+                onChanged: (v) => setState(() => _isFamily = v),
+                title: const Text(
+                  'اشتراك عائلي / مشترك',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.ink,
+                  ),
+                ),
+                subtitle: const Text(
+                  'يقسم التكلفة على المشاركين ويعرض نصيبك',
+                  style: TextStyle(color: AppColors.muted, fontSize: 12.5),
+                ),
+                activeColor: AppColors.primary,
+                contentPadding: EdgeInsets.zero,
+              ),
+              if (_isFamily)
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'عدد المشاركين (أنت منهم)',
+                        style: TextStyle(
+                          color: AppColors.muted,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _famCount <= 2
+                          ? null
+                          : () => setState(() => _famCount--),
+                      icon: const Icon(
+                        Icons.remove_circle_outline_rounded,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    Text(
+                      '$_famCount',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 17,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _famCount >= 20
+                          ? null
+                          : () => setState(() => _famCount++),
+                      icon: const Icon(
+                        Icons.add_circle_outline_rounded,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _url,

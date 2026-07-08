@@ -247,15 +247,9 @@ class DashboardScreen extends StatelessWidget {
                 ),
               )
             else
-              ...List.generate(
-                upcoming.take(6).length,
-                (i) => FadeSlideIn(
-                  delayMs: 240 + i * 60,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _UpcomingTile(sub: upcoming[i]),
-                  ),
-                ),
+              FadeSlideIn(
+                delayMs: 240,
+                child: _Timeline(subs: upcoming.take(8).toList()),
               ),
           ],
         );
@@ -530,51 +524,150 @@ class _StatChip extends StatelessWidget {
   }
 }
 
-class _UpcomingTile extends StatelessWidget {
-  final Subscription sub;
+class _Timeline extends StatelessWidget {
+  final List<Subscription> subs;
 
-  const _UpcomingTile({required this.sub});
+  const _Timeline({required this.subs});
+
+  static String _relative(int days) {
+    if (days <= 0) return 'اليوم';
+    if (days == 1) return 'غدًا';
+    if (days == 2) return 'بعد يومين';
+    if (days <= 10) return 'بعد $days أيام';
+    return 'بعد $days يومًا';
+  }
+
+  static Color _urgency(int days) {
+    if (days <= 1) return AppColors.danger;
+    if (days <= 7) return AppColors.gold;
+    return AppColors.primary;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var i = 0; i < subs.length; i++)
+          _TimelineRow(
+            sub: subs[i],
+            isLast: i == subs.length - 1,
+          ),
+      ],
+    );
+  }
+}
+
+class _TimelineRow extends StatelessWidget {
+  final Subscription sub;
+  final bool isLast;
+
+  const _TimelineRow({required this.sub, required this.isLast});
 
   @override
   Widget build(BuildContext context) {
     final days = sub.daysUntilRenewal();
+    final color = _Timeline._urgency(days);
     final d = sub.nextRenewal();
     final catColor = categoryColor(sub.category);
-    return AppCard(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+
+    return IntrinsicHeight(
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ServiceAvatar(
-            name: sub.name,
-            emoji: sub.emoji,
-            manageUrl: sub.manageUrl,
-            tint: catColor,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
+          SizedBox(
+            width: 72,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  sub.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                    color: AppColors.ink,
+                  _Timeline._relative(days),
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12.5,
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 2),
                 Text(
-                  '${fmtDate(d)} • ${fmtMoney(sub.price, sub.currency)}',
+                  '${d.month}/${d.day}',
                   style: const TextStyle(
                     color: AppColors.muted,
-                    fontSize: 12.5,
+                    fontSize: 11,
                   ),
                 ),
               ],
             ),
           ),
-          RenewalBadge(days: days),
+          Column(
+            children: [
+              Container(
+                width: 13,
+                height: 13,
+                margin: const EdgeInsets.only(top: 2),
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withOpacity(0.45),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+              ),
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    margin: const EdgeInsets.symmetric(vertical: 3),
+                    color: AppColors.border,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+              child: AppCard(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 13,
+                  vertical: 10,
+                ),
+                child: Row(
+                  children: [
+                    ServiceAvatar(
+                      name: sub.name,
+                      emoji: sub.emoji,
+                      manageUrl: sub.manageUrl,
+                      tint: catColor,
+                      size: 40,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        sub.name,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14.5,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      fmtMoney(sub.price, sub.currency),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 15,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
