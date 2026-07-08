@@ -6,13 +6,12 @@ git init
 git config user.name "basilsa77"
 git config user.email "basilsa77@users.noreply.github.com"
 git add .
-git commit -m "update from my computer"
+git commit -m "v6.0: modern home UI, grouped timeline, installments and bills"
 git branch -M main
 git remote remove origin 2>nul
 git remote add origin https://github.com/basilsa77/ishtirakati.git
-rem اسحب اي تعديلات من موقع GitHub اولا ثم ارفع
 git pull origin main --no-rebase --no-edit
 git push -u origin main
 echo.
-echo ===== DONE - يمكنك اغلاق النافذة =====
+echo ===== DONE =====
 pause

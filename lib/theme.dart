@@ -13,7 +13,7 @@ class AppColors {
   static const Color bg = Color(0xFF0B1512); // ليل غابة عميق
   static const Color card = Color(0xFF15221C);
   static const Color cardAlt = Color(0xFF1B2B24);
-  static const Color border = Color(0xFF25382F);
+  static const Color border = Color(0xFF223329);
 
   // نصوص
   static const Color ink = Color(0xFFEDF6F0);
@@ -204,9 +204,9 @@ class AppCard extends StatelessWidget {
         border: Border.all(color: borderColor ?? AppColors.border),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x33000000),
-            blurRadius: 16,
-            offset: Offset(0, 6),
+            color: Color(0x22000000),
+            blurRadius: 12,
+            offset: Offset(0, 4),
           ),
         ],
       ),

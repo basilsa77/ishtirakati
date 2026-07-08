@@ -57,4 +57,51 @@ void main() {
       );
     });
   });
+
+  group('الأقساط والفواتير', () {
+    test('قسط 12 شهرًا: المتبقي والاكتمال وتاريخ النهاية', () {
+      final s = Subscription(
+        id: 'q1',
+        name: 'قسط جوال',
+        emoji: '📱',
+        price: 100,
+        currency: 'SAR',
+        cycle: BillingCycle.monthly,
+        anchorDate: DateTime(2026, 1, 10),
+        category: 'أخرى',
+        kind: PaymentKind.installment,
+        totalInstallments: 12,
+      );
+      // بعد 3 دفعات (يناير، فبراير، مارس)
+      expect(s.remainingInstallments(DateTime(2026, 3, 15)), 9);
+      expect(s.isCompleted(DateTime(2026, 3, 15)), isFalse);
+      // بعد انتهاء كل الأقساط
+      expect(s.isCompleted(DateTime(2027, 1, 15)), isTrue);
+      expect(s.remainingInstallments(DateTime(2027, 6, 1)), 0);
+      expect(s.lastInstallmentDate, DateTime(2026, 12, 10));
+    });
+
+    test('roundtrip JSON يحفظ النوع وعدد الأقساط', () {
+      final s = Subscription(
+        id: 'q2',
+        name: 'فاتورة كهرباء',
+        emoji: '⚡',
+        price: 250,
+        currency: 'SAR',
+        cycle: BillingCycle.monthly,
+        anchorDate: DateTime(2026, 1, 1),
+        category: 'أخرى',
+        kind: PaymentKind.bill,
+      );
+      final back = Subscription.fromJson(s.toJson());
+      expect(back.kind, PaymentKind.bill);
+      expect(back.totalInstallments, isNull);
+      // التوافق مع بيانات قديمة بدون الحقل
+      final legacy = s.toJson()..remove('kind');
+      expect(
+        Subscription.fromJson(legacy).kind,
+        PaymentKind.subscription,
+      );
+    });
+  });
 }

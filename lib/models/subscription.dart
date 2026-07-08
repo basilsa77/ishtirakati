@@ -4,6 +4,17 @@ library;
 /// دورة الفوترة.
 enum BillingCycle { weekly, monthly, quarterly, yearly }
 
+/// نوع الدفعة: اشتراك متجدد، قسط ينتهي، أو فاتورة شهرية.
+enum PaymentKind { subscription, installment, bill }
+
+extension PaymentKindX on PaymentKind {
+  String get labelAr => switch (this) {
+        PaymentKind.subscription => 'اشتراك',
+        PaymentKind.installment => 'قسط',
+        PaymentKind.bill => 'فاتورة',
+      };
+}
+
 /// تغيير سعر سابق: السعر القديم وتاريخ استبداله.
 class PriceChange {
   final double oldPrice;
@@ -129,6 +140,12 @@ class Subscription {
   /// رابط شعار مخصص (من البحث الذكي في iTunes مثلًا).
   String iconUrl;
 
+  /// نوع الدفعة: اشتراك / قسط / فاتورة.
+  PaymentKind kind;
+
+  /// لأقساط محددة المدة: العدد الكلي للأقساط (null = مفتوح).
+  int? totalInstallments;
+
   /// اشتراك عائلي/مشترك مع آخرين.
   bool isFamily;
 
@@ -154,7 +171,46 @@ class Subscription {
     this.iconUrl = '',
     this.isFamily = false,
     this.familyMembers = 2,
+    this.kind = PaymentKind.subscription,
+    this.totalInstallments,
   }) : priceHistory = priceHistory ?? [];
+
+  /// هل اكتمل سداد القسط؟
+  bool isCompleted([DateTime? from]) {
+    final total = totalInstallments;
+    if (kind != PaymentKind.installment || total == null || total <= 0) {
+      return false;
+    }
+    return paymentsMade(from) >= total;
+  }
+
+  /// عدد الأقساط المتبقية (null إن لم يكن قسطًا محدد المدة).
+  int? remainingInstallments([DateTime? from]) {
+    final total = totalInstallments;
+    if (kind != PaymentKind.installment || total == null || total <= 0) {
+      return null;
+    }
+    final left = total - paymentsMade(from);
+    return left < 0 ? 0 : left;
+  }
+
+  /// تاريخ آخر قسط (لأقساط محددة المدة).
+  DateTime? get lastInstallmentDate {
+    final total = totalInstallments;
+    if (kind != PaymentKind.installment || total == null || total <= 0) {
+      return null;
+    }
+    if (cycle == BillingCycle.weekly) {
+      return anchorDate.add(Duration(days: 7 * (total - 1)));
+    }
+    final step = switch (cycle) {
+      BillingCycle.monthly => 1,
+      BillingCycle.quarterly => 3,
+      BillingCycle.yearly => 12,
+      BillingCycle.weekly => 1,
+    };
+    return addMonths(anchorDate, (total - 1) * step);
+  }
 
   /// نصيب الفرد الواحد من الاشتراك العائلي.
   double get pricePerMember =>
@@ -342,6 +398,8 @@ class Subscription {
         'isFamily': isFamily,
         'familyMembers': familyMembers,
         'iconUrl': iconUrl,
+        'kind': kind.index,
+        'totalInstallments': totalInstallments,
       };
 
   factory Subscription.fromJson(Map<String, dynamic> json) {
@@ -374,6 +432,9 @@ class Subscription {
       familyMembers:
           ((json['familyMembers'] as num?)?.toInt() ?? 2).clamp(1, 20),
       iconUrl: (json['iconUrl'] as String?) ?? '',
+      kind: PaymentKind.values[((json['kind'] as num?)?.toInt() ?? 0)
+          .clamp(0, PaymentKind.values.length - 1)],
+      totalInstallments: (json['totalInstallments'] as num?)?.toInt(),
     );
   }
 }

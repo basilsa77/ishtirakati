@@ -241,7 +241,7 @@ class SubscriptionStore extends ChangeNotifier {
   // ------------------------- إحصائيات -------------------------
 
   List<Subscription> get active =>
-      _items.where((s) => !s.isPaused).toList();
+      _items.where((s) => !s.isPaused && !s.isCompleted()).toList();
 
   List<Subscription> get paused =>
       _items.where((s) => s.isPaused).toList();

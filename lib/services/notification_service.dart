@@ -87,7 +87,8 @@ class NotificationService {
       if (!enabled) return;
 
       final now = DateTime.now();
-      final active = subs.where((s) => !s.isPaused).toList()
+      final active =
+          subs.where((s) => !s.isPaused && !s.isCompleted()).toList()
         ..sort(
           (a, b) => a.daysUntilRenewal().compareTo(b.daysUntilRenewal()),
         );

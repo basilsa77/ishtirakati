@@ -1,8 +1,7 @@
-/// الرئيسية: بطاقة المصروف المتحركة، الميزانية، الإحصائيات، والتجديدات.
+/// الرئيسية v2: بطاقة بطل نظيفة، أزرار سريعة، وتايم لاين مجمّع بالأيام.
 library;
 
 import 'package:flutter/material.dart';
-
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/subscription.dart';
@@ -12,6 +11,8 @@ import '../services/update_checker.dart';
 import '../theme.dart';
 import 'calendar_screen.dart';
 import 'edit_subscription_screen.dart';
+import 'email_link_screen.dart';
+import 'import_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -42,7 +43,6 @@ class DashboardScreen extends StatelessWidget {
         final monthlyMain = monthly[currency] ?? 0;
         final budget = store.monthlyBudget;
 
-        // تنبيه فرق السعر مقابل الأسعار الرسمية في القاعدة.
         final priceAlerts = <(Subscription, double)>[];
         for (final sub in store.active) {
           final hint =
@@ -67,19 +67,19 @@ class DashboardScreen extends StatelessWidget {
                         borderColor: AppColors.goldDeep,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
-                          vertical: 10,
+                          vertical: 8,
                         ),
                         child: Row(
                           children: [
                             const Icon(
                               Icons.system_update_alt_rounded,
                               color: AppColors.gold,
-                              size: 22,
+                              size: 20,
                             ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                'نسخة أحدث متاحة ($v) — نزّلها وثبّتها عبر Sideloadly',
+                                'نسخة أحدث متاحة ($v)',
                                 style: const TextStyle(
                                   color: AppColors.ink,
                                   fontSize: 12.5,
@@ -103,90 +103,95 @@ class DashboardScreen extends StatelessWidget {
             ),
             FadeSlideIn(
               child: _HeroCard(
-                monthly: monthly,
-                yearly: yearly,
+                monthly: monthlyMain,
+                yearly: yearly[currency] ?? 0,
+                activeCount: store.active.length,
+                pausedCount: store.paused.length,
                 currency: currency,
               ),
             ),
-            if (trials.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              FadeSlideIn(
-                delayMs: 40,
-                child: AppCard(
-                  color: AppColors.dangerSoft,
-                  borderColor: AppColors.danger,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'تجارب مجانية على وشك التحول لمدفوعة',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 14.5,
-                          color: AppColors.ink,
-                        ),
+            const SizedBox(height: 14),
+            FadeSlideIn(
+              delayMs: 60,
+              child: Row(
+                children: [
+                  _QuickAction(
+                    icon: Icons.add_rounded,
+                    label: 'إضافة',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const EditSubscriptionScreen(),
                       ),
-                      const SizedBox(height: 8),
-                      for (final t in trials.take(3))
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Text(
-                            '• «${t.name}» تنتهي في ${fmtDate(t.trialEndDate!)} '
-                            'ثم يُخصم ${fmtMoney(t.price, t.currency)}',
-                            style: const TextStyle(
-                              color: AppColors.muted,
-                              fontSize: 12.5,
-                              height: 1.6,
-                            ),
-                          ),
-                        ),
-                    ],
+                    ),
                   ),
+                  _QuickAction(
+                    icon: Icons.auto_awesome_rounded,
+                    label: 'استيراد',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ImportScreen(),
+                      ),
+                    ),
+                  ),
+                  _QuickAction(
+                    icon: Icons.alternate_email_rounded,
+                    label: 'البريد',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const EmailLinkScreen(),
+                      ),
+                    ),
+                  ),
+                  _QuickAction(
+                    icon: Icons.calendar_month_rounded,
+                    label: 'التقويم',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const CalendarScreen(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (trials.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              FadeSlideIn(
+                delayMs: 80,
+                child: _NoticeCard(
+                  icon: Icons.hourglass_bottom_rounded,
+                  color: AppColors.danger,
+                  bg: AppColors.dangerSoft,
+                  title: 'تجارب مجانية على وشك التحول لمدفوعة',
+                  lines: [
+                    for (final t in trials.take(3))
+                      '«${t.name}» تنتهي ${fmtDate(t.trialEndDate!)} '
+                          'ثم يُخصم ${fmtMoney(t.price, t.currency)}',
+                  ],
                 ),
               ),
             ],
             if (priceAlerts.isNotEmpty) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               FadeSlideIn(
-                delayMs: 50,
-                child: AppCard(
-                  color: AppColors.goldSoft,
-                  borderColor: AppColors.goldDeep,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'تدفع أكثر من السعر الرسمي الحالي',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 14.5,
-                          color: AppColors.ink,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      for (final (sub, hint) in priceAlerts.take(2))
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Text(
-                            '• «${sub.name}»: تدفع ${fmtMoney(sub.price, sub.currency)} '
-                            'والسعر المعتاد ${fmtMoney(hint, 'SAR')} — '
-                            'راجع باقتك، قد توفر فرق السعر.',
-                            style: const TextStyle(
-                              color: AppColors.muted,
-                              fontSize: 12.5,
-                              height: 1.6,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+                delayMs: 100,
+                child: _NoticeCard(
+                  icon: Icons.trending_up_rounded,
+                  color: AppColors.gold,
+                  bg: AppColors.goldSoft,
+                  title: 'تدفع أكثر من السعر المعتاد',
+                  lines: [
+                    for (final (sub, hint) in priceAlerts.take(2))
+                      '«${sub.name}»: تدفع ${fmtMoney(sub.price, sub.currency)} '
+                          'والمعتاد ${fmtMoney(hint, 'SAR')}',
+                  ],
                 ),
               ),
             ],
             if (budget > 0) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               FadeSlideIn(
-                delayMs: 60,
+                delayMs: 120,
                 child: _BudgetCard(
                   spent: monthlyMain,
                   budget: budget,
@@ -194,125 +199,45 @@ class DashboardScreen extends StatelessWidget {
                 ),
               ),
             ],
-            const SizedBox(height: 12),
-            FadeSlideIn(
-              delayMs: 120,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _StatChip(
-                      label: 'اشتراك نشط',
-                      value: '${store.active.length}',
-                      icon: Icons.check_circle_rounded,
-                      color: AppColors.primary,
-                      bg: AppColors.primarySoft,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _StatChip(
-                      label: 'موقوف مؤقتًا',
-                      value: '${store.paused.length}',
-                      icon: Icons.pause_circle_rounded,
-                      color: AppColors.gold,
-                      bg: AppColors.goldSoft,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (lifetime.isNotEmpty) ...[
-              const SizedBox(height: 12),
+            if (savings.isNotEmpty || lifetime.isNotEmpty) ...[
+              const SizedBox(height: 10),
               FadeSlideIn(
-                delayMs: 160,
-                child: AppCard(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 42,
-                        height: 42,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: AppColors.goldSoft,
-                          borderRadius: BorderRadius.circular(13),
-                        ),
-                        child: const Icon(
-                          Icons.receipt_long_rounded,
+                delayMs: 140,
+                child: Row(
+                  children: [
+                    if (lifetime.isNotEmpty)
+                      Expanded(
+                        child: _MiniStat(
+                          icon: Icons.receipt_long_rounded,
                           color: AppColors.gold,
-                          size: 22,
+                          label: 'مدفوع منذ البداية',
+                          value: lifetime.entries
+                              .map((e) => fmtMoney(e.value, e.key))
+                              .join(' + '),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'إجمالي ما دفعته منذ البداية',
-                              style: TextStyle(
-                                color: AppColors.muted,
-                                fontSize: 12.5,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              lifetime.entries
-                                  .map((e) => fmtMoney(e.value, e.key))
-                                  .join(' + '),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 16,
-                                color: AppColors.gold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-            if (savings.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              FadeSlideIn(
-                delayMs: 200,
-                child: AppCard(
-                  color: AppColors.primarySoft,
-                  borderColor: AppColors.primaryDeep,
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.savings_rounded,
-                        color: AppColors.primary,
-                        size: 26,
-                      ),
+                    if (savings.isNotEmpty && lifetime.isNotEmpty)
                       const SizedBox(width: 10),
+                    if (savings.isNotEmpty)
                       Expanded(
-                        child: Text(
-                          'إيقافك لبعض الاشتراكات يوفّر لك '
-                          '${savings.entries.map((e) => fmtMoney(e.value, e.key)).join(' + ')} شهريًا',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.ink,
-                            height: 1.5,
-                          ),
+                        child: _MiniStat(
+                          icon: Icons.savings_rounded,
+                          color: AppColors.primary,
+                          label: 'توفير الإيقاف شهريًا',
+                          value: savings.entries
+                              .map((e) => fmtMoney(e.value, e.key))
+                              .join(' + '),
                         ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
             ],
-            const SizedBox(height: 20),
+            const SizedBox(height: 22),
             Row(
               children: [
                 const Expanded(
-                  child: SectionTitle('التجديدات القادمة (٣٠ يومًا)'),
+                  child: SectionTitle('القادم عليك'),
                 ),
                 TextButton.icon(
                   onPressed: () => Navigator.of(context).push(
@@ -320,7 +245,7 @@ class DashboardScreen extends StatelessWidget {
                       builder: (_) => const CalendarScreen(),
                     ),
                   ),
-                  icon: const Icon(Icons.calendar_month_rounded, size: 19),
+                  icon: const Icon(Icons.calendar_month_rounded, size: 18),
                   label: const Text('التقويم'),
                 ),
               ],
@@ -332,12 +257,12 @@ class DashboardScreen extends StatelessWidget {
                     Icon(
                       Icons.nightlight_round,
                       color: AppColors.muted,
-                      size: 24,
+                      size: 22,
                     ),
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'لا توجد تجديدات خلال الشهر القادم. استرخِ!',
+                        'لا خصومات خلال الشهر القادم. استرخِ!',
                         style: TextStyle(color: AppColors.muted),
                       ),
                     ),
@@ -346,8 +271,8 @@ class DashboardScreen extends StatelessWidget {
               )
             else
               FadeSlideIn(
-                delayMs: 240,
-                child: _Timeline(subs: upcoming.take(8).toList()),
+                delayMs: 180,
+                child: _GroupedTimeline(subs: upcoming.take(10).toList()),
               ),
           ],
         );
@@ -356,34 +281,35 @@ class DashboardScreen extends StatelessWidget {
   }
 }
 
+/// بطاقة البطل: الرقم الكبير + ثلاث حقائق سريعة في سطر واحد.
 class _HeroCard extends StatelessWidget {
-  final Map<String, double> monthly;
-  final Map<String, double> yearly;
+  final double monthly;
+  final double yearly;
+  final int activeCount;
+  final int pausedCount;
   final String currency;
 
   const _HeroCard({
     required this.monthly,
     required this.yearly,
+    required this.activeCount,
+    required this.pausedCount,
     required this.currency,
   });
 
   @override
   Widget build(BuildContext context) {
-    final mainValue = monthly[currency] ?? 0;
-    final others =
-        monthly.entries.where((e) => e.key != currency).toList();
-    final daily = mainValue * 12 / 365;
-
+    final daily = monthly * 12 / 365;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.fromLTRB(22, 20, 22, 18),
       decoration: BoxDecoration(
         gradient: AppColors.heroGradient,
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x5514B886),
-            blurRadius: 26,
+            color: Color(0x4414B886),
+            blurRadius: 24,
             offset: Offset(0, 10),
           ),
         ],
@@ -391,67 +317,108 @@ class _HeroCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const Text(
+            'مصروفك الشهري',
+            style: TextStyle(
+              color: Color(0xCC06231A),
+              fontSize: 13.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+              AnimatedMoney(
+                value: monthly,
+                currency: currency,
+                style: const TextStyle(
+                  color: Color(0xFF06231A),
+                  fontSize: 44,
+                  fontWeight: FontWeight.w900,
+                  height: 1.05,
                 ),
-                decoration: BoxDecoration(
-                  color: const Color(0x33062318),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'مصروفك الشهري',
+              ),
+              const SizedBox(width: 8),
+              const Padding(
+                padding: EdgeInsets.only(bottom: 7),
+                child: Text(
+                  'شهريًا',
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
+                    color: Color(0xB306231A),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-              const Spacer(),
-              const Icon(
-                Icons.credit_card_rounded,
-                color: Colors.white,
-                size: 26,
-              ),
             ],
           ),
           const SizedBox(height: 14),
-          AnimatedMoney(
-            value: mainValue,
-            currency: currency,
-            style: const TextStyle(
-              color: Color(0xFF06231A),
-              fontSize: 40,
-              fontWeight: FontWeight.w900,
-              height: 1.1,
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 9,
             ),
-          ),
-          if (others.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                '+ ${others.map((e) => fmtMoney(e.value, e.key)).join(' + ')}',
-                style: const TextStyle(
-                  color: Color(0xCC06231A),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
+            decoration: BoxDecoration(
+              color: const Color(0x2E062318),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                _HeroFact(label: 'سنويًا', value: fmtMoney(yearly, currency)),
+                _heroDivider(),
+                _HeroFact(label: 'يوميًا', value: fmtMoney(daily, currency)),
+                _heroDivider(),
+                _HeroFact(
+                  label: 'نشط',
+                  value: pausedCount > 0
+                      ? '$activeCount (+$pausedCount موقوف)'
+                      : '$activeCount',
                 ),
-              ),
+              ],
             ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              _HeroPill(
-                text:
-                    'سنويًا ≈ ${yearly.entries.map((e) => fmtMoney(e.value, e.key)).join(' + ')}',
-              ),
-              const SizedBox(width: 8),
-              _HeroPill(text: 'يوميًا ≈ ${fmtMoney(daily, currency)}'),
-            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _heroDivider() => Container(
+        width: 1,
+        height: 26,
+        margin: const EdgeInsets.symmetric(horizontal: 12),
+        color: const Color(0x33FFFFFF),
+      );
+}
+
+class _HeroFact extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _HeroFact({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14.5,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 1),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xCCE8FFF5),
+              fontSize: 11,
+            ),
           ),
         ],
       ),
@@ -459,29 +426,158 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-class _HeroPill extends StatelessWidget {
-  final String text;
+/// زر إجراء سريع دائري.
+class _QuickAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
 
-  const _HeroPill({required this.text});
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Flexible(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: const Color(0x2E062318),
-          borderRadius: BorderRadius.circular(20),
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          children: [
+            Container(
+              width: 54,
+              height: 54,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Icon(icon, color: AppColors.primary, size: 25),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.muted,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ),
-        child: Text(
-          text,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12.5,
-            fontWeight: FontWeight.w800,
+      ),
+    );
+  }
+}
+
+/// بطاقة تنبيه موحّدة (تجارب/أسعار).
+class _NoticeCard extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final Color bg;
+  final String title;
+  final List<String> lines;
+
+  const _NoticeCard({
+    required this.icon,
+    required this.color,
+    required this.bg,
+    required this.title,
+    required this.lines,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      color: bg,
+      borderColor: color,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 19),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 13.5,
+                    color: AppColors.ink,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
+          const SizedBox(height: 6),
+          for (final l in lines)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 3),
+              child: Text(
+                '• $l',
+                style: const TextStyle(
+                  color: AppColors.muted,
+                  fontSize: 12.5,
+                  height: 1.55,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniStat extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final String value;
+
+  const _MiniStat({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 22),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w900,
+                    color: color,
+                  ),
+                ),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.muted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -509,6 +605,7 @@ class _BudgetCard extends StatelessWidget {
             : AppColors.primary;
 
     return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -518,7 +615,7 @@ class _BudgetCard extends StatelessWidget {
                 'الميزانية الشهرية',
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
-                  fontSize: 15,
+                  fontSize: 13.5,
                   color: AppColors.ink,
                 ),
               ),
@@ -527,17 +624,17 @@ class _BudgetCard extends StatelessWidget {
                 '${fmtMoney(spent, currency)} / ${fmtMoney(budget, currency)}',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
-                  fontSize: 13,
+                  fontSize: 12.5,
                   color: color,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Container(
-              height: 12,
+              height: 10,
               color: AppColors.cardAlt,
               alignment: AlignmentDirectional.centerStart,
               child: TweenAnimationBuilder<double>(
@@ -551,14 +648,14 @@ class _BudgetCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 7),
           Text(
             over
-                ? '⚠️ تجاوزت ميزانيتك بـ ${fmtMoney(spent - budget, currency)}'
-                : 'متبقي ${fmtMoney(budget - spent, currency)} من ميزانيتك',
+                ? 'تجاوزت ميزانيتك بـ ${fmtMoney(spent - budget, currency)}'
+                : 'متبقي ${fmtMoney(budget - spent, currency)}',
             style: TextStyle(
               color: over ? AppColors.danger : AppColors.muted,
-              fontSize: 12.5,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -568,71 +665,21 @@ class _BudgetCard extends StatelessWidget {
   }
 }
 
-class _StatChip extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-  final Color bg;
-
-  const _StatChip({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-    required this.bg,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 26),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: color,
-                ),
-              ),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.muted,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Timeline extends StatelessWidget {
+/// تايم لاين v2: مجمّع بالأيام برؤوس تواريخ ومجموع كل يوم.
+class _GroupedTimeline extends StatelessWidget {
   final List<Subscription> subs;
 
-  const _Timeline({required this.subs});
+  const _GroupedTimeline({required this.subs});
 
-  static String _relative(int days) {
+  static const List<String> _weekDays = [
+    'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس',
+    'الجمعة', 'السبت', 'الأحد',
+  ];
+
+  static String _relative(int days, DateTime d) {
     if (days <= 0) return 'اليوم';
     if (days == 1) return 'غدًا';
-    if (days == 2) return 'بعد يومين';
-    if (days <= 10) return 'بعد $days أيام';
-    return 'بعد $days يومًا';
+    return '${_weekDays[d.weekday - 1]} ${d.day}/${d.month}';
   }
 
   static Color _urgency(int days) {
@@ -643,94 +690,112 @@ class _Timeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // تجميع حسب تاريخ التجديد.
+    final groups = <DateTime, List<Subscription>>{};
+    for (final s in subs) {
+      final d = s.nextRenewal();
+      final key = DateTime(d.year, d.month, d.day);
+      groups.putIfAbsent(key, () => []).add(s);
+    }
+    final dates = groups.keys.toList()..sort();
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (var i = 0; i < subs.length; i++)
-          _TimelineRow(
-            sub: subs[i],
-            isLast: i == subs.length - 1,
-          ),
+        for (var gi = 0; gi < dates.length; gi++) ...[
+          _dayHeader(dates[gi], groups[dates[gi]]!, gi == 0),
+          for (final s in groups[dates[gi]]!)
+            _TimelineCard(
+              sub: s,
+              color: _urgency(s.daysUntilRenewal()),
+              isLastInGroup: s == groups[dates[gi]]!.last &&
+                  gi == dates.length - 1,
+            ),
+        ],
       ],
+    );
+  }
+
+  Widget _dayHeader(DateTime d, List<Subscription> daySubs, bool first) {
+    final today = DateTime.now();
+    final days = DateTime(d.year, d.month, d.day)
+        .difference(DateTime(today.year, today.month, today.day))
+        .inDays;
+    final color = _urgency(days);
+    var total = 0.0;
+    for (final s in daySubs) {
+      total += s.price;
+    }
+    return Padding(
+      padding: EdgeInsets.only(top: first ? 2 : 14, bottom: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: color.withOpacity(0.5), blurRadius: 7),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            _relative(days, d),
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w900,
+              fontSize: 13.5,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            fmtMoney(total, ''),
+            style: const TextStyle(
+              color: AppColors.muted,
+              fontWeight: FontWeight.w800,
+              fontSize: 12.5,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _TimelineRow extends StatelessWidget {
+class _TimelineCard extends StatelessWidget {
   final Subscription sub;
-  final bool isLast;
+  final Color color;
+  final bool isLastInGroup;
 
-  const _TimelineRow({required this.sub, required this.isLast});
+  const _TimelineCard({
+    required this.sub,
+    required this.color,
+    required this.isLastInGroup,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final days = sub.daysUntilRenewal();
-    final color = _Timeline._urgency(days);
-    final d = sub.nextRenewal();
-    final catColor = categoryColor(sub.category);
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            width: 72,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _Timeline._relative(days),
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12.5,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${d.month}/${d.day}',
-                  style: const TextStyle(
-                    color: AppColors.muted,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(start: 4, bottom: 8),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 2,
+              margin: const EdgeInsetsDirectional.only(start: 3, end: 15),
+              color: isLastInGroup
+                  ? Colors.transparent
+                  : AppColors.border,
             ),
-          ),
-          Column(
-            children: [
-              Container(
-                width: 13,
-                height: 13,
-                margin: const EdgeInsets.only(top: 2),
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withOpacity(0.45),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-              ),
-              if (!isLast)
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    margin: const EdgeInsets.symmetric(vertical: 3),
-                    color: AppColors.border,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+            Expanded(
               child: AppCard(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 13,
-                  vertical: 10,
+                  horizontal: 12,
+                  vertical: 9,
                 ),
                 child: Row(
                   children: [
@@ -739,19 +804,36 @@ class _TimelineRow extends StatelessWidget {
                       emoji: sub.emoji,
                       manageUrl: sub.manageUrl,
                       iconUrl: sub.iconUrl,
-                      tint: catColor,
-                      size: 40,
+                      tint: categoryColor(sub.category),
+                      size: 38,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text(
-                        sub.name,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14.5,
-                          color: AppColors.ink,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            sub.name,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                          Text(
+                            sub.kind == PaymentKind.installment &&
+                                    sub.remainingInstallments() != null
+                                ? 'قسط • متبقي ${sub.remainingInstallments()}'
+                                : sub.kind == PaymentKind.bill
+                                    ? 'فاتورة • ${sub.cycle.labelAr}'
+                                    : sub.cycle.labelAr,
+                            style: const TextStyle(
+                              color: AppColors.muted,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     Text(
@@ -766,8 +848,8 @@ class _TimelineRow extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -790,10 +872,10 @@ class _EmptyState extends StatelessWidget {
               width: 110,
               height: 110,
               alignment: Alignment.center,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: AppColors.heroGradient,
                 shape: BoxShape.circle,
-                boxShadow: const [
+                boxShadow: [
                   BoxShadow(
                     color: Color(0x5514B886),
                     blurRadius: 30,
@@ -818,8 +900,8 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'أضف اشتراكاتك (شاهد، نتفلكس، iCloud، النادي...) '
-              'واكتشف مجموعها الحقيقي ومواعيد تجديدها قبل أن تُخصم.',
+              'أضف اشتراكاتك وأقساطك وفواتيرك واكتشف مجموعها الحقيقي '
+              'ومواعيد خصمها قبل أن تُخصم.',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.muted, height: 1.6),
             ),
@@ -827,7 +909,7 @@ class _EmptyState extends StatelessWidget {
             FilledButton.icon(
               onPressed: onAdd,
               icon: const Icon(Icons.add_rounded),
-              label: const Text('أضف أول اشتراك'),
+              label: const Text('أضف أول التزام'),
             ),
           ],
         ),

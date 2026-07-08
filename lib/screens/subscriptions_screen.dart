@@ -38,6 +38,7 @@ class SubscriptionsScreen extends StatefulWidget {
 class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   final TextEditingController _search = TextEditingController();
   String _category = 'الكل';
+  PaymentKind? _kindFilter; // null = الكل
   SortMode _sort = SortMode.renewal;
 
   @override
@@ -69,7 +70,9 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
             final matchesQuery = query.isEmpty || s.name.contains(query);
             final matchesCat =
                 _category == 'الكل' || s.category == _category;
-            return matchesQuery && matchesCat;
+            final matchesKind =
+                _kindFilter == null || s.kind == _kindFilter;
+            return matchesQuery && matchesCat && matchesKind;
           }).toList();
 
           switch (_sort) {
@@ -194,9 +197,29 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                   children: [
                     _CatChip(
                       label: 'الكل',
-                      selected: _category == 'الكل',
-                      onTap: () => setState(() => _category = 'الكل'),
+                      selected: _category == 'الكل' && _kindFilter == null,
+                      onTap: () => setState(() {
+                        _category = 'الكل';
+                        _kindFilter = null;
+                      }),
                     ),
+                    for (final k in PaymentKind.values)
+                      if (store.items.any((s) => s.kind == k) &&
+                          store.items.any((s) => s.kind != k))
+                        Padding(
+                          padding:
+                              const EdgeInsetsDirectional.only(start: 8),
+                          child: _CatChip(
+                            label: switch (k) {
+                              PaymentKind.subscription => 'اشتراكات',
+                              PaymentKind.installment => 'أقساط',
+                              PaymentKind.bill => 'فواتير',
+                            },
+                            selected: _kindFilter == k,
+                            onTap: () => setState(() =>
+                                _kindFilter = _kindFilter == k ? null : k),
+                          ),
+                        ),
                     for (final c in kCategories)
                       if (usedCategories.contains(c))
                         Padding(
@@ -359,6 +382,31 @@ class _SubTile extends StatelessWidget {
                               ),
                             ),
                           ),
+                          if (sub.kind != PaymentKind.subscription) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.cardAlt,
+                                borderRadius: BorderRadius.circular(10),
+                                border:
+                                    Border.all(color: AppColors.border),
+                              ),
+                              child: Text(
+                                sub.isCompleted()
+                                    ? '${sub.kind.labelAr} مكتمل'
+                                    : sub.kind.labelAr,
+                                style: const TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.muted,
+                                ),
+                              ),
+                            ),
+                          ],
                           if (sub.isTrialActive()) ...[
                             const SizedBox(width: 6),
                             Container(
@@ -576,6 +624,25 @@ Future<void> showSubscriptionDetails(
                       label: 'التكلفة الشهرية',
                       value: fmtMoney(sub.monthlyCost, sub.currency),
                     ),
+                    if (sub.kind == PaymentKind.installment &&
+                        sub.totalInstallments != null) ...[
+                      _DetailRow(
+                        icon: Icons.pie_chart_outline_rounded,
+                        label: 'الأقساط المدفوعة',
+                        value:
+                            '${sub.paymentsMade()} من ${sub.totalInstallments}',
+                      ),
+                      _DetailRow(
+                        icon: Icons.flag_circle_rounded,
+                        label: 'آخر قسط في',
+                        value: sub.lastInstallmentDate == null
+                            ? '—'
+                            : fmtDate(sub.lastInstallmentDate!),
+                        valueColor: sub.isCompleted()
+                            ? AppColors.primary
+                            : null,
+                      ),
+                    ],
                     if (sub.isTrialActive())
                       _DetailRow(
                         icon: Icons.hourglass_bottom_rounded,

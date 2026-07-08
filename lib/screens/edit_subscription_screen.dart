@@ -42,6 +42,8 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   late int _famCount;
   String _iconUrl = '';
   bool _searching = false;
+  PaymentKind _kind = PaymentKind.subscription;
+  late final TextEditingController _installments;
 
   bool get isEditing => widget.existing != null;
 
@@ -82,6 +84,10 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     _isFamily = e?.isFamily ?? false;
     _famCount = (e?.familyMembers ?? 2).clamp(2, 20);
     _iconUrl = e?.iconUrl ?? '';
+    _kind = e?.kind ?? PaymentKind.subscription;
+    _installments = TextEditingController(
+      text: e?.totalInstallments?.toString() ?? '',
+    );
   }
 
   @override
@@ -90,6 +96,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     _price.dispose();
     _notes.dispose();
     _url.dispose();
+    _installments.dispose();
     super.dispose();
   }
 
@@ -346,10 +353,15 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
       paymentMethod: _payMethod,
       manageUrl: _url.text.trim(),
       reminderDays: _reminderDays,
-      trialEndDate: _trialOn ? _trialEnd : null,
+      trialEndDate:
+          (_kind == PaymentKind.subscription && _trialOn) ? _trialEnd : null,
       isFamily: _isFamily,
       familyMembers: _famCount,
       iconUrl: _iconUrl,
+      kind: _kind,
+      totalInstallments: _kind == PaymentKind.installment
+          ? int.tryParse(_installments.text.trim())
+          : null,
     );
     await SubscriptionStore.instance.upsert(sub);
     if (!mounted) return;
@@ -399,7 +411,28 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
-              if (!isEditing)
+              SegmentedButton<PaymentKind>(
+                segments: [
+                  for (final k in PaymentKind.values)
+                    ButtonSegment(value: k, label: Text(k.labelAr)),
+                ],
+                selected: {_kind},
+                onSelectionChanged: (v) =>
+                    setState(() => _kind = v.first),
+                style: SegmentedButton.styleFrom(
+                  backgroundColor: AppColors.card,
+                  foregroundColor: AppColors.muted,
+                  selectedBackgroundColor: AppColors.primary,
+                  selectedForegroundColor: const Color(0xFF06231A),
+                  side: const BorderSide(color: AppColors.border),
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              if (!isEditing && _kind == PaymentKind.subscription)
                 OutlinedButton.icon(
                   onPressed: _openPresetPicker,
                   icon: const Icon(Icons.flash_on_rounded),
@@ -540,6 +573,18 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     ),
                 ],
               ),
+              if (_kind == PaymentKind.installment) ...[
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _installments,
+                  keyboardType: TextInputType.number,
+                  textDirection: TextDirection.ltr,
+                  decoration: const InputDecoration(
+                    labelText: 'عدد الأقساط الكلي',
+                    hintText: 'مثال: 12 — اتركه فارغًا إن كان مفتوحًا',
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
               InkWell(
                 onTap: _pickDate,
@@ -603,6 +648,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     setState(() => _reminderDays = v ?? _reminderDays),
               ),
               const SizedBox(height: 8),
+              if (_kind == PaymentKind.subscription)
               SwitchListTile(
                 value: _trialOn,
                 onChanged: (v) => setState(() => _trialOn = v),
