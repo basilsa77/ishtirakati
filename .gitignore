@@ -17,3 +17,7 @@ web/
 .idea/
 *.iml
 .vscode/
+
+# Firebase client configuration is restored in CI from GitHub Actions Secrets.
+GoogleService-Info.plist
+lib/firebase_options.dart
