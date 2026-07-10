@@ -143,6 +143,11 @@ class SubscriptionStore extends ChangeNotifier {
           old.priceHistory.isNotEmpty) {
         sub.priceHistory = old.priceHistory;
       }
+      // النماذج القديمة لا تحمل إحصائيات الاستخدام، فلا نفقدها عند التعديل.
+      if (sub.usageCount == 0 && old.usageCount > 0) {
+        sub.usageCount = old.usageCount;
+        sub.lastUsedAt = old.lastUsedAt;
+      }
       _items[index] = sub;
     } else {
       _items.insert(0, sub);
@@ -165,6 +170,24 @@ class SubscriptionStore extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// يسجل استخدامًا واحدًا للاشتراك دون إرسال أي بيانات خارج الجهاز.
+  Future<void> recordUsage(String id, {DateTime? at}) async {
+    final index = _items.indexWhere((s) => s.id == id);
+    if (index < 0) return;
+    final sub = _items[index];
+    sub.usageCount = (sub.usageCount + 1).clamp(0, 100000).toInt();
+    sub.lastUsedAt = at ?? DateTime.now();
+    await _persist();
+    notifyListeners();
+  }
+
+  List<Subscription> get neverUsed =>
+      _items.where((s) => !s.isPaused && s.usageCount == 0).toList();
+
+  double savingsFor(String currency) => paused
+      .where((s) => s.currency == currency)
+      .fold(0, (sum, s) => sum + s.monthlyCost);
 
   Future<void> clearAll() async {
     _items.clear();

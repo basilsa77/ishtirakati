@@ -624,6 +624,14 @@ Future<void> showSubscriptionDetails(
                       label: 'التكلفة الشهرية',
                       value: fmtMoney(sub.monthlyCost, sub.currency),
                     ),
+                    _DetailRow(
+                      icon: Icons.insights_rounded,
+                      label: 'الاستخدام المسجل',
+                      value: sub.usageCount == 0
+                          ? 'لم تسجل استخدامًا بعد'
+                          : '${sub.usageCount} مرة'
+                              '${sub.costPerUse == null ? '' : ' • ${fmtMoney(sub.costPerUse!, sub.currency)} لكل استخدام'}',
+                    ),
                     if (sub.kind == PaymentKind.installment &&
                         sub.totalInstallments != null) ...[
                       _DetailRow(
@@ -703,6 +711,15 @@ Future<void> showSubscriptionDetails(
                 ),
               ),
               const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () async {
+                  await store.recordUsage(sub.id);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+                icon: const Icon(Icons.check_circle_outline_rounded),
+                label: const Text('سجّل استخدامًا الآن'),
+              ),
+              const SizedBox(height: 8),
               if (sub.manageUrl.isNotEmpty) ...[
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(

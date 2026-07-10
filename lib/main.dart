@@ -8,6 +8,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:local_auth/local_auth.dart';
 
 import 'screens/dashboard_screen.dart';
+import 'screens/calendar_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/insights_screen.dart';
 import 'screens/settings_screen.dart';
@@ -213,6 +214,7 @@ class _RootShellState extends State<RootShell> {
     'اشتراكاتي',
     'كل الاشتراكات',
     'تحليلات الإنفاق',
+    'التقويم',
     'الإعدادات',
   ];
 
@@ -224,6 +226,8 @@ class _RootShellState extends State<RootShell> {
         return const SubscriptionsScreen(key: ValueKey('subs'));
       case 2:
         return const InsightsScreen(key: ValueKey('insights'));
+      case 3:
+        return const CalendarScreen(key: ValueKey('calendar'));
       default:
         return const SettingsScreen(key: ValueKey('settings'));
     }
@@ -264,6 +268,11 @@ class _RootShellState extends State<RootShell> {
             icon: Icon(Icons.donut_large_outlined),
             selectedIcon: Icon(Icons.donut_large_rounded),
             label: 'تحليلات',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.calendar_month_outlined),
+            selectedIcon: Icon(Icons.calendar_month_rounded),
+            label: 'التقويم',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),

@@ -42,6 +42,7 @@ class DashboardScreen extends StatelessWidget {
         final currency = store.dominantCurrency;
         final monthlyMain = monthly[currency] ?? 0;
         final budget = store.monthlyBudget;
+        final neverUsed = store.neverUsed;
 
         final priceAlerts = <(Subscription, double)>[];
         for (final sub in store.active) {
@@ -196,6 +197,23 @@ class DashboardScreen extends StatelessWidget {
                   spent: monthlyMain,
                   budget: budget,
                   currency: currency,
+                ),
+              ),
+            ],
+            if (neverUsed.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              FadeSlideIn(
+                delayMs: 130,
+                child: _NoticeCard(
+                  icon: Icons.visibility_off_rounded,
+                  color: AppColors.gold,
+                  bg: AppColors.goldSoft,
+                  title: 'راجع قيمة اشتراكاتك',
+                  lines: [
+                    'لم تسجل استخدام «${neverUsed.first.name}» بعد.',
+                    if (neverUsed.length > 1)
+                      'لديك ${neverUsed.length} اشتراكات بلا استخدام مسجل.',
+                  ],
                 ),
               ),
             ],

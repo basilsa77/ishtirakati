@@ -152,6 +152,10 @@ class Subscription {
   /// عدد الأفراد المشاركين في الاشتراك العائلي (أنت منهم).
   int familyMembers;
 
+  /// إحصائية استخدام محلية تساعد على تقييم قيمة الاشتراك.
+  int usageCount;
+  DateTime? lastUsedAt;
+
   Subscription({
     required this.id,
     required this.name,
@@ -171,6 +175,8 @@ class Subscription {
     this.iconUrl = '',
     this.isFamily = false,
     this.familyMembers = 2,
+    this.usageCount = 0,
+    this.lastUsedAt,
     this.kind = PaymentKind.subscription,
     this.totalInstallments,
   }) : priceHistory = priceHistory ?? [];
@@ -215,6 +221,8 @@ class Subscription {
   /// نصيب الفرد الواحد من الاشتراك العائلي.
   double get pricePerMember =>
       isFamily && familyMembers > 1 ? price / familyMembers : price;
+
+  double? get costPerUse => usageCount > 0 ? price / usageCount : null;
 
   /// هل هو تجربة مجانية لم تنتهِ بعد؟
   bool isTrialActive([DateTime? from]) {
@@ -397,6 +405,8 @@ class Subscription {
         'priceHistory': priceHistory.map((e) => e.toJson()).toList(),
         'isFamily': isFamily,
         'familyMembers': familyMembers,
+        'usageCount': usageCount,
+        'lastUsedAt': lastUsedAt?.toIso8601String(),
         'iconUrl': iconUrl,
         'kind': kind.index,
         'totalInstallments': totalInstallments,
@@ -430,7 +440,12 @@ class Subscription {
       ],
       isFamily: (json['isFamily'] as bool?) ?? false,
       familyMembers:
-          ((json['familyMembers'] as num?)?.toInt() ?? 2).clamp(1, 20),
+          (((json['familyMembers'] as num?)?.toInt() ?? 2).clamp(1, 20))
+              .toInt(),
+      usageCount:
+          (((json['usageCount'] as num?)?.toInt() ?? 0).clamp(0, 100000))
+              .toInt(),
+      lastUsedAt: DateTime.tryParse((json['lastUsedAt'] as String?) ?? ''),
       iconUrl: (json['iconUrl'] as String?) ?? '',
       kind: PaymentKind.values[((json['kind'] as num?)?.toInt() ?? 0)
           .clamp(0, PaymentKind.values.length - 1)],

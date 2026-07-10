@@ -128,6 +128,17 @@ void main() {
       expect(back.notes, s.notes);
       expect(back.isPaused, s.isPaused);
     });
+
+    test('إحصائية الاستخدام وتكلفة الاستخدام تحفظان في JSON', () {
+      final s = _sub(
+        cycle: BillingCycle.monthly,
+        anchor: DateTime(2026, 1, 1),
+        price: 30,
+      )..usageCount = 3;
+      final back = Subscription.fromJson(s.toJson());
+      expect(back.usageCount, 3);
+      expect(back.costPerUse, closeTo(10, 0.001));
+    });
   });
 
   group('تنسيق المبالغ', () {
