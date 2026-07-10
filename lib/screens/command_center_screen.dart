@@ -30,7 +30,7 @@ class CommandCenterScreen extends StatelessWidget {
         final byCategory = store.monthlyByCategory(currency).entries.toList()
           ..sort((a, b) => b.value.compareTo(a.value));
         return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 122),
           children: [
             const _TopBar(),
             const SizedBox(height: 14),
@@ -131,6 +131,20 @@ class _TopBar extends StatelessWidget {
             ],
           ),
         ),
+        Container(
+          width: 44,
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: AppColors.primarySoft,
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: const Icon(
+            Icons.account_balance_wallet_rounded,
+            color: AppColors.primary,
+            size: 22,
+          ),
+        ),
       ],
     );
   }
@@ -155,16 +169,49 @@ class _FinancialHero extends StatelessWidget {
         ? 0.0
         : (monthly / budget).clamp(0.0, 1.0).toDouble();
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: AppColors.heroGradient,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withOpacity(.4)),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x260B6F52),
+            blurRadius: 24,
+            offset: Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('التزامك الشهري', style: TextStyle(color: Color(0xD9E8FFF5), fontWeight: FontWeight.w800)),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'التزامك الشهري',
+                  style: TextStyle(
+                    color: Color(0xD9E8FFF5),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0x26FFFFFF),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'شهريًا',
+                  style: TextStyle(
+                    color: Color(0xE6FFFFFF),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 7),
           AnimatedMoney(
             value: monthly,
@@ -213,8 +260,12 @@ class _HeroMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(color: const Color(0x26000000), borderRadius: BorderRadius.circular(8)),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        decoration: BoxDecoration(
+          color: const Color(0x26000000),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0x1FFFFFFF)),
+        ),
         child: Row(
           children: [
             Icon(icon, size: 18, color: color),
@@ -266,18 +317,34 @@ class _ActionGrid extends StatelessWidget {
           message: action.$2,
           child: InkWell(
             onTap: action.$3,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(18),
             child: Container(
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: AppColors.card,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: AppColors.border),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x0F0B3D2E),
+                    blurRadius: 12,
+                    offset: Offset(0, 4),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(action.$1, color: AppColors.primary, size: 22),
+                  Container(
+                    width: 34,
+                    height: 34,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.primarySoft,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(action.$1, color: AppColors.primary, size: 19),
+                  ),
                   const SizedBox(width: 8),
                   Text(action.$2, style: const TextStyle(color: AppColors.ink, fontSize: 12, fontWeight: FontWeight.w800)),
                 ],
@@ -299,9 +366,34 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(color: AppColors.ink, fontSize: 17, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 2),
-          Text(subtitle, style: const TextStyle(color: AppColors.muted, fontSize: 12.5)),
+          Row(
+            children: [
+              Container(
+                width: 7,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(5),
+                ),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.ink,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: const TextStyle(color: AppColors.muted, fontSize: 13),
+          ),
         ],
       );
 }
@@ -333,17 +425,20 @@ class _UpcomingRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
               Container(
-                width: 37,
-                height: 37,
+                width: 44,
+                height: 44,
                 alignment: Alignment.center,
-                decoration: BoxDecoration(color: categoryColor(sub.category).withOpacity(.15), borderRadius: BorderRadius.circular(8)),
-                child: Text(sub.emoji, style: const TextStyle(fontSize: 19)),
+                decoration: BoxDecoration(
+                  color: categoryColor(sub.category).withOpacity(.15),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(sub.emoji, style: const TextStyle(fontSize: 21)),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -356,7 +451,24 @@ class _UpcomingRow extends StatelessWidget {
                   ],
                 ),
               ),
-              Text(fmtMoney(sub.price, sub.currency), style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w900)),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    fmtMoney(sub.price, sub.currency),
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  const Icon(
+                    Icons.chevron_left_rounded,
+                    color: AppColors.muted,
+                    size: 17,
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -422,8 +534,12 @@ class _ActionNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(13),
-        decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.border)),
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: color.withOpacity(.07),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: color.withOpacity(.18)),
+        ),
         child: Row(
           children: [
             Icon(icon, color: color, size: 22),

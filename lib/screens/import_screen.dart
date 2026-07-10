@@ -184,7 +184,7 @@ class _ImportScreenState extends State<ImportScreen> {
       body: SafeArea(
         child: ListView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
           children: [
             AppCard(
               color: AppColors.primarySoft,

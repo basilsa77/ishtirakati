@@ -351,7 +351,7 @@ class _HeroCard extends StatelessWidget {
                 value: monthly,
                 currency: currency,
                 style: const TextStyle(
-                  color: Color(0xFF06231A),
+                  color: Colors.white,
                   fontSize: 44,
                   fontWeight: FontWeight.w900,
                   height: 1.05,

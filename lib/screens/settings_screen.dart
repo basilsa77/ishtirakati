@@ -60,8 +60,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return ListView(
           keyboardDismissBehavior:
               ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 132),
           children: [
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'تحكم في تجربتك',
+                    style: TextStyle(
+                      color: AppColors.ink,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    'إعدادات بسيطة تجعل اشتراكاتك تعمل كما تريد',
+                    style: TextStyle(color: AppColors.muted, fontSize: 12.5),
+                  ),
+                ],
+              ),
+            ),
             AppCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

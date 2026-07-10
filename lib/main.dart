@@ -31,7 +31,13 @@ Future<void> main() async {
   await NotificationService.instance.init();
   await AuthService.init();
   SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark),
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+      systemNavigationBarColor: AppColors.card,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    ),
   );
   runApp(const IshtirakatiApp());
   // بعد الإقلاع: صلاحية الإشعارات وجدولتها + تحديث قاعدة الخدمات.
@@ -243,8 +249,12 @@ class _RootShellState extends State<RootShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _index == 0 ? null : AppBar(title: Text(_titles[_index])),
+      extendBody: true,
+      appBar: _index == 0 || _index == 3
+          ? null
+          : AppBar(title: Text(_titles[_index])),
       body: SafeArea(
+        bottom: false,
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 260),
           switchInCurve: Curves.easeOutCubic,
@@ -256,37 +266,117 @@ class _RootShellState extends State<RootShell> {
           child: _body(),
         ),
       ),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: _ModernBottomBar(
         selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'الرئيسية',
+        onSelected: (i) => setState(() => _index = i),
+      ),
+    );
+  }
+}
+
+class _ModernBottomBar extends StatelessWidget {
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  const _ModernBottomBar({
+    required this.selectedIndex,
+    required this.onSelected,
+  });
+
+  static const _items = [
+    (Icons.home_outlined, Icons.home_rounded, 'الرئيسية'),
+    (Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'اشتراكاتي'),
+    (Icons.insights_outlined, Icons.insights_rounded, 'تحليلات'),
+    (Icons.calendar_month_outlined, Icons.calendar_month_rounded, 'التقويم'),
+    (Icons.settings_outlined, Icons.settings_rounded, 'الإعدادات'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 7),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(26),
+          border: Border.all(color: AppColors.border),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x180B3D2E),
+              blurRadius: 24,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            for (var i = 0; i < _items.length; i++)
+              Expanded(
+                child: _BottomBarItem(
+                  item: _items[i],
+                  selected: selectedIndex == i,
+                  onTap: () => onSelected(i),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomBarItem extends StatelessWidget {
+  final (IconData, IconData, String) item;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _BottomBarItem({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: item.$3,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(vertical: 7),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primarySoft : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long_rounded),
-            label: 'اشتراكاتي',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                selected ? item.$2 : item.$1,
+                size: 21,
+                color: selected ? AppColors.primary : AppColors.muted,
+              ),
+              const SizedBox(height: 3),
+              Text(
+                item.$3,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: selected ? AppColors.primary : AppColors.muted,
+                  fontSize: 10.5,
+                  fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+                ),
+              ),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.donut_large_outlined),
-            selectedIcon: Icon(Icons.donut_large_rounded),
-            label: 'تحليلات',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month_rounded),
-            label: 'التقويم',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings_rounded),
-            label: 'الإعدادات',
-          ),
-        ],
+        ),
       ),
     );
   }

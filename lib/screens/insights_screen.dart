@@ -61,8 +61,29 @@ class InsightsScreen extends StatelessWidget {
         final heaviest = sortedCats.isEmpty ? null : sortedCats.first;
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 132),
           children: [
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'قراءة إنفاقك',
+                    style: TextStyle(
+                      color: AppColors.ink,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    'صورة واضحة تساعدك على اتخاذ قرار أفضل',
+                    style: TextStyle(color: AppColors.muted, fontSize: 12.5),
+                  ),
+                ],
+              ),
+            ),
             FadeSlideIn(
               child: AppCard(
                 child: Column(
@@ -434,7 +455,7 @@ class _AdvisorCardState extends State<_AdvisorCard> {
   Widget build(BuildContext context) {
     return AppCard(
       color: AppColors.primarySoft,
-      borderColor: AppColors.primaryDeep,
+      borderColor: AppColors.primary.withOpacity(.22),
       child: Row(
         children: [
           const Icon(

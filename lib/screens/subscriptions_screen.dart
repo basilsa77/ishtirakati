@@ -52,14 +52,14 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     final store = SubscriptionStore.instance;
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const EditSubscriptionScreen()),
-        ),
-        icon: const Icon(Icons.add_rounded),
-        label: const Text(
-          'إضافة',
-          style: TextStyle(fontWeight: FontWeight.w800),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 86),
+        child: FloatingActionButton(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const EditSubscriptionScreen()),
+          ),
+          tooltip: 'إضافة اشتراك',
+          child: const Icon(Icons.add_rounded),
         ),
       ),
       body: ListenableBuilder(
@@ -96,7 +96,55 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'مكتبتك المالية',
+                            style: TextStyle(
+                              color: AppColors.ink,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          SizedBox(height: 3),
+                          Text(
+                            'كل خدماتك ودفعاتك في مكان واحد',
+                            style: TextStyle(
+                              color: AppColors.muted,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 11,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primarySoft,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Text(
+                        '${store.active.length} نشط',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
                 child: Row(
                   children: [
                     Expanded(
@@ -288,7 +336,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                         keyboardDismissBehavior:
                             ScrollViewKeyboardDismissBehavior.onDrag,
                         padding:
-                            const EdgeInsets.fromLTRB(16, 4, 16, 96),
+                            const EdgeInsets.fromLTRB(20, 4, 20, 132),
                         itemCount: list.length,
                         separatorBuilder: (_, __) =>
                             const SizedBox(height: 10),

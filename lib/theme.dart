@@ -78,11 +78,14 @@ ThemeData buildAppTheme() {
       backgroundColor: AppColors.bg,
       foregroundColor: AppColors.ink,
       elevation: 0,
-      centerTitle: true,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
+      toolbarHeight: 62,
+      centerTitle: false,
       titleTextStyle: TextStyle(
         color: AppColors.ink,
-        fontSize: 20,
-        fontWeight: FontWeight.w800,
+        fontSize: 22,
+        fontWeight: FontWeight.w900,
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
@@ -92,7 +95,7 @@ ThemeData buildAppTheme() {
         minimumSize: const Size.fromHeight(54),
         textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
         ),
       ),
     ),
@@ -101,7 +104,7 @@ ThemeData buildAppTheme() {
         foregroundColor: AppColors.primary,
         side: const BorderSide(color: AppColors.primaryDeep, width: 1.2),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
         ),
         textStyle: const TextStyle(fontWeight: FontWeight.w700),
       ),
@@ -115,17 +118,17 @@ ThemeData buildAppTheme() {
       hintStyle: const TextStyle(color: AppColors.muted),
       labelStyle: const TextStyle(color: AppColors.muted),
       contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         borderSide: const BorderSide(color: AppColors.border),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         borderSide: const BorderSide(color: AppColors.border),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
       ),
     ),
@@ -133,7 +136,9 @@ ThemeData buildAppTheme() {
       backgroundColor: AppColors.card,
       indicatorColor: AppColors.primarySoft,
       surfaceTintColor: Colors.transparent,
-      height: 68,
+      height: 72,
+      elevation: 0,
+      indicatorShape: StadiumBorder(),
       labelTextStyle: MaterialStateProperty.resolveWith(
         (states) => TextStyle(
           fontSize: 12,
@@ -210,13 +215,13 @@ class AppCard extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: color ?? AppColors.card,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: borderColor ?? AppColors.border),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x140B3D2E),
-            blurRadius: 18,
-            offset: Offset(0, 6),
+            color: Color(0x100B3D2E),
+            blurRadius: 22,
+            offset: Offset(0, 8),
           ),
         ],
       ),

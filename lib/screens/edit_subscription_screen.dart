@@ -429,7 +429,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
           child: ListView(
             keyboardDismissBehavior:
                 ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
             children: [
               SegmentedButton<PaymentKind>(
                 segments: [
