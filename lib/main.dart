@@ -13,6 +13,7 @@ import 'screens/onboarding_screen.dart';
 import 'screens/insights_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/subscriptions_screen.dart';
+import 'services/auth_service.dart';
 import 'services/notification_service.dart';
 import 'services/remote_catalog.dart';
 import 'services/subscription_store.dart';
@@ -28,6 +29,7 @@ Future<void> main() async {
     // لا نسمح لأي خطأ تخزين بمنع التطبيق من الفتح.
   }
   await NotificationService.instance.init();
+  await AuthService.init();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark),
   );

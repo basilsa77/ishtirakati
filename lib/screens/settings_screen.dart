@@ -6,12 +6,15 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/subscription.dart';
+import '../services/auth_service.dart';
+import '../services/cloud_sync.dart';
 import '../services/notification_service.dart';
 import '../services/update_checker.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
 import 'email_link_screen.dart';
 import 'import_screen.dart';
+import 'login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -54,6 +57,102 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
+            AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'الحساب والمزامنة',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    !AuthService.isAvailable
+                        ? 'المزامنة السحابية قيد التجهيز — ستتوفر في تحديث قريب.'
+                        : AuthService.isSignedIn
+                            ? 'مسجل الدخول: ${AuthService.userEmail}'
+                            : 'سجّل دخولك لتُحفظ بياناتك مع حسابك وتستعيدها على أي جهاز.',
+                    style: const TextStyle(
+                      color: AppColors.muted,
+                      fontSize: 12.5,
+                      height: 1.6,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (!AuthService.isSignedIn)
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      onPressed: !AuthService.isAvailable
+                          ? null
+                          : () async {
+                              await Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const LoginScreen(fromSettings: true),
+                                ),
+                              );
+                              if (context.mounted) setState(() {});
+                            },
+                      icon: const Icon(Icons.login_rounded, size: 20),
+                      label: const Text('تسجيل الدخول'),
+                    )
+                  else
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(46),
+                            ),
+                            onPressed: () async {
+                              final ok = await CloudSync.push();
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      ok
+                                          ? 'تمت المزامنة بنجاح'
+                                          : 'تعذرت المزامنة — تأكد من الإنترنت',
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            icon: const Icon(Icons.cloud_upload_rounded,
+                                size: 19),
+                            label: const Text('مزامنة الآن'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(46),
+                              foregroundColor: AppColors.danger,
+                              side: const BorderSide(
+                                color: AppColors.danger,
+                              ),
+                            ),
+                            onPressed: () async {
+                              await AuthService.signOut();
+                              if (context.mounted) setState(() {});
+                            },
+                            icon: const Icon(Icons.logout_rounded, size: 19),
+                            label: const Text('خروج'),
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
             AppCard(
               child: SwitchListTile(
                 value: store.notificationsEnabled,

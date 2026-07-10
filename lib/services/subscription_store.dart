@@ -14,6 +14,7 @@ import 'category_classifier.dart';
 import 'ai_extractor.dart';
 import 'notification_service.dart';
 import 'remote_catalog.dart';
+import 'cloud_sync.dart';
 import 'secure_data_codec.dart';
 
 class SubscriptionStore extends ChangeNotifier {
@@ -134,6 +135,8 @@ class SubscriptionStore extends ChangeNotifier {
     // ignore: unawaited_futures
     NotificationService.instance
         .rescheduleAll(_items, enabled: _notificationsEnabled);
+    // مزامنة سحابية مؤجلة إن كان المستخدم مسجلًا.
+    CloudSync.schedulePush();
   }
 
   Future<void> setOnboarded() async {

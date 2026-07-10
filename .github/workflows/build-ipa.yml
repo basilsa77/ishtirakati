@@ -24,6 +24,29 @@ jobs:
       - name: توليد مجلد iOS
         run: flutter create . --platforms=ios --org com.basil --project-name ishtirakati
 
+      - name: Configure Firebase and Google Sign-In
+        run: |
+          test -f GoogleService-Info.plist
+          cp GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
+          CLIENT_ID=$(/usr/libexec/PlistBuddy -c 'Print :CLIENT_ID' GoogleService-Info.plist 2>/dev/null || true)
+          SCHEME=$(/usr/libexec/PlistBuddy -c 'Print :REVERSED_CLIENT_ID' GoogleService-Info.plist 2>/dev/null || true)
+          if [ -z "$SCHEME" ] && [ -f ios_url_scheme.txt ]; then
+            SCHEME=$(cat ios_url_scheme.txt | tr -d '[:space:]')
+          fi
+          if [ -n "$CLIENT_ID" ] && [ "$CLIENT_ID" != "REPLACE_ME" ]; then
+            /usr/libexec/PlistBuddy -c 'Delete :GIDClientID' ios/Runner/Info.plist || true
+            /usr/libexec/PlistBuddy -c "Add :GIDClientID string $CLIENT_ID" ios/Runner/Info.plist
+          fi
+          if [ -n "$SCHEME" ] && [ "$SCHEME" != "REPLACE_ME" ]; then
+            /usr/libexec/PlistBuddy -c 'Add :CFBundleURLTypes array' ios/Runner/Info.plist || true
+            /usr/libexec/PlistBuddy -c 'Add :CFBundleURLTypes:0 dict' ios/Runner/Info.plist || true
+            /usr/libexec/PlistBuddy -c 'Add :CFBundleURLTypes:0:CFBundleURLSchemes array' ios/Runner/Info.plist || true
+            /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string $SCHEME" ios/Runner/Info.plist || true
+          fi
+          if [ -z "$CLIENT_ID" ] || [ -z "$SCHEME" ] || [ "$SCHEME" = "REPLACE_ME" ]; then
+            echo "Google Sign-In needs CLIENT_ID and REVERSED_CLIENT_ID in GoogleService-Info.plist."
+          fi
+
       - name: ضبط اسم التطبيق الظاهر على الجهاز
         run: |
           /usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName اشتراكاتي' ios/Runner/Info.plist \

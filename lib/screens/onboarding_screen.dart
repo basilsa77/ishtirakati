@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../main.dart';
 import '../services/subscription_store.dart';
+import 'login_screen.dart';
 import '../theme.dart';
 
 class _OnboardPage {
@@ -92,7 +93,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await SubscriptionStore.instance.setOnboarded();
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const LockGate(child: RootShell())),
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
     );
   }
 
