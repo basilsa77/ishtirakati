@@ -2,6 +2,11 @@
 /// وApple (يتطلب حساب مطور مدفوع — جاهز للتفعيل).
 library;
 
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:cryptography/cryptography.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -22,6 +27,7 @@ class AuthService {
   AuthService._();
 
   static bool _initialized = false;
+  static bool _googleInitialized = false;
 
   /// هل المزامنة السحابية متاحة (الإعداد مكتمل والتهيئة نجحت)؟
   static bool get isAvailable =>
@@ -42,6 +48,19 @@ class AuthService {
         options: DefaultFirebaseOptions.currentPlatform,
       );
       _initialized = true;
+      try {
+        await FirebaseAppCheck.instance.activate(
+          appleProvider: AppleProvider.appAttest,
+        );
+      } catch (_) {
+        // App Check enforcement is enabled from Firebase Console after monitoring.
+      }
+      try {
+        await GoogleSignIn.instance.initialize();
+        _googleInitialized = true;
+      } catch (_) {
+        _googleInitialized = false;
+      }
     } catch (_) {
       _initialized = false;
     }
@@ -51,15 +70,15 @@ class AuthService {
     if (!isAvailable) {
       throw const AuthException('المزامنة السحابية غير مفعّلة بعد.');
     }
+    if (!_googleInitialized) {
+      throw const AuthException('تعذر تهيئة تسجيل الدخول بقوقل على هذا الجهاز.');
+    }
     try {
-      // The native GoogleService-Info.plist provides the OAuth client on iOS.
-      final google = GoogleSignIn();
-      final account = await google.signIn();
+      final account = await GoogleSignIn.instance.authenticate();
       if (account == null) return null; // ألغى المستخدم
-      final auth = await account.authentication;
+      final auth = account.authentication;
       final credential = GoogleAuthProvider.credential(
         idToken: auth.idToken,
-        accessToken: auth.accessToken,
       );
       final result =
           await FirebaseAuth.instance.signInWithCredential(credential);
@@ -79,15 +98,21 @@ class AuthService {
       throw const AuthException('المزامنة السحابية غير مفعّلة بعد.');
     }
     try {
+      final rawNonce = _newNonce();
+      final hashedNonce = await _sha256(rawNonce);
       final apple = await SignInWithApple.getAppleIDCredential(
         scopes: [
           AppleIDAuthorizationScopes.email,
           AppleIDAuthorizationScopes.fullName,
         ],
+        nonce: hashedNonce,
       );
+      if (apple.identityToken == null || apple.identityToken!.isEmpty) {
+        throw const AuthException('لم يصل رمز مصادقة صالح من Apple.');
+      }
       final credential = OAuthProvider('apple.com').credential(
         idToken: apple.identityToken,
-        accessToken: apple.authorizationCode,
+        rawNonce: rawNonce,
       );
       final result =
           await FirebaseAuth.instance.signInWithCredential(credential);
@@ -110,8 +135,22 @@ class AuthService {
     try {
       await FirebaseAuth.instance.signOut();
     } catch (_) {}
-    try {
-      await GoogleSignIn().signOut();
-    } catch (_) {}
+  }
+
+  static String _newNonce([int length = 32]) {
+    const alphabet =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List<String>.generate(
+      length,
+      (_) => alphabet[random.nextInt(alphabet.length)],
+    ).join();
+  }
+
+  static Future<String> _sha256(String value) async {
+    final digest = await Sha256().hash(utf8.encode(value));
+    return digest.bytes
+        .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+        .join();
   }
 }

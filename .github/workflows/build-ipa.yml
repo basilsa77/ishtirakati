@@ -29,6 +29,11 @@ jobs:
       - name: توليد مجلد iOS
         run: flutter create . --platforms=ios --org com.basil --project-name ishtirakati
 
+      - name: ضبط الحد الأدنى لنظام iOS
+        run: |
+          perl -0pi -e "s/^#?\\s*platform :ios, '[^']+'/platform :ios, '15.0'/m" ios/Podfile
+          perl -pi -e 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]+;/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/g' ios/Runner.xcodeproj/project.pbxproj
+
       - name: Configure Firebase and Google Sign-In
         run: |
           test -f GoogleService-Info.plist

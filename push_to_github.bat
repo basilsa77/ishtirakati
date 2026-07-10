@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=7.1.1"
-set "COMMIT_MESSAGE=Release 7.1.1: security hardening and protected storage"
+set "RELEASE_VERSION=7.2.0"
+set "COMMIT_MESSAGE=Release 7.2.0: current Firebase SDKs and App Check"
 
 git init
 git config user.name "basilsa77"

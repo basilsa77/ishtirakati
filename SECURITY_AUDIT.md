@@ -19,7 +19,7 @@
 ## Required Console Checks
 
 1. Publish the exact rules in `firestore.rules` to the Firestore Rules tab.
-2. In Firebase App Check, register the iOS app and monitor requests. Add App Attest enforcement only after updating the Firebase dependencies and testing a signed build.
+2. In Firebase App Check, register the iOS app with App Attest, distribute this version, monitor requests, then enable enforcement for Firestore and Authentication.
 3. Restrict the Firebase API key to `com.basil.ishtirakati` in Google Cloud Console.
 4. Keep Google Sign-In enabled only in Firebase Authentication and periodically review Firebase Authentication users and Firestore usage.
 5. Generate and commit `pubspec.lock` from a trusted Flutter installation before a production release so dependency resolution is reproducible.
