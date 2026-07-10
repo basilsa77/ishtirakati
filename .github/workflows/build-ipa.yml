@@ -26,6 +26,17 @@ jobs:
           channel: stable
           cache: true
 
+      - name: استعادة إعدادات Firebase من GitHub Secrets
+        run: |
+          if [ -z "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_B64 }}" ] || [ -z "${{ secrets.FIREBASE_OPTIONS_DART_B64 }}" ]; then
+            echo "::error::Missing Firebase configuration secrets."
+            exit 1
+          fi
+          printf '%s' '${{ secrets.GOOGLE_SERVICE_INFO_PLIST_B64 }}' | base64 -D > GoogleService-Info.plist
+          printf '%s' '${{ secrets.FIREBASE_OPTIONS_DART_B64 }}' | base64 -D > lib/firebase_options.dart
+          test -s GoogleService-Info.plist
+          test -s lib/firebase_options.dart
+
       - name: توليد مجلد iOS
         run: flutter create . --platforms=ios --org com.basil --project-name ishtirakati
 
