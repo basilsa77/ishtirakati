@@ -37,8 +37,20 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
 
   Future<void> _restore() async {
     final prefs = await SharedPreferences.getInstance();
-    const secure = FlutterSecureStorage();
+    const secure = FlutterSecureStorage(
+      iOptions: IOSOptions(
+        accessibility: KeychainAccessibility.unlocked_this_device,
+      ),
+    );
     var savedEmail = await secure.read(key: _emailKey) ?? '';
+    if (savedEmail.isEmpty) {
+      const legacySecure = FlutterSecureStorage();
+      final legacyKeychain = await legacySecure.read(key: _emailKey) ?? '';
+      if (legacyKeychain.isNotEmpty) {
+        savedEmail = legacyKeychain;
+        await secure.write(key: _emailKey, value: legacyKeychain);
+      }
+    }
     final legacyEmail = prefs.getString(_legacyEmailKey) ?? '';
     if (savedEmail.isEmpty && legacyEmail.isNotEmpty) {
       await secure.write(key: _emailKey, value: legacyEmail);
@@ -83,11 +95,19 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
       );
       if (_remember) {
         final prefs = await SharedPreferences.getInstance();
-        const secure = FlutterSecureStorage();
+        const secure = FlutterSecureStorage(
+          iOptions: IOSOptions(
+            accessibility: KeychainAccessibility.unlocked_this_device,
+          ),
+        );
         await secure.write(key: _emailKey, value: email);
         await prefs.setString(_hostKey, _provider.host);
       } else {
-        const secure = FlutterSecureStorage();
+        const secure = FlutterSecureStorage(
+          iOptions: IOSOptions(
+            accessibility: KeychainAccessibility.unlocked_this_device,
+          ),
+        );
         await secure.delete(key: _emailKey);
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove(_hostKey);

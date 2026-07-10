@@ -334,8 +334,28 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     );
   }
 
+  String? _normalizedManageUrl(String raw) {
+    if (raw.isEmpty) return '';
+    final candidate = raw.startsWith('https://') ? raw : 'https://$raw';
+    final uri = Uri.tryParse(candidate);
+    if (uri == null ||
+        uri.scheme != 'https' ||
+        uri.host.isEmpty ||
+        uri.userInfo.isNotEmpty) {
+      return null;
+    }
+    return uri.toString();
+  }
+
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    final manageUrl = _normalizedManageUrl(_url.text.trim());
+    if (manageUrl == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('استخدم رابط HTTPS صالحًا أو اتركه فارغًا.')),
+      );
+      return;
+    }
     final price =
         double.parse(_price.text.trim().replaceAll('،', '.').replaceAll(',', '.'));
     final sub = Subscription(
@@ -351,7 +371,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
       notes: _notes.text.trim(),
       isPaused: _paused,
       paymentMethod: _payMethod,
-      manageUrl: _url.text.trim(),
+      manageUrl: manageUrl,
       reminderDays: _reminderDays,
       trialEndDate:
           (_kind == PaymentKind.subscription && _trialOn) ? _trialEnd : null,

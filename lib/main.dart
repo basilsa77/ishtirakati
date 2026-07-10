@@ -111,7 +111,8 @@ class _LockGateState extends State<LockGate>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused &&
+    if ((state == AppLifecycleState.inactive ||
+            state == AppLifecycleState.paused) &&
         SubscriptionStore.instance.appLockEnabled) {
       setState(() => _locked = true);
     }
@@ -126,7 +127,7 @@ class _LockGateState extends State<LockGate>
       final ok = await auth.authenticate(
         localizedReason: 'افتح «اشتراكاتي» ببصمة الوجه',
         options: const AuthenticationOptions(
-          biometricOnly: false,
+          biometricOnly: true,
           stickyAuth: true,
         ),
       );

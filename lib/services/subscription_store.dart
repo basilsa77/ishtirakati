@@ -31,6 +31,8 @@ class SubscriptionStore extends ChangeNotifier {
   static const String _lockKey = 'ishtirakati_app_lock';
   static const String _aiKeyKey = 'ishtirakati_ai_api_key';
   static const String _onboardKey = 'ishtirakati_onboarded_v1';
+  static const int _maxImportBytes = 2 * 1024 * 1024;
+  static const int _maxImportRecords = 5000;
 
   final List<Subscription> _items = [];
   String _defaultCurrency = 'SAR';
@@ -64,8 +66,20 @@ class SubscriptionStore extends ChangeNotifier {
     _hasOnboarded = prefs.getBool(_onboardKey) ?? false;
     // مفتاح الذكاء الاصطناعي: مخزن في Keychain/Keystore فقط.
     try {
-      const secure = FlutterSecureStorage();
+      const secure = FlutterSecureStorage(
+        iOptions: IOSOptions(
+          accessibility: KeychainAccessibility.unlocked_this_device,
+        ),
+      );
       _aiApiKey = await secure.read(key: _aiKeyKey) ?? '';
+      if (_aiApiKey.isEmpty) {
+        const legacySecure = FlutterSecureStorage();
+        final legacyKeychain = await legacySecure.read(key: _aiKeyKey) ?? '';
+        if (legacyKeychain.isNotEmpty) {
+          _aiApiKey = legacyKeychain;
+          await secure.write(key: _aiKeyKey, value: legacyKeychain);
+        }
+      }
       // ترحيل آمن لمفتاح قديم ثم حذفه من التخزين غير المشفر.
       final legacy = prefs.getString(_aiKeyKey) ?? '';
       if (_aiApiKey.isEmpty && legacy.isNotEmpty) {
@@ -148,7 +162,11 @@ class SubscriptionStore extends ChangeNotifier {
   Future<void> setAiApiKey(String value) async {
     _aiApiKey = value.trim();
     try {
-      const secure = FlutterSecureStorage();
+      const secure = FlutterSecureStorage(
+        iOptions: IOSOptions(
+          accessibility: KeychainAccessibility.unlocked_this_device,
+        ),
+      );
       if (_aiApiKey.isEmpty) {
         await secure.delete(key: _aiKeyKey);
       } else {
@@ -329,10 +347,11 @@ class SubscriptionStore extends ChangeNotifier {
   /// يعيد عدد الاشتراكات المستوردة، أو -1 إذا كان النص غير صالح.
   Future<int> importJson(String raw) async {
     try {
+      if (utf8.encode(raw).length > _maxImportBytes) return -1;
       final data = jsonDecode(raw);
       if (data is! Map<String, dynamic>) return -1;
       final list = data['subscriptions'];
-      if (list is! List) return -1;
+      if (list is! List || list.length > _maxImportRecords) return -1;
       var count = 0;
       for (final e in list) {
         if (e is Map<String, dynamic>) {

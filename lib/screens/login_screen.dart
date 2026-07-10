@@ -2,6 +2,8 @@
 /// تظهر بعد الترحيب ويمكن فتحها من الإعدادات.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../main.dart';
@@ -48,8 +50,8 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
       // اجلب النسخة السحابية إن وجدت، ثم ارفع الحالة الحالية.
-      final imported = await CloudSync.pull();
-      await CloudSync.push();
+      unawaited(CloudSync.restoreAndPush());
+      const imported = 0;
       if (!mounted) return;
       setState(() => _busy = false);
       ScaffoldMessenger.of(context).showSnackBar(

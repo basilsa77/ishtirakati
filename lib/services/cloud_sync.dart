@@ -16,6 +16,7 @@ class CloudSync {
   static bool _pushQueued = false;
   static const _schemaVersion = 1;
   static const _maxBackupBytes = 850000;
+  static const _networkTimeout = Duration(seconds: 10);
 
   static DocumentReference<Map<String, dynamic>>? _doc() {
     final user = AuthService.currentUser;
@@ -30,11 +31,13 @@ class CloudSync {
     try {
       final backup = SubscriptionStore.instance.exportJson();
       if (utf8.encode(backup).length > _maxBackupBytes) return false;
-      await doc.set({
-        'backup': backup,
-        'updatedAt': FieldValue.serverTimestamp(),
-        'schemaVersion': _schemaVersion,
-      });
+      await doc
+          .set({
+            'backup': backup,
+            'updatedAt': FieldValue.serverTimestamp(),
+            'schemaVersion': _schemaVersion,
+          })
+          .timeout(_networkTimeout);
       return true;
     } catch (_) {
       return false;
@@ -47,7 +50,7 @@ class CloudSync {
     final doc = _doc();
     if (doc == null) return -1;
     try {
-      final snap = await doc.get();
+      final snap = await doc.get().timeout(_networkTimeout);
       final data = snap.data();
       final raw = data?['backup'] as String?;
       final schemaVersion = data?['schemaVersion'];
@@ -60,6 +63,12 @@ class CloudSync {
     } catch (_) {
       return -1;
     }
+  }
+
+  /// Restores a backup before uploading the latest local state.
+  static Future<void> restoreAndPush() async {
+    await pull();
+    await push();
   }
 
   /// رفع مؤجل بعد كل تعديل (يجمع التعديلات المتتابعة في رفعة واحدة).

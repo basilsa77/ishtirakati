@@ -20,11 +20,23 @@ class SecureDataCodec {
   static const _keyName = 'ishtirakati_data_encryption_key_v1';
 
   final AesGcm _cipher = AesGcm.with256bits();
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage(
+    iOptions: IOSOptions(
+      accessibility: KeychainAccessibility.unlocked_this_device,
+    ),
+  );
+  final FlutterSecureStorage _legacyStorage = const FlutterSecureStorage();
 
   Future<SecretKey> _loadOrCreateKey() async {
     try {
-      final encoded = await _storage.read(key: _keyName);
+      var encoded = await _storage.read(key: _keyName);
+      if (encoded == null || encoded.isEmpty) {
+        final legacy = await _legacyStorage.read(key: _keyName);
+        if (legacy != null && legacy.isNotEmpty) {
+          await _storage.write(key: _keyName, value: legacy);
+          encoded = legacy;
+        }
+      }
       if (encoded != null && encoded.isNotEmpty) {
         return SecretKey(base64Url.decode(encoded));
       }

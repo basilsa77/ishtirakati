@@ -770,7 +770,10 @@ Future<void> showSubscriptionDetails(
                     var raw = sub.manageUrl.trim();
                     if (!raw.startsWith('http')) raw = 'https://$raw';
                     final uri = Uri.tryParse(raw);
-                    if (uri != null) {
+                    if (uri != null &&
+                        uri.scheme == 'https' &&
+                        uri.host.isNotEmpty &&
+                        uri.userInfo.isEmpty) {
                       await launchUrl(
                         uri,
                         mode: LaunchMode.externalApplication,
