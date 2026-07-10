@@ -11,7 +11,7 @@ if errorlevel 1 (
 )
 
 set "RELEASE_VERSION=10.0.0"
-set "COMMIT_MESSAGE=v10.0.0: responsive dark mode, redesigned navigation, subscriptions, dashboard and settings"
+set "COMMIT_MESSAGE=v10.0.0: fix unsigned iOS build on GitHub Actions"
 
 git init
 git config user.name "basilsa77"
