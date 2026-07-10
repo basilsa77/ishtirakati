@@ -6,6 +6,12 @@ import '../services/remote_catalog.dart';
 const Map<String, String> kServiceDomains = {
   'Netflix': 'netflix.com',
   'شاهد VIP': 'shahid.mbc.net',
+  'MBC Shahid': 'shahid.mbc.net',
+  'FaceApp: Perfect Face Editor': 'faceapp.com',
+  'STC Bank': 'stcbank.com.sa',
+  'Claude by Anthropic': 'claude.ai',
+  '+Snapchat': 'snapchat.com',
+  'HungerStation - Food Delivery': 'hungerstation.com',
   'stc tv': 'stctv.com',
   'Jawwy TV': 'jawwy.tv',
   'OSN+': 'osnplus.com',

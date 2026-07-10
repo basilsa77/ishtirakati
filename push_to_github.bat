@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=7.4.0"
-set "COMMIT_MESSAGE=Release 7.4.0: complete iOS UI redesign and modern navigation"
+set "RELEASE_VERSION=7.5.0"
+set "COMMIT_MESSAGE=Release 7.5.0: official service logos, system dark mode, and refined UI"
 
 git init
 git config user.name "basilsa77"
@@ -36,7 +36,7 @@ if errorlevel 1 goto :failed
 
 echo.
 echo ===== Ishtirakati %RELEASE_VERSION% pushed successfully =====
-echo Complete iOS UI redesign and modern navigation are included.
+echo Official service logos, system dark mode, and refined UI are included.
 echo Firebase, Google Sign-In, and Firestore rules remain unchanged.
 echo Open GitHub Actions to run Build iOS IPA.
 pause

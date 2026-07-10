@@ -249,6 +249,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               ),
                             ),
                             const SizedBox(width: 12),
+                            ServiceAvatar(
+                              name: s.name,
+                              emoji: s.emoji,
+                              manageUrl: s.manageUrl,
+                              iconUrl: s.iconUrl,
+                              tint: categoryColor(s.category),
+                              size: 42,
+                            ),
+                            const SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 s.name,

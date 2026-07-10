@@ -136,7 +136,7 @@ class _TopBar extends StatelessWidget {
           height: 44,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: AppColors.primarySoft,
+            color: Theme.of(context).colorScheme.primaryContainer,
             borderRadius: BorderRadius.circular(15),
           ),
           child: const Icon(
@@ -321,9 +321,9 @@ class _ActionGrid extends StatelessWidget {
             child: Container(
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: AppColors.card,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: Theme.of(context).dividerColor),
                 boxShadow: const [
                   BoxShadow(
                     color: Color(0x0F0B3D2E),
@@ -340,7 +340,7 @@ class _ActionGrid extends StatelessWidget {
                     height: 34,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: AppColors.primarySoft,
+                      color: Theme.of(context).colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(action.$1, color: AppColors.primary, size: 19),
@@ -430,15 +430,13 @@ class _UpcomingRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: categoryColor(sub.category).withOpacity(.15),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Text(sub.emoji, style: const TextStyle(fontSize: 21)),
+              ServiceAvatar(
+                name: sub.name,
+                emoji: sub.emoji,
+                manageUrl: sub.manageUrl,
+                iconUrl: sub.iconUrl,
+                tint: categoryColor(sub.category),
+                size: 44,
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -718,7 +716,14 @@ class _ReviewList extends StatelessWidget {
               padding: const EdgeInsets.all(13),
               child: Row(
                 children: [
-                  Text(sub.emoji, style: const TextStyle(fontSize: 24)),
+                  ServiceAvatar(
+                    name: sub.name,
+                    emoji: sub.emoji,
+                    manageUrl: sub.manageUrl,
+                    iconUrl: sub.iconUrl,
+                    tint: categoryColor(sub.category),
+                    size: 44,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(sub.name, style: const TextStyle(color: AppColors.ink, fontWeight: FontWeight.w900)), Text('${fmtMoney(sub.monthlyCost, sub.currency)} شهريًا', style: const TextStyle(color: AppColors.muted, fontSize: 12))])),
                   IconButton(tooltip: 'تسجيل استخدام', onPressed: () => store.recordUsage(sub.id), icon: const Icon(Icons.check_circle_outline_rounded, color: AppColors.primary)),

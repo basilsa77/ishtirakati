@@ -63,6 +63,8 @@ class IshtirakatiApp extends StatelessWidget {
       title: 'اشتراكاتي',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
+      darkTheme: buildAppTheme(dark: true),
+      themeMode: ThemeMode.system,
       locale: const Locale('ar'),
       supportedLocales: const [Locale('ar')],
       localizationsDelegates: const [
@@ -71,11 +73,28 @@ class IshtirakatiApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       // إغلاق الكيبورد عند الضغط في أي مكان فارغ بالتطبيق.
-      builder: (context, child) => GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-        child: child ?? const SizedBox.shrink(),
-      ),
+      builder: (context, child) {
+        final isDark =
+            MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+        SystemChrome.setSystemUIOverlayStyle(
+          SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness:
+                isDark ? Brightness.light : Brightness.dark,
+            statusBarBrightness:
+                isDark ? Brightness.dark : Brightness.light,
+            systemNavigationBarColor:
+                isDark ? AppColors.darkBg : AppColors.card,
+            systemNavigationBarIconBrightness:
+                isDark ? Brightness.light : Brightness.dark,
+          ),
+        );
+        return GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       home: SubscriptionStore.instance.hasOnboarded
           ? const LockGate(child: RootShell())
           : const OnboardingScreen(),
@@ -299,9 +318,9 @@ class _ModernBottomBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 7),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(26),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: Theme.of(context).dividerColor),
           boxShadow: const [
             BoxShadow(
               color: Color(0x180B3D2E),
@@ -352,7 +371,9 @@ class _BottomBarItem extends StatelessWidget {
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(vertical: 7),
           decoration: BoxDecoration(
-            color: selected ? AppColors.primarySoft : Colors.transparent,
+            color: selected
+                ? Theme.of(context).colorScheme.primaryContainer
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
@@ -361,7 +382,9 @@ class _BottomBarItem extends StatelessWidget {
               Icon(
                 selected ? item.$2 : item.$1,
                 size: 21,
-                color: selected ? AppColors.primary : AppColors.muted,
+                color: selected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               const SizedBox(height: 3),
               Text(
@@ -369,7 +392,9 @@ class _BottomBarItem extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: selected ? AppColors.primary : AppColors.muted,
+                  color: selected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 10.5,
                   fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
                 ),

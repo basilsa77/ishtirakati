@@ -764,7 +764,14 @@ class _TopTile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          Text(sub.emoji, style: const TextStyle(fontSize: 22)),
+          ServiceAvatar(
+            name: sub.name,
+            emoji: sub.emoji,
+            manageUrl: sub.manageUrl,
+            iconUrl: sub.iconUrl,
+            tint: categoryColor(sub.category),
+            size: 42,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(

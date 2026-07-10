@@ -31,6 +31,14 @@ class AppColors {
   static const Color dangerSoft = Color(0xFFFFE8EA);
   static const Color warn = Color(0xFFF5B84F);
 
+  // ألوان السطح الليلي، مع إبقاء الهوية الخضراء نفسها.
+  static const Color darkBg = Color(0xFF0B1512);
+  static const Color darkCard = Color(0xFF14211B);
+  static const Color darkCardAlt = Color(0xFF1B2B24);
+  static const Color darkBorder = Color(0xFF294036);
+  static const Color darkInk = Color(0xFFEAF5EF);
+  static const Color darkMuted = Color(0xFFA0B7AC);
+
   /// تدرج البطاقة الرئيسية.
   static const LinearGradient heroGradient = LinearGradient(
     colors: [AppColors.primaryDeep, AppColors.primary],
@@ -58,32 +66,52 @@ const Map<String, Color> kCategoryColors = {
 Color categoryColor(String category) =>
     kCategoryColors[category] ?? AppColors.gold;
 
-ThemeData buildAppTheme() {
-  const scheme = ColorScheme.light(
-    primary: AppColors.primary,
-    onPrimary: Colors.white,
-    secondary: AppColors.gold,
-    onSecondary: AppColors.ink,
-    surface: AppColors.card,
-    onSurface: AppColors.ink,
-    error: AppColors.danger,
-    onError: Colors.white,
+ThemeData buildAppTheme({bool dark = false}) {
+  final scheme = dark
+      ? const ColorScheme.dark(
+          primary: AppColors.primary,
+          onPrimary: Colors.white,
+          secondary: AppColors.gold,
+          onSecondary: AppColors.ink,
+          surface: AppColors.darkCard,
+          onSurface: AppColors.darkInk,
+          error: AppColors.danger,
+          onError: Colors.white,
+        )
+      : const ColorScheme.light(
+          primary: AppColors.primary,
+          onPrimary: Colors.white,
+          secondary: AppColors.gold,
+          onSecondary: AppColors.ink,
+          surface: AppColors.card,
+          onSurface: AppColors.ink,
+          error: AppColors.danger,
+          onError: Colors.white,
+        );
+
+  final surface = dark ? AppColors.darkCard : AppColors.card;
+  final surfaceAlt = dark ? AppColors.darkCardAlt : AppColors.cardAlt;
+  final border = dark ? AppColors.darkBorder : AppColors.border;
+  final onSurface = dark ? AppColors.darkInk : AppColors.ink;
+  final muted = dark ? AppColors.darkMuted : AppColors.muted;
+  final base = ThemeData(
+    useMaterial3: true,
+    brightness: dark ? Brightness.dark : Brightness.light,
+    colorScheme: scheme,
   );
 
-  final base = ThemeData(useMaterial3: true, colorScheme: scheme);
-
   return base.copyWith(
-    scaffoldBackgroundColor: AppColors.bg,
-    appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.bg,
-      foregroundColor: AppColors.ink,
+    scaffoldBackgroundColor: dark ? AppColors.darkBg : AppColors.bg,
+    appBarTheme: AppBarTheme(
+      backgroundColor: dark ? AppColors.darkBg : AppColors.bg,
+      foregroundColor: onSurface,
       elevation: 0,
       scrolledUnderElevation: 0,
       surfaceTintColor: Colors.transparent,
       toolbarHeight: 62,
       centerTitle: false,
       titleTextStyle: TextStyle(
-        color: AppColors.ink,
+        color: onSurface,
         fontSize: 22,
         fontWeight: FontWeight.w900,
       ),
@@ -102,7 +130,7 @@ ThemeData buildAppTheme() {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.primary,
-        side: const BorderSide(color: AppColors.primaryDeep, width: 1.2),
+        side: BorderSide(color: AppColors.primary, width: 1.2),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
         ),
@@ -114,27 +142,27 @@ ThemeData buildAppTheme() {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.card,
-      hintStyle: const TextStyle(color: AppColors.muted),
-      labelStyle: const TextStyle(color: AppColors.muted),
+      fillColor: surface,
+      hintStyle: TextStyle(color: muted),
+      labelStyle: TextStyle(color: muted),
       contentPadding:
           const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: BorderSide(color: border),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: BorderSide(color: border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        borderSide: BorderSide(color: AppColors.primary, width: 1.5),
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: AppColors.card,
-      indicatorColor: AppColors.primarySoft,
+      backgroundColor: surface,
+      indicatorColor: dark ? AppColors.darkCardAlt : AppColors.primarySoft,
       surfaceTintColor: Colors.transparent,
       height: 72,
       elevation: 0,
@@ -145,19 +173,19 @@ ThemeData buildAppTheme() {
           fontWeight: FontWeight.w800,
           color: states.contains(MaterialState.selected)
               ? AppColors.primary
-              : AppColors.muted,
+              : muted,
         ),
       ),
       iconTheme: MaterialStateProperty.resolveWith(
         (states) => IconThemeData(
           color: states.contains(MaterialState.selected)
               ? AppColors.primary
-              : AppColors.muted,
+              : muted,
         ),
       ),
     ),
     cardTheme: CardThemeData(
-      color: AppColors.card,
+      color: surface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       margin: EdgeInsets.zero,
@@ -166,7 +194,7 @@ ThemeData buildAppTheme() {
       ),
     ),
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: AppColors.ink,
+      backgroundColor: dark ? AppColors.darkCardAlt : AppColors.ink,
       contentTextStyle: const TextStyle(color: Colors.white, fontSize: 15),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -176,20 +204,20 @@ ThemeData buildAppTheme() {
       foregroundColor: Colors.white,
     ),
     dialogTheme: DialogThemeData(
-      backgroundColor: AppColors.card,
-      titleTextStyle: const TextStyle(
-        color: AppColors.ink,
+      backgroundColor: surface,
+      titleTextStyle: TextStyle(
+        color: onSurface,
         fontSize: 18,
         fontWeight: FontWeight.w800,
       ),
-      contentTextStyle: const TextStyle(
-        color: AppColors.muted,
+      contentTextStyle: TextStyle(
+        color: muted,
         fontSize: 14.5,
         height: 1.6,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
-    dividerColor: AppColors.border,
+    dividerColor: border,
   );
 }
 
@@ -214,9 +242,11 @@ class AppCard extends StatelessWidget {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: color ?? AppColors.card,
+        color: color ?? Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: borderColor ?? AppColors.border),
+        border: Border.all(
+          color: borderColor ?? Theme.of(context).dividerColor,
+        ),
         boxShadow: const [
           BoxShadow(
             color: Color(0x100B3D2E),
@@ -378,7 +408,7 @@ class FadeSlideIn extends StatelessWidget {
 String fmtDate(DateTime d) =>
     '${d.year}/${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}';
 
-/// أيقونة الخدمة: الشعار الرسمي إن عُرف نطاقها، وإلا الإيموجي.
+/// أيقونة الخدمة: الشعار الرسمي إن عُرف نطاقها، وإلا رمز تطبيق محايد.
 class ServiceAvatar extends StatelessWidget {
   final String name;
   final String emoji;
@@ -400,9 +430,10 @@ class ServiceAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final url = iconUrl.isNotEmpty ? iconUrl : logoUrlFor(name, manageUrl);
-    final emojiText = Text(
-      emoji,
-      style: TextStyle(fontSize: size * 0.52),
+    final fallback = Icon(
+      Icons.apps_rounded,
+      color: tint,
+      size: size * 0.48,
     );
     return Container(
       width: size,
@@ -414,7 +445,7 @@ class ServiceAvatar extends StatelessWidget {
         border: Border.all(color: tint.withOpacity(0.35)),
       ),
       child: url == null
-          ? emojiText
+          ? fallback
           : ClipRRect(
               borderRadius: BorderRadius.circular(size * 0.16),
               child: Image.network(
@@ -423,7 +454,7 @@ class ServiceAvatar extends StatelessWidget {
                 height: size * 0.58,
                 fit: BoxFit.cover,
                 gaplessPlayback: true,
-                errorBuilder: (_, __, ___) => emojiText,
+                errorBuilder: (_, __, ___) => fallback,
               ),
             ),
     );
