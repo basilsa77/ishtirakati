@@ -11,7 +11,7 @@ if errorlevel 1 (
 )
 
 set "RELEASE_VERSION=8.0.0"
-set "COMMIT_MESSAGE=Release 8.0.0: complete app redesign, adaptive dark mode, and new navigation"
+set "COMMIT_MESSAGE=Security: protect Firebase build configuration with GitHub Actions secrets"
 
 git init
 git config user.name "basilsa77"
@@ -36,8 +36,8 @@ if errorlevel 1 goto :failed
 
 echo.
 echo ===== Ishtirakati %RELEASE_VERSION% pushed successfully =====
-echo Version 8 complete redesign, adaptive dark mode, and official service logos are included.
-echo Firebase, Google Sign-In, and Firestore rules remain unchanged.
+echo Firebase build configuration is restored only from encrypted GitHub Actions secrets.
+echo Local Firebase configuration files are intentionally excluded from Git.
 echo Open GitHub Actions to run Build iOS IPA.
 pause
 exit /b 0
