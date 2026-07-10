@@ -131,23 +131,26 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   Future<void> _openPresetPicker() async {
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppColors.card,
+      isScrollControlled: true,
+      backgroundColor: context.palette.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => SafeArea(
-        child: Padding(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(ctx).height * .78),
+          child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+               Text(
                 'خدمات شائعة',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
-                  color: AppColors.ink,
+                  color: ctx.palette.text,
                 ),
               ),
               const SizedBox(height: 12),
@@ -171,20 +174,20 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                               vertical: 9,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primarySoft,
+                              color: ctx.palette.accentSoft,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                color: AppColors.primaryDeep,
+                                color: ctx.palette.accentStrong,
                               ),
                             ),
                             child: Text(
                               r.priceHint == null
                                   ? '${r.emoji} ${r.name}'
                                   : '${r.emoji} ${r.name} • ${fmtMoney(r.priceHint!, 'SAR')}',
-                              style: const TextStyle(
+                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13.5,
-                                color: AppColors.ink,
+                                color: ctx.palette.text,
                               ),
                             ),
                           ),
@@ -203,17 +206,17 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                               vertical: 9,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.cardAlt,
+                              color: ctx.palette.surfaceAlt,
                               borderRadius: BorderRadius.circular(14),
                               border:
-                                  Border.all(color: AppColors.border),
+                                  Border.all(color: ctx.palette.stroke),
                             ),
                             child: Text(
                               '${p.emoji} ${p.name}',
-                              style: const TextStyle(
+                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13.5,
-                                color: AppColors.ink,
+                                color: ctx.palette.text,
                               ),
                             ),
                           ),
@@ -223,6 +226,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 ),
               ),
             ],
+          ),
           ),
         ),
       ),
@@ -267,23 +271,26 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     }
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppColors.card,
+      isScrollControlled: true,
+      backgroundColor: context.palette.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => SafeArea(
-        child: Padding(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(ctx).height * .78),
+          child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+               Text(
                 'اختر التطبيق الصحيح',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w900,
-                  color: AppColors.ink,
+                  color: ctx.palette.text,
                 ),
               ),
               const SizedBox(height: 12),
@@ -304,8 +311,8 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   ),
                   title: Text(
                     r.name,
-                    style: const TextStyle(
-                      color: AppColors.ink,
+                     style: TextStyle(
+                      color: ctx.palette.text,
                       fontWeight: FontWeight.w800,
                       fontSize: 14.5,
                     ),
@@ -314,8 +321,8 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                       ? null
                       : Text(
                           r.seller,
-                          style: const TextStyle(
-                            color: AppColors.muted,
+                           style: TextStyle(
+                            color: ctx.palette.textMuted,
                             fontSize: 12,
                           ),
                         ),
@@ -328,6 +335,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   },
                 ),
             ],
+          ),
           ),
         ),
       ),
@@ -404,7 +412,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            style: TextButton.styleFrom(foregroundColor: context.palette.danger),
             child: const Text('حذف'),
           ),
         ],
@@ -419,6 +427,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   @override
   Widget build(BuildContext context) {
     final d = _anchor;
+    final p = context.palette;
     return Scaffold(
       appBar: AppBar(
         title: Text(isEditing ? 'تعديل الاشتراك' : 'اشتراك جديد'),
@@ -440,15 +449,17 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 onSelectionChanged: (v) =>
                     setState(() => _kind = v.first),
                 style: SegmentedButton.styleFrom(
-                  backgroundColor: AppColors.card,
-                  foregroundColor: AppColors.muted,
-                  selectedBackgroundColor: AppColors.primary,
+                  backgroundColor: p.surface,
+                  foregroundColor: p.textMuted,
+                  selectedBackgroundColor: p.accent,
                   selectedForegroundColor: Colors.white,
-                  side: const BorderSide(color: AppColors.border),
+                  side: BorderSide(color: p.stroke),
                   textStyle: const TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
                   ),
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
                 ),
               ),
               const SizedBox(height: 14),
@@ -488,17 +499,17 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                           tooltip: 'بحث ذكي عن التطبيق وشعاره',
                           onPressed: _searching ? null : _smartSearch,
                           icon: _searching
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 18,
                                   height: 18,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2.5,
-                                    color: AppColors.primary,
+                                    color: p.accent,
                                   ),
                                 )
-                              : const Icon(
+                              : Icon(
                                   Icons.travel_explore_rounded,
-                                  color: AppColors.primary,
+                                  color: p.accent,
                                 ),
                         ),
                       ),
@@ -544,7 +555,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     flex: 2,
                     child: DropdownButtonFormField<String>(
                       value: _currency,
-                      dropdownColor: AppColors.cardAlt,
+                      dropdownColor: p.surfaceAlt,
                       decoration:
                           const InputDecoration(labelText: 'العملة'),
                       items: [
@@ -561,11 +572,11 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'دورة التجديد',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
-                  color: AppColors.ink,
+                  color: p.text,
                 ),
               ),
               const SizedBox(height: 8),
@@ -576,18 +587,18 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     ChoiceChip(
                       label: Text(c.labelAr),
                       selected: _cycle == c,
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.card,
+                      selectedColor: p.accent,
+                      backgroundColor: p.surface,
                       labelStyle: TextStyle(
                         color: _cycle == c
                             ? Colors.white
-                            : AppColors.ink,
+                            : p.text,
                         fontWeight: FontWeight.w700,
                       ),
                       side: BorderSide(
                         color: _cycle == c
-                            ? AppColors.primary
-                            : AppColors.border,
+                            ? p.accent
+                            : p.stroke,
                       ),
                       onSelected: (_) => setState(() => _cycle = c),
                     ),
@@ -610,18 +621,18 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 onTap: _pickDate,
                 borderRadius: BorderRadius.circular(14),
                 child: InputDecorator(
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'تاريخ البداية / آخر تجديد',
                     suffixIcon: Icon(
                       Icons.calendar_month_rounded,
-                      color: AppColors.muted,
+                      color: p.textMuted,
                     ),
                   ),
                   child: Text(
                     fmtDate(d),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: AppColors.ink,
+                      color: p.text,
                     ),
                   ),
                 ),
@@ -629,7 +640,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               const SizedBox(height: 14),
               DropdownButtonFormField<String>(
                 value: _category,
-                dropdownColor: AppColors.cardAlt,
+                dropdownColor: p.surfaceAlt,
                 decoration: const InputDecoration(labelText: 'التصنيف'),
                 items: [
                   for (final c in kCategories)
@@ -643,7 +654,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               const SizedBox(height: 14),
               DropdownButtonFormField<String>(
                 value: _payMethod,
-                dropdownColor: AppColors.cardAlt,
+                dropdownColor: p.surfaceAlt,
                 decoration:
                     const InputDecoration(labelText: 'طريقة الدفع'),
                 items: [
@@ -656,7 +667,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               const SizedBox(height: 14),
               DropdownButtonFormField<int>(
                 value: _reminderDays,
-                dropdownColor: AppColors.cardAlt,
+                dropdownColor: p.surfaceAlt,
                 decoration: const InputDecoration(
                   labelText: 'إشعار التذكير قبل التجديد',
                 ),
@@ -672,18 +683,18 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               SwitchListTile(
                 value: _trialOn,
                 onChanged: (v) => setState(() => _trialOn = v),
-                title: const Text(
+                title: Text(
                   'تجربة مجانية',
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: AppColors.ink,
+                    color: p.text,
                   ),
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'سنحذرك قبل تحولها لاشتراك مدفوع بيومين',
-                  style: TextStyle(color: AppColors.muted, fontSize: 12.5),
+                  style: TextStyle(color: p.textMuted, fontSize: 12.5),
                 ),
-                activeColor: AppColors.primary,
+                activeColor: p.accent,
                 contentPadding: EdgeInsets.zero,
               ),
               if (_trialOn) ...[
@@ -702,18 +713,18 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   },
                   borderRadius: BorderRadius.circular(14),
                   child: InputDecorator(
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'تاريخ انتهاء التجربة',
                       suffixIcon: Icon(
                         Icons.hourglass_bottom_rounded,
-                        color: AppColors.muted,
+                        color: p.textMuted,
                       ),
                     ),
                     child: Text(
                       fmtDate(_trialEnd),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: AppColors.ink,
+                        color: p.text,
                       ),
                     ),
                   ),
@@ -723,28 +734,28 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               SwitchListTile(
                 value: _isFamily,
                 onChanged: (v) => setState(() => _isFamily = v),
-                title: const Text(
+                title: Text(
                   'اشتراك عائلي / مشترك',
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: AppColors.ink,
+                    color: p.text,
                   ),
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'يقسم التكلفة على المشاركين ويعرض نصيبك',
-                  style: TextStyle(color: AppColors.muted, fontSize: 12.5),
+                  style: TextStyle(color: p.textMuted, fontSize: 12.5),
                 ),
-                activeColor: AppColors.primary,
+                activeColor: p.accent,
                 contentPadding: EdgeInsets.zero,
               ),
               if (_isFamily)
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'عدد المشاركين (أنت منهم)',
                         style: TextStyle(
-                          color: AppColors.muted,
+                          color: p.textMuted,
                           fontSize: 13.5,
                         ),
                       ),
@@ -753,26 +764,26 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                       onPressed: _famCount <= 2
                           ? null
                           : () => setState(() => _famCount--),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.remove_circle_outline_rounded,
-                        color: AppColors.primary,
+                        color: p.accent,
                       ),
                     ),
                     Text(
                       '$_famCount',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 17,
-                        color: AppColors.ink,
+                        color: p.text,
                       ),
                     ),
                     IconButton(
                       onPressed: _famCount >= 20
                           ? null
                           : () => setState(() => _famCount++),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.add_circle_outline_rounded,
-                        color: AppColors.primary,
+                        color: p.accent,
                       ),
                     ),
                   ],
@@ -801,18 +812,18 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 SwitchListTile(
                   value: _paused,
                   onChanged: (v) => setState(() => _paused = v),
-                  title: const Text(
+                  title: Text(
                     'إيقاف مؤقت',
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
-                      color: AppColors.ink,
+                      color: p.text,
                     ),
                   ),
-                  subtitle: const Text(
+                  subtitle: Text(
                     'لن يُحتسب في المصروف ولا في التجديدات',
-                    style: TextStyle(color: AppColors.muted, fontSize: 12.5),
+                    style: TextStyle(color: p.textMuted, fontSize: 12.5),
                   ),
-                  activeColor: AppColors.primary,
+                  activeColor: p.accent,
                   contentPadding: EdgeInsets.zero,
                 ),
               ],
@@ -827,7 +838,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 TextButton.icon(
                   onPressed: _delete,
                   style: TextButton.styleFrom(
-                    foregroundColor: AppColors.danger,
+                    foregroundColor: p.danger,
                   ),
                   icon: const Icon(Icons.delete_outline_rounded),
                   label: const Text('حذف هذا الاشتراك'),

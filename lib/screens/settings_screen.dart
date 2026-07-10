@@ -52,7 +52,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return ListenableBuilder(
       listenable: store,
       builder: (context, _) => ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 132),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         children: [
           const _SettingsIntro(),
           const SizedBox(height: 22),
@@ -229,7 +229,7 @@ class _AccountCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: p.accentSoft,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: p.accent.withOpacity(.24)),
       ),
       child: Column(
@@ -519,7 +519,7 @@ class _ThemeModeCard extends StatelessWidget {
         children: [
           Text('وضع الألوان', style: TextStyle(color: p.text, fontSize: 14, fontWeight: FontWeight.w900)),
           const SizedBox(height: 4),
-          Text('الوضع الداكن هو الأنسب حاليًا للتجربة الكاملة.', style: TextStyle(color: p.textMuted, fontSize: 12)),
+          Text('اختر المظهر الذي يناسب جهازك؛ الوضع التلقائي يتبع iPhone.', style: TextStyle(color: p.textMuted, fontSize: 12)),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
@@ -531,6 +531,10 @@ class _ThemeModeCard extends StatelessWidget {
               ],
               selected: {store.themeMode},
               onSelectionChanged: (selection) => store.setThemeMode(selection.first),
+              style: const ButtonStyle(
+                visualDensity: VisualDensity.compact,
+                padding: MaterialStatePropertyAll(EdgeInsets.symmetric(horizontal: 5)),
+              ),
             ),
           ),
         ],

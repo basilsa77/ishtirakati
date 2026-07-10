@@ -64,8 +64,8 @@ const List<_OnboardPage> _pages = [
     title: 'خصوصيتك خط أحمر',
     body: 'بيانات اشتراكاتك مشفّرة محليًا. البريد والذكاء الاصطناعي '
         'اختياريان ولا يرسلان محتوى إلا بعد موافقتك.\n\n'
-        'يمكنك قفل التطبيق ببصمة الوجه، وأخذ نسخة احتياطية '
-        'تحفظها في مكان خاص.\n\n'
+        'يمكنك قفل التطبيق ببصمة الوجه، والتحكم بإعدادات التنبيه '
+        'بكل سهولة.\n\n'
         'كل شيء جاهز الآن — لنبدأ بإضافة أول اشتراك!',
   ),
 ];
@@ -99,6 +99,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -114,9 +115,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ? const SizedBox(height: 40)
                     : TextButton(
                         onPressed: _finish,
-                        child: const Text(
+                        child: Text(
                           'تخطي',
-                          style: TextStyle(color: AppColors.muted),
+                          style: TextStyle(color: palette.textMuted),
                         ),
                       ),
               ),
@@ -157,19 +158,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         Text(
                           p.title,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 23,
                             fontWeight: FontWeight.w900,
-                            color: AppColors.ink,
+                            color: palette.text,
                           ),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           p.body,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14.5,
-                            color: AppColors.muted,
+                            color: palette.textMuted,
                             height: 1.8,
                           ),
                         ),
@@ -190,8 +191,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     margin: const EdgeInsets.symmetric(horizontal: 3),
                     decoration: BoxDecoration(
                       color: i == _index
-                          ? AppColors.primary
-                          : AppColors.border,
+                           ? palette.accent
+                           : palette.stroke,
                       borderRadius: BorderRadius.circular(6),
                     ),
                   ),

@@ -82,6 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final configured = AuthService.isAvailable;
+    final p = context.palette;
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -107,13 +108,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 28),
-              const Text(
+              Text(
                 'احفظ بياناتك مع حسابك',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 23,
                   fontWeight: FontWeight.w900,
-                  color: AppColors.ink,
+                  color: p.text,
                 ),
               ),
               const SizedBox(height: 12),
@@ -126,9 +127,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         'قريب — يمكنك استخدام التطبيق كاملًا الآن، '
                         'وبياناتك محفوظة مشفّرة على جهازك.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14.5,
-                  color: AppColors.muted,
+                  color: p.textMuted,
                   height: 1.8,
                 ),
               ),
@@ -137,9 +138,9 @@ class _LoginScreenState extends State<LoginScreen> {
               FilledButton.icon(
                 style: FilledButton.styleFrom(
                   backgroundColor:
-                      configured ? Colors.white : AppColors.cardAlt,
+                       configured ? Colors.white : p.surfaceAlt,
                   foregroundColor:
-                      configured ? Colors.black : AppColors.muted,
+                       configured ? Colors.black : p.textMuted,
                   minimumSize: const Size.fromHeight(54),
                 ),
                 onPressed: (!configured || _busy)
@@ -159,10 +160,10 @@ class _LoginScreenState extends State<LoginScreen> {
               FilledButton.icon(
                 style: FilledButton.styleFrom(
                   backgroundColor:
-                      configured ? AppColors.primary : AppColors.cardAlt,
+                       configured ? p.accentStrong : p.surfaceAlt,
                   foregroundColor: configured
                       ? Colors.white
-                      : AppColors.muted,
+                       : p.textMuted,
                   minimumSize: const Size.fromHeight(54),
                 ),
                 onPressed: (!configured || _busy)
@@ -191,8 +192,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 Text(
                   _error!,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: AppColors.danger,
+                  style: TextStyle(
+                    color: p.danger,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     height: 1.6,
@@ -202,23 +203,23 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 10),
               TextButton(
                 onPressed: _busy ? null : _continueToApp,
-                child: const Text(
+                child: Text(
                   'المتابعة بدون حساب',
                   style: TextStyle(
-                    color: AppColors.muted,
+                    color: p.textMuted,
                     fontSize: 14.5,
                   ),
                 ),
               ),
               const Spacer(),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(bottom: 16),
                 child: Text(
                   'بياناتك تُحفظ في مساحة خاصة بحسابك فقط، '
                   'ولا نستخدمها لأي غرض آخر.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: AppColors.muted,
+                    color: p.textMuted,
                     fontSize: 11.5,
                     height: 1.6,
                   ),

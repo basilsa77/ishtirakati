@@ -75,7 +75,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             .fold<double>(0, (sum, item) => sum + item.price);
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 132),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
           children: [
             _CalendarHeader(total: total, currency: currency, itemCount: byDay.values.expand((items) => items).length),
             const SizedBox(height: 22),
@@ -117,32 +117,51 @@ class _CalendarScreenState extends State<CalendarScreen> {
   void _openDay(BuildContext context, int day, List<Subscription> subscriptions) {
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         final p = sheetContext.palette;
-        return SafeArea(
-          top: false,
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-            decoration: BoxDecoration(color: p.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(28))),
-            child: Wrap(
-              runSpacing: 10,
-              children: [
-                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: p.stroke, borderRadius: BorderRadius.circular(99)))),
-                const SizedBox(height: 4),
-                Text('دفعات يوم $day', style: TextStyle(color: p.text, fontSize: 18, fontWeight: FontWeight.w900)),
-                for (final subscription in subscriptions)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: .52,
+          minChildSize: .32,
+          maxChildSize: .9,
+          builder: (context, controller) => SafeArea(
+            top: false,
+            child: Container(
+              decoration: BoxDecoration(color: p.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
+              child: ListView.separated(
+                controller: controller,
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+                itemCount: subscriptions.length + 1,
+                separatorBuilder: (_, index) => index == 0 ? const SizedBox(height: 14) : Divider(color: p.stroke, height: 1),
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(child: Container(width: 38, height: 4, decoration: BoxDecoration(color: p.stroke, borderRadius: BorderRadius.circular(99)))),
+                        const SizedBox(height: 18),
+                        Text('دفعات يوم $day', style: TextStyle(color: p.text, fontSize: 18, fontWeight: FontWeight.w900)),
+                      ],
+                    );
+                  }
+                  final subscription = subscriptions[index - 1];
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(vertical: 4),
                     onTap: () {
                       Navigator.pop(sheetContext);
                       showSubscriptionDetails(context, subscription);
                     },
                     leading: ServiceAvatar(name: subscription.name, emoji: subscription.emoji, manageUrl: subscription.manageUrl, iconUrl: subscription.iconUrl, tint: categoryColor(subscription.category), size: 42),
-                    title: Text(subscription.name, style: TextStyle(color: p.text, fontWeight: FontWeight.w800)),
-                    trailing: Text(fmtMoney(subscription.price, subscription.currency), style: TextStyle(color: p.accent, fontWeight: FontWeight.w900)),
-                  ),
-              ],
+                    title: Text(subscription.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontWeight: FontWeight.w800)),
+                    trailing: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 96),
+                      child: Text(fmtMoney(subscription.price, subscription.currency), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.accent, fontWeight: FontWeight.w900)),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         );

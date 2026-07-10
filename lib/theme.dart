@@ -221,11 +221,11 @@ ThemeData buildAppTheme({bool dark = false}) {
           onError: Colors.white,
         );
 
-  final surface = dark ? AppColors.darkCard : AppColors.card;
-  final surfaceAlt = dark ? AppColors.darkCardAlt : AppColors.cardAlt;
-  final border = dark ? AppColors.darkBorder : AppColors.border;
-  final onSurface = dark ? AppColors.darkInk : AppColors.ink;
-  final muted = dark ? AppColors.darkMuted : AppColors.muted;
+  final surface = palette.surface;
+  final surfaceAlt = palette.surfaceAlt;
+  final border = palette.stroke;
+  final onSurface = palette.text;
+  final muted = palette.textMuted;
   final base = ThemeData(
     useMaterial3: true,
     brightness: dark ? Brightness.dark : Brightness.light,
@@ -234,9 +234,9 @@ ThemeData buildAppTheme({bool dark = false}) {
   );
 
   return base.copyWith(
-    scaffoldBackgroundColor: dark ? AppColors.darkBg : AppColors.bg,
+    scaffoldBackgroundColor: palette.canvas,
     appBarTheme: AppBarTheme(
-      backgroundColor: dark ? AppColors.darkBg : AppColors.bg,
+      backgroundColor: palette.canvas,
       foregroundColor: onSurface,
       elevation: 0,
       scrolledUnderElevation: 0,
@@ -251,7 +251,7 @@ ThemeData buildAppTheme({bool dark = false}) {
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: AppColors.primary,
+        backgroundColor: palette.accentStrong,
         foregroundColor: Colors.white,
         minimumSize: const Size.fromHeight(54),
         textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
@@ -262,8 +262,8 @@ ThemeData buildAppTheme({bool dark = false}) {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.primary,
-        side: BorderSide(color: AppColors.primary, width: 1.2),
+        foregroundColor: palette.accent,
+        side: BorderSide(color: palette.accent, width: 1.2),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
         ),
@@ -271,7 +271,7 @@ ThemeData buildAppTheme({bool dark = false}) {
       ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+      style: TextButton.styleFrom(foregroundColor: palette.accent),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -290,12 +290,12 @@ ThemeData buildAppTheme({bool dark = false}) {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+        borderSide: BorderSide(color: palette.accent, width: 1.5),
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: surface,
-      indicatorColor: dark ? AppColors.darkCardAlt : AppColors.primarySoft,
+      indicatorColor: palette.accentSoft,
       surfaceTintColor: Colors.transparent,
       height: 72,
       elevation: 0,
@@ -305,14 +305,14 @@ ThemeData buildAppTheme({bool dark = false}) {
           fontSize: 12,
           fontWeight: FontWeight.w800,
           color: states.contains(MaterialState.selected)
-              ? AppColors.primary
+              ? palette.accent
               : muted,
         ),
       ),
       iconTheme: MaterialStateProperty.resolveWith(
         (states) => IconThemeData(
           color: states.contains(MaterialState.selected)
-              ? AppColors.primary
+              ? palette.accent
               : muted,
         ),
       ),
@@ -327,13 +327,13 @@ ThemeData buildAppTheme({bool dark = false}) {
       ),
     ),
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: dark ? AppColors.darkCardAlt : AppColors.ink,
+      backgroundColor: dark ? palette.surfaceAlt : palette.text,
       contentTextStyle: const TextStyle(color: Colors.white, fontSize: 15),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
-    floatingActionButtonTheme: const FloatingActionButtonThemeData(
-      backgroundColor: AppColors.primary,
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: palette.accentStrong,
       foregroundColor: Colors.white,
     ),
     dialogTheme: DialogThemeData(
@@ -376,15 +376,15 @@ class AppCard extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: color ?? context.palette.surface,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: borderColor ?? context.palette.stroke,
         ),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x100B3D2E),
-            blurRadius: 22,
-            offset: Offset(0, 8),
+            color: context.palette.shadow,
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -412,10 +412,10 @@ class SectionTitle extends StatelessWidget {
           ],
           Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w900,
-              color: AppColors.ink,
+              color: context.palette.text,
             ),
           ),
         ],
@@ -480,20 +480,20 @@ class RenewalBadge extends StatelessWidget {
     final Color fg;
     if (days <= 0) {
       text = 'اليوم';
-      bg = AppColors.dangerSoft;
-      fg = AppColors.danger;
+      bg = context.palette.dangerSoft;
+      fg = context.palette.danger;
     } else if (days == 1) {
       text = 'غدًا';
-      bg = AppColors.dangerSoft;
-      fg = AppColors.danger;
+      bg = context.palette.dangerSoft;
+      fg = context.palette.danger;
     } else if (days <= 7) {
       text = 'بعد $days أيام';
-      bg = AppColors.goldSoft;
-      fg = AppColors.gold;
+      bg = context.palette.warningSoft;
+      fg = context.palette.warning;
     } else {
       text = 'بعد $days يومًا';
-      bg = AppColors.primarySoft;
-      fg = AppColors.primary;
+      bg = context.palette.accentSoft;
+      fg = context.palette.accent;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

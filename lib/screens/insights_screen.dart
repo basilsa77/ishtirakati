@@ -31,7 +31,7 @@ class InsightsScreen extends StatelessWidget {
         final average = top.isEmpty ? 0.0 : total / top.length;
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 132),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
           children: [
             const _InsightsHeader(),
             const SizedBox(height: 22),
@@ -184,11 +184,12 @@ class _DistributionCard extends StatelessWidget {
     final p = context.palette;
     return AppCard(
       padding: const EdgeInsets.all(18),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 128,
-            height: 128,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 365;
+          final chart = SizedBox(
+            width: compact ? 112 : 128,
+            height: compact ? 112 : 128,
             child: CustomPaint(
               painter: _DistributionPainter(entries: entries, total: total, track: p.surfaceAlt),
               child: Center(
@@ -201,9 +202,8 @@ class _DistributionCard extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
+          );
+          final legend = Column(
             child: Column(
               children: [
                 for (final entry in entries.take(5))
@@ -220,8 +220,17 @@ class _DistributionCard extends StatelessWidget {
                   ),
               ],
             ),
-          ),
-        ],
+          );
+          return compact
+              ? Column(
+                  children: [
+                    chart,
+                    const SizedBox(height: 18),
+                    SizedBox(width: double.infinity, child: legend),
+                  ],
+                )
+              : Row(children: [chart, const SizedBox(width: 16), Expanded(child: legend)]);
+        },
       ),
     );
   }
@@ -343,7 +352,15 @@ class _TopServiceRow extends StatelessWidget {
           ServiceAvatar(name: subscription.name, emoji: subscription.emoji, manageUrl: subscription.manageUrl, iconUrl: subscription.iconUrl, tint: categoryColor(subscription.category), size: 40),
           const SizedBox(width: 10),
           Expanded(child: Text(subscription.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: 13.5, fontWeight: FontWeight.w800))),
-          Text(fmtMoney(subscription.monthlyCost, subscription.currency), style: TextStyle(color: p.accent, fontSize: 12.5, fontWeight: FontWeight.w900)),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 92),
+            child: Text(
+              fmtMoney(subscription.monthlyCost, subscription.currency),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: p.accent, fontSize: 12.5, fontWeight: FontWeight.w900),
+            ),
+          ),
         ],
       ),
     );

@@ -142,6 +142,7 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return Scaffold(
       appBar: AppBar(title: const Text('ربط البريد الإلكتروني')),
       body: SafeArea(
@@ -150,17 +151,17 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
           children: [
             AppCard(
-              color: AppColors.primarySoft,
-              borderColor: AppColors.primaryDeep,
+              color: p.accentSoft,
+              borderColor: p.accentStrong,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'كيف يعمل؟',
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 15,
-                      color: AppColors.ink,
+                      color: p.text,
                     ),
                   ),
                   SizedBox(height: 6),
@@ -170,7 +171,7 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
                     'الاشتراكات تلقائيًا. كلمة المرور تبقى على جهازك '
                     'ولا تُخزّن أو تُرسل إلى الذكاء الاصطناعي.',
                     style: TextStyle(
-                      color: AppColors.muted,
+                      color: p.textMuted,
                       fontSize: 13,
                       height: 1.7,
                     ),
@@ -181,7 +182,7 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
             const SizedBox(height: 14),
             DropdownButtonFormField<EmailProvider>(
               value: _provider,
-              dropdownColor: AppColors.cardAlt,
+                dropdownColor: p.surfaceAlt,
               decoration: const InputDecoration(labelText: 'مزوّد البريد'),
               items: [
                 for (final p in kEmailProviders)
@@ -224,27 +225,27 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
             SwitchListTile(
               value: _remember,
               onChanged: (v) => setState(() => _remember = v),
-              title: const Text(
+              title: Text(
                 'تذكّر بريدي',
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
-                  color: AppColors.ink,
+                  color: p.text,
                   fontSize: 14,
                 ),
               ),
-              activeColor: AppColors.primary,
+              activeColor: p.accent,
               contentPadding: EdgeInsets.zero,
             ),
             if (_error != null) ...[
               const SizedBox(height: 4),
               AppCard(
-                color: AppColors.dangerSoft,
-                borderColor: AppColors.danger,
+                color: p.dangerSoft,
+                borderColor: p.danger,
                 padding: const EdgeInsets.all(12),
                 child: Text(
                   _error!,
-                  style: const TextStyle(
-                    color: AppColors.danger,
+                  style: TextStyle(
+                    color: p.danger,
                     fontSize: 13,
                     height: 1.6,
                   ),
@@ -267,12 +268,12 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
               label: Text(_busy ? 'نفحص بريدك...' : 'جلب الاشتراكات من بريدي'),
             ),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'ملاحظة أمان: استخدم دائمًا «كلمة مرور خاصة بالتطبيقات» — '
               'وهي كلمة مرور محدودة يمكنك إلغاؤها في أي وقت، '
               'ولا تعطي وصولًا لحسابك الكامل.',
               style: TextStyle(
-                color: AppColors.muted,
+                color: p.textMuted,
                 fontSize: 12,
                 height: 1.7,
               ),

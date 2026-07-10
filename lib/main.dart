@@ -280,7 +280,9 @@ class _RootShellState extends State<RootShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
+      // Keep the dock in the Scaffold flow. Each page can now scroll to its
+      // final item without being hidden under a floating navigation surface.
+      extendBody: false,
       body: SafeArea(
         bottom: false,
         child: AnimatedSwitcher(
@@ -323,32 +325,31 @@ class _ModernBottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      minimum: EdgeInsets.zero,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 7),
+        padding: const EdgeInsets.fromLTRB(8, 7, 8, 6),
         decoration: BoxDecoration(
           color: context.palette.surface,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: context.palette.stroke),
-          boxShadow: [
-            BoxShadow(
-              color: context.palette.shadow,
-              blurRadius: 24,
-              offset: Offset(0, 8),
-            ),
-          ],
+          border: Border(top: BorderSide(color: context.palette.stroke)),
         ),
-        child: Row(
-          children: [
-            for (var i = 0; i < _items.length; i++)
-              Expanded(
-                child: _BottomBarItem(
-                  item: _items[i],
-                  selected: selectedIndex == i,
-                  onTap: () => onSelected(i),
-                ),
-              ),
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final showLabels = constraints.maxWidth >= 390;
+            return Row(
+              children: [
+                for (var i = 0; i < _items.length; i++)
+                  Expanded(
+                    child: _BottomBarItem(
+                      item: _items[i],
+                      selected: selectedIndex == i,
+                      showLabel: showLabels,
+                      onTap: () => onSelected(i),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
         ),
       ),
     );
@@ -358,11 +359,13 @@ class _ModernBottomBar extends StatelessWidget {
 class _BottomBarItem extends StatelessWidget {
   final (IconData, IconData, String) item;
   final bool selected;
+  final bool showLabel;
   final VoidCallback onTap;
 
   const _BottomBarItem({
     required this.item,
     required this.selected,
+    required this.showLabel,
     required this.onTap,
   });
 
@@ -374,14 +377,14 @@ class _BottomBarItem extends StatelessWidget {
       label: item.$3,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: 7),
+          padding: EdgeInsets.symmetric(vertical: showLabel ? 7 : 11),
           decoration: BoxDecoration(
             color: selected ? context.palette.accentSoft : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -391,17 +394,19 @@ class _BottomBarItem extends StatelessWidget {
                 size: 21,
                 color: selected ? context.palette.accent : context.palette.textMuted,
               ),
-              const SizedBox(height: 3),
-              Text(
-                item.$3,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: selected ? context.palette.accent : context.palette.textMuted,
-                  fontSize: 10.5,
-                  fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+              if (showLabel) ...[
+                const SizedBox(height: 3),
+                Text(
+                  item.$3,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: selected ? context.palette.accent : context.palette.textMuted,
+                    fontSize: 10.5,
+                    fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

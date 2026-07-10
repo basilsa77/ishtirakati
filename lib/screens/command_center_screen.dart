@@ -31,7 +31,7 @@ class CommandCenterScreen extends StatelessWidget {
           ..sort((a, b) => b.value.compareTo(a.value));
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 132),
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
           children: [
             _DashboardGreeting(activeCount: store.active.length),
             const SizedBox(height: 22),
@@ -218,12 +218,18 @@ class _CommitmentHero extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(
-                'سنويًا ${fmtMoney(yearly, currency)}',
-                style: const TextStyle(
-                  color: Color(0xBFFFFFFF),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 112),
+                child: Text(
+                  'سنويًا ${fmtMoney(yearly, currency)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(
+                    color: Color(0xBFFFFFFF),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -299,32 +305,23 @@ class _QuickLane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _QuickAction(
-            icon: Icons.add_rounded,
-            label: 'إضافة',
-            onTap: onAdd,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _QuickAction(
-            icon: Icons.document_scanner_rounded,
-            label: 'استيراد',
-            onTap: onImport,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _QuickAction(
-            icon: Icons.calendar_today_rounded,
-            label: 'التقويم',
-            onTap: onCalendar,
-          ),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth < 390 ? 2 : 3;
+        return GridView.count(
+          crossAxisCount: columns,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: columns == 2 ? 2.1 : 1.35,
+          children: [
+            _QuickAction(icon: Icons.add_rounded, label: 'إضافة', onTap: onAdd),
+            _QuickAction(icon: Icons.document_scanner_rounded, label: 'استيراد', onTap: onImport),
+            _QuickAction(icon: Icons.calendar_today_rounded, label: 'التقويم', onTap: onCalendar),
+          ],
+        );
+      },
     );
   }
 }
@@ -349,7 +346,7 @@ class _QuickAction extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
         child: Ink(
-          height: 76,
+          height: double.infinity,
           decoration: BoxDecoration(
             color: p.surface,
             borderRadius: BorderRadius.circular(18),
@@ -413,13 +410,15 @@ class _RenewalStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 154,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: subscriptions.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (context, index) => _RenewalCard(sub: subscriptions[index]),
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          for (var index = 0; index < subscriptions.length; index++) ...[
+            _RenewalCard(sub: subscriptions[index]),
+            if (index != subscriptions.length - 1) Divider(height: 1, color: context.palette.stroke),
+          ],
+        ],
       ),
     );
   }
@@ -433,54 +432,37 @@ class _RenewalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    return SizedBox(
-      width: 166,
-      child: InkWell(
+    return InkWell(
         onTap: () => showSubscriptionDetails(context, sub),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: Ink(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: p.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: p.stroke),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          child: Row(
             children: [
-              Row(
-                children: [
-                  ServiceAvatar(
-                    name: sub.name,
-                    emoji: sub.emoji,
-                    manageUrl: sub.manageUrl,
-                    iconUrl: sub.iconUrl,
-                    tint: categoryColor(sub.category),
-                    size: 38,
-                  ),
-                  const Spacer(),
-                  Icon(Icons.arrow_outward_rounded, color: p.textMuted, size: 17),
-                ],
+              ServiceAvatar(
+                name: sub.name,
+                emoji: sub.emoji,
+                manageUrl: sub.manageUrl,
+                iconUrl: sub.iconUrl,
+                tint: categoryColor(sub.category),
+                size: 42,
               ),
-              const Spacer(),
-              Text(
-                sub.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: p.text,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 13,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(sub.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: 14)),
+                    const SizedBox(height: 4),
+                    Text('بعد ${sub.daysUntilRenewal()} يوم', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.textMuted, fontSize: 11.5)),
+                  ],
                 ),
               ),
-              const SizedBox(height: 5),
-              Text(
-                'بعد ${sub.daysUntilRenewal()} يوم',
-                style: TextStyle(color: p.textMuted, fontSize: 11.5),
-              ),
-              const SizedBox(height: 8),
+              const SizedBox(width: 8),
               Text(
                 fmtMoney(sub.price, sub.currency),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: p.accent,
                   fontSize: 13,
@@ -510,32 +492,23 @@ class _PulseGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _PulseTile(
-            icon: Icons.notifications_active_outlined,
-            label: 'قريب',
-            value: '$upcoming',
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _PulseTile(
-            icon: Icons.visibility_off_outlined,
-            label: 'بلا استخدام',
-            value: '$unused',
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _PulseTile(
-            icon: Icons.savings_outlined,
-            label: 'توفير',
-            value: saved <= 0 ? '—' : fmtMoney(saved, currency),
-          ),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth < 390 ? 2 : 3;
+        return GridView.count(
+          crossAxisCount: columns,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: columns == 2 ? 1.85 : 1.05,
+          children: [
+            _PulseTile(icon: Icons.notifications_active_outlined, label: 'قريب', value: '$upcoming'),
+            _PulseTile(icon: Icons.visibility_off_outlined, label: 'بلا استخدام', value: '$unused'),
+            _PulseTile(icon: Icons.savings_outlined, label: 'توفير', value: saved <= 0 ? '—' : fmtMoney(saved, currency)),
+          ],
+        );
+      },
     );
   }
 }
@@ -668,9 +641,15 @@ class _CategoryLine extends StatelessWidget {
                 style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: 12.5),
               ),
             ),
-            Text(
-              fmtMoney(amount, currency),
-              style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: 12),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 96),
+              child: Text(
+                fmtMoney(amount, currency),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.end,
+                style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: 12),
+              ),
             ),
           ],
         ),

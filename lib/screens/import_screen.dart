@@ -179,6 +179,7 @@ class _ImportScreenState extends State<ImportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     return Scaffold(
       appBar: AppBar(title: const Text('الاستيراد الذكي')),
       body: SafeArea(
@@ -187,17 +188,17 @@ class _ImportScreenState extends State<ImportScreen> {
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
           children: [
             AppCard(
-              color: AppColors.primarySoft,
-              borderColor: AppColors.primaryDeep,
+              color: p.accentSoft,
+              borderColor: p.accentStrong,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'كيف يعمل؟',
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 15,
-                      color: AppColors.ink,
+                      color: p.text,
                     ),
                   ),
                   SizedBox(height: 6),
@@ -210,7 +211,7 @@ class _ImportScreenState extends State<ImportScreen> {
                     'التحليل المحلي لا يرسل النص خارج جهازك. تحليل Gemini اختياري '
                     'ويتطلب موافقتك قبل الإرسال.',
                     style: TextStyle(
-                      color: AppColors.muted,
+                      color: p.textMuted,
                       fontSize: 13,
                       height: 1.7,
                     ),
@@ -235,16 +236,16 @@ class _ImportScreenState extends State<ImportScreen> {
               child: Theme(
                 data: Theme.of(context)
                     .copyWith(dividerColor: Colors.transparent),
-                child: const ExpansionTile(
+                child: ExpansionTile(
                   tilePadding: EdgeInsets.zero,
-                  iconColor: AppColors.primary,
-                  collapsedIconColor: AppColors.muted,
+                  iconColor: p.accent,
+                  collapsedIconColor: p.textMuted,
                   title: Text(
                     'أين أجد اشتراكات App Store؟',
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 14,
-                      color: AppColors.ink,
+                      color: p.text,
                     ),
                   ),
                   children: [
@@ -257,7 +258,7 @@ class _ImportScreenState extends State<ImportScreen> {
                         'انسخ محتوى الإيصالات والصقها هنا — سنستخرج الخدمة '
                         'والسعر والتاريخ تلقائيًا.',
                         style: TextStyle(
-                          color: AppColors.muted,
+                          color: p.textMuted,
                           fontSize: 13,
                           height: 1.8,
                         ),
@@ -316,8 +317,8 @@ class _ImportScreenState extends State<ImportScreen> {
               const SizedBox(height: 10),
               Text(
                 _aiNote!,
-                style: const TextStyle(
-                  color: AppColors.muted,
+                style: TextStyle(
+                  color: p.textMuted,
                   fontSize: 12.5,
                   height: 1.6,
                 ),
@@ -325,17 +326,17 @@ class _ImportScreenState extends State<ImportScreen> {
             ],
             const SizedBox(height: 18),
             if (_analyzed && !_aiBusy && _candidates.isEmpty)
-              const AppCard(
+              AppCard(
                 child: Row(
                   children: [
-                    Icon(Icons.search_off_rounded, color: AppColors.muted, size: 26),
+                    Icon(Icons.search_off_rounded, color: p.textMuted, size: 26),
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         'لم نتعرف على اشتراكات في هذا النص. '
                         'جرّب لصق رسائل البنك أو إيصالات Apple كما هي.',
                         style: TextStyle(
-                          color: AppColors.muted,
+                          color: p.textMuted,
                           height: 1.6,
                         ),
                       ),
@@ -391,6 +392,7 @@ class _CandidateTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     final c = candidate;
     final catColor = categoryColor(c.category);
     final details = <String>[
@@ -403,7 +405,7 @@ class _CandidateTile extends StatelessWidget {
     ];
     return AppCard(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      borderColor: selected ? AppColors.primaryDeep : null,
+      borderColor: selected ? p.accentStrong : null,
       child: InkWell(
         onTap: alreadyExists ? null : onToggle,
         child: Row(
@@ -411,7 +413,7 @@ class _CandidateTile extends StatelessWidget {
             Checkbox(
               value: selected && !alreadyExists,
               onChanged: alreadyExists ? null : (_) => onToggle(),
-              activeColor: AppColors.primary,
+              activeColor: p.accent,
               checkColor: Colors.white,
             ),
             Container(
@@ -435,10 +437,10 @@ class _CandidateTile extends StatelessWidget {
                         child: Text(
                           c.name,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 14.5,
-                            color: AppColors.ink,
+                            color: p.text,
                           ),
                         ),
                       ),
@@ -450,15 +452,15 @@ class _CandidateTile extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.goldSoft,
+                            color: p.warningSoft,
                             borderRadius: BorderRadius.circular(9),
                           ),
-                          child: const Text(
+                          child: Text(
                             'موجود مسبقًا',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.gold,
+                              color: p.warning,
                             ),
                           ),
                         ),
@@ -468,8 +470,8 @@ class _CandidateTile extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     details.join(' • '),
-                    style: const TextStyle(
-                      color: AppColors.muted,
+                    style: TextStyle(
+                      color: p.textMuted,
                       fontSize: 12,
                     ),
                   ),

@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// نسخة التطبيق الحالية — تُحدَّث مع كل إصدار.
-const String kAppVersion = '9.0.1';
+const String kAppVersion = '10.0.0';
 
 const String _pubspecUrl =
     'https://raw.githubusercontent.com/basilsa77/ishtirakati/main/pubspec.yaml';
