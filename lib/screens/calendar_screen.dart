@@ -8,6 +8,31 @@ import '../services/subscription_store.dart';
 import '../theme.dart';
 import 'subscriptions_screen.dart';
 
+/// صفحة مستقلة للتقويم تُستخدم عند فتحه من خارج الشريط السفلي.
+/// تلف [CalendarScreen] داخل Scaffold لضمان وجود Material وخلفية صحيحة.
+class CalendarPage extends StatelessWidget {
+  const CalendarPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Scaffold(
+      backgroundColor: p.canvas,
+      appBar: AppBar(
+        backgroundColor: p.canvas,
+        elevation: 0,
+        centerTitle: true,
+        title: Text(
+          'تقويم الدفعات',
+          style: TextStyle(color: p.text, fontSize: 17, fontWeight: FontWeight.w900),
+        ),
+        iconTheme: IconThemeData(color: p.text),
+      ),
+      body: const SafeArea(top: false, child: CalendarScreen()),
+    );
+  }
+}
+
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
 

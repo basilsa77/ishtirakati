@@ -32,6 +32,7 @@ class SubscriptionStore extends ChangeNotifier {
   static const String _aiKeyKey = 'ishtirakati_ai_api_key';
   static const String _aiProviderKey = 'ishtirakati_ai_provider';
   static const String _onboardKey = 'ishtirakati_onboarded_v1';
+  static const String _themeModeKey = 'ishtirakati_theme_mode';
   static const int _maxImportBytes = 2 * 1024 * 1024;
   static const int _maxImportRecords = 5000;
 
@@ -42,6 +43,7 @@ class SubscriptionStore extends ChangeNotifier {
   bool _appLockEnabled = false;
   String _aiApiKey = '';
   String _aiProvider = 'gemini';
+  String _themeMode = 'dark'; // dark | light | system
   bool _hasOnboarded = false;
   bool _loaded = false;
 
@@ -57,6 +59,7 @@ class SubscriptionStore extends ChangeNotifier {
   bool get appLockEnabled => _appLockEnabled;
   String get aiApiKey => _aiApiKey;
   String get aiProvider => _aiProvider;
+  String get themeMode => _themeMode;
   bool get hasOnboarded => _hasOnboarded;
   bool get isLoaded => _loaded;
 
@@ -68,6 +71,7 @@ class SubscriptionStore extends ChangeNotifier {
     _appLockEnabled = prefs.getBool(_lockKey) ?? false;
     _hasOnboarded = prefs.getBool(_onboardKey) ?? false;
     _aiProvider = prefs.getString(_aiProviderKey) ?? 'gemini';
+    _themeMode = prefs.getString(_themeModeKey) ?? 'dark';
     // مفتاح الذكاء الاصطناعي: يُقرأ من أي موضع متاح ولا يُمسح أبدًا
     // بسبب خطأ مؤقت (Keychain الافتراضي، خيار قديم، مرآة محلية، نص قديم).
     _aiApiKey = '';
@@ -173,6 +177,14 @@ class SubscriptionStore extends ChangeNotifier {
     _hasOnboarded = true;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_onboardKey, true);
+  }
+
+  Future<void> setThemeMode(String mode) async {
+    if (mode != 'dark' && mode != 'light' && mode != 'system') return;
+    _themeMode = mode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_themeModeKey, mode);
+    notifyListeners();
   }
 
   Future<void> setAiProvider(String id) async {

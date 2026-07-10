@@ -50,7 +50,7 @@ class CommandCenterScreen extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const ImportScreen()),
               ),
               onCalendar: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const CalendarScreen()),
+                MaterialPageRoute(builder: (_) => const CalendarPage()),
               ),
             ),
             const SizedBox(height: 28),

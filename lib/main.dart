@@ -57,14 +57,30 @@ Future<void> main() async {
 class IshtirakatiApp extends StatelessWidget {
   const IshtirakatiApp({super.key});
 
+  static ThemeMode _resolveMode(String pref) {
+    switch (pref) {
+      case 'light':
+        return ThemeMode.light;
+      case 'system':
+        return ThemeMode.system;
+      default:
+        return ThemeMode.dark;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    final store = SubscriptionStore.instance;
+    return ListenableBuilder(
+      listenable: store,
+      builder: (context, _) {
+        final mode = _resolveMode(store.themeMode);
+        return MaterialApp(
       title: 'اشتراكاتي',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
       darkTheme: buildAppTheme(dark: true),
-      themeMode: ThemeMode.system,
+      themeMode: mode,
       locale: const Locale('ar'),
       supportedLocales: const [Locale('ar')],
       localizationsDelegates: const [
@@ -74,8 +90,9 @@ class IshtirakatiApp extends StatelessWidget {
       ],
       // إغلاق الكيبورد عند الضغط في أي مكان فارغ بالتطبيق.
       builder: (context, child) {
-        final isDark =
-            MediaQuery.platformBrightnessOf(context) == Brightness.dark;
+        final isDark = mode == ThemeMode.dark ||
+            (mode == ThemeMode.system &&
+                MediaQuery.platformBrightnessOf(context) == Brightness.dark);
         SystemChrome.setSystemUIOverlayStyle(
           SystemUiOverlayStyle(
             statusBarColor: Colors.transparent,
@@ -95,9 +112,11 @@ class IshtirakatiApp extends StatelessWidget {
           child: child ?? const SizedBox.shrink(),
         );
       },
-      home: SubscriptionStore.instance.hasOnboarded
+      home: store.hasOnboarded
           ? const LockGate(child: RootShell())
           : const OnboardingScreen(),
+        );
+      },
     );
   }
 }

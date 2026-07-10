@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=8.0.0"
-set "COMMIT_MESSAGE=Security: protect Firebase build configuration with GitHub Actions secrets"
+set "RELEASE_VERSION=9.0.0"
+set "COMMIT_MESSAGE=v9.0.0: theme mode setting, fixed calendar page, settings redesign, backup restore, version guard"
 
 git init
 git config user.name "basilsa77"

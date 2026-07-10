@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/subscription.dart' show currencySymbols;
@@ -60,6 +61,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const _SettingsIntro(),
           const SizedBox(height: 22),
           _AccountCard(onChanged: () => setState(() {})),
+          const SizedBox(height: 26),
+          const _SettingsLabel('المظهر'),
+          const SizedBox(height: 10),
+          const _ThemeModeCard(),
           const SizedBox(height: 26),
           const _SettingsLabel('الحماية والتنبيهات'),
           const SizedBox(height: 10),
@@ -133,13 +138,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onClassify: _classifyUnknowns,
           ),
           const SizedBox(height: 26),
-          const _SettingsLabel('عن اشتراكاتي'),
+          const _SettingsLabel('النسخ الاحتياطي والبيانات'),
+          const SizedBox(height: 10),
+          _DataCard(
+            onExport: _exportBackup,
+            onRestore: _importBackup,
+            onDelete: _confirmWipe,
+          ),
+          const SizedBox(height: 26),
+          const _SettingsLabel('حول التطبيق'),
           const SizedBox(height: 10),
           _AboutCard(onCheckUpdates: _checkUpdates),
-          const SizedBox(height: 26),
-          const _SettingsLabel('منطقة حساسة'),
-          const SizedBox(height: 10),
-          _DangerZone(onDelete: _confirmWipe),
         ],
       ),
     );
@@ -223,6 +232,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SnackBar(content: Text('تم التحقق من وجود تحديثات.')),
       );
     }
+  }
+
+  Future<void> _exportBackup() async {
+    final json = SubscriptionStore.instance.exportJson();
+    await Clipboard.setData(ClipboardData(text: json));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('تم نسخ النسخة الاحتياطية. احفظها في الملاحظات أو الملفات.'),
+      ),
+    );
+  }
+
+  Future<void> _importBackup() async {
+    final controller = TextEditingController();
+    final raw = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('استعادة نسخة احتياطية'),
+        content: TextField(
+          controller: controller,
+          maxLines: 6,
+          textDirection: TextDirection.ltr,
+          decoration: const InputDecoration(
+            hintText: 'الصق نص النسخة الاحتياطية هنا',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, controller.text),
+            child: const Text('استعادة'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (raw == null || raw.trim().isEmpty) return;
+    final count = await SubscriptionStore.instance.importJson(raw.trim());
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          count < 0 ? 'النص غير صالح. تأكد من نسخه كاملًا.' : 'تمت استعادة $count اشتراكًا.',
+        ),
+      ),
+    );
   }
 
   Future<void> _confirmWipe() async {
@@ -667,32 +726,79 @@ class _AboutLine extends StatelessWidget {
   }
 }
 
-class _DangerZone extends StatelessWidget {
+/// اختيار مظهر التطبيق: داكن (الافتراضي) أو فاتح أو حسب النظام.
+class _ThemeModeCard extends StatelessWidget {
+  const _ThemeModeCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final store = SubscriptionStore.instance;
+    final p = context.palette;
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('وضع الألوان', style: TextStyle(color: p.text, fontSize: 14, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 4),
+          Text('الوضع الداكن هو الأنسب حاليًا للتجربة الكاملة.', style: TextStyle(color: p.textMuted, fontSize: 12)),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(value: 'dark', label: Text('داكن'), icon: Icon(Icons.dark_mode_rounded, size: 16)),
+                ButtonSegment(value: 'light', label: Text('فاتح'), icon: Icon(Icons.light_mode_rounded, size: 16)),
+                ButtonSegment(value: 'system', label: Text('تلقائي'), icon: Icon(Icons.phone_iphone_rounded, size: 16)),
+              ],
+              selected: {store.themeMode},
+              onSelectionChanged: (selection) => store.setThemeMode(selection.first),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// النسخ الاحتياطي والاستعادة وحذف البيانات في بطاقة واحدة هادئة.
+class _DataCard extends StatelessWidget {
+  final Future<void> Function() onExport;
+  final Future<void> Function() onRestore;
   final Future<void> Function() onDelete;
 
-  const _DangerZone({required this.onDelete});
+  const _DataCard({
+    required this.onExport,
+    required this.onRestore,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: p.dangerSoft,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: p.danger.withOpacity(.28)),
-      ),
-      child: Row(
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Column(
         children: [
-          Icon(Icons.delete_outline_rounded, color: p.danger),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text('حذف جميع الاشتراكات من الجهاز', style: TextStyle(color: p.danger, fontWeight: FontWeight.w900, fontSize: 13)),
+          _SettingsAction(
+            icon: Icons.file_upload_outlined,
+            title: 'تصدير نسخة احتياطية',
+            detail: 'انسخ بياناتك كاملة لحفظها في مكان آمن',
+            onTap: onExport,
           ),
-          IconButton(
-            tooltip: 'حذف جميع الاشتراكات',
-            onPressed: onDelete,
-            icon: Icon(Icons.arrow_back_rounded, color: p.danger),
+          Divider(height: 1, color: p.stroke),
+          _SettingsAction(
+            icon: Icons.file_download_outlined,
+            title: 'استعادة نسخة احتياطية',
+            detail: 'أرجِع بياناتك من نسخة مصدَّرة سابقًا',
+            onTap: onRestore,
+          ),
+          Divider(height: 1, color: p.stroke),
+          ListTile(
+            onTap: onDelete,
+            leading: Icon(Icons.delete_outline_rounded, color: p.danger),
+            title: Text('حذف جميع الاشتراكات', style: TextStyle(color: p.danger, fontWeight: FontWeight.w900, fontSize: 13.5)),
+            subtitle: Text('يمسح السجل من هذا الجهاز نهائيًا', style: TextStyle(color: p.danger.withOpacity(.7), fontSize: 11.5)),
+            trailing: Icon(Icons.chevron_left_rounded, color: p.danger),
           ),
         ],
       ),
