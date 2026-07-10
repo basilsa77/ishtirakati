@@ -59,7 +59,7 @@ class RemoteCatalog extends ChangeNotifier {
 
   static final RemoteCatalog instance = RemoteCatalog._();
 
-  static const String _cacheKey = 'ishtirakati_remote_catalog_v1';
+  static const String _cacheKey = 'ishtirakati_remote_catalog_v2';
   static const String catalogUrl =
       'https://raw.githubusercontent.com/basilsa77/ishtirakati/main/catalog/services.json';
 
@@ -68,8 +68,9 @@ class RemoteCatalog extends ChangeNotifier {
   List<RemoteService> get services => List.unmodifiable(_services);
 
   RemoteService? byName(String name) {
+    final normalized = name.toLowerCase().trim();
     for (final s in _services) {
-      if (s.name == name) return s;
+      if (s.name.toLowerCase().trim() == normalized) return s;
     }
     return null;
   }

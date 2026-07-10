@@ -18,6 +18,8 @@ const List<String> kCategories = [
   'تسوق وتوصيل',
   'اتصالات وإنترنت',
   'تخزين سحابي',
+  'مالية وفواتير',
+  'أخبار ومجلات',
   'أخرى',
 ];
 
@@ -31,6 +33,8 @@ const Map<String, String> kCategoryEmoji = {
   'تسوق وتوصيل': '🛍️',
   'اتصالات وإنترنت': '📶',
   'تخزين سحابي': '☁️',
+  'مالية وفواتير': '💳',
+  'أخبار ومجلات': '📰',
   'أخرى': '🔖',
 };
 
@@ -61,9 +65,9 @@ const List<ServicePreset> kPresets = [
   ServicePreset('Disney+', '🏰', 'ترفيه ومشاهدة'),
   ServicePreset('TOD', '⚽', 'ترفيه ومشاهدة'),
   ServicePreset('Yango Play', '🎥', 'ترفيه ومشاهدة'),
-  ServicePreset('Snapchat+', '👻', 'أخرى'),
-  ServicePreset('X Premium', '❌', 'أخرى'),
-  ServicePreset('Telegram Premium', '✈️', 'أخرى'),
+  ServicePreset('Snapchat+', '👻', 'ترفيه ومشاهدة'),
+  ServicePreset('X Premium', '❌', 'أخبار ومجلات'),
+  ServicePreset('Telegram Premium', '✈️', 'إنتاجية وذكاء اصطناعي'),
   ServicePreset('Adobe Creative Cloud', '🖌️', 'إنتاجية وذكاء اصطناعي'),
   ServicePreset('Google Gemini', '💎', 'إنتاجية وذكاء اصطناعي'),
   ServicePreset('LinkedIn Premium', '💼', 'إنتاجية وذكاء اصطناعي'),

@@ -13,7 +13,7 @@ jobs:
 
     steps:
       - name: سحب الكود
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: تجهيز Flutter (قناة stable)
         uses: subosito/flutter-action@v2
@@ -59,7 +59,7 @@ jobs:
           ls -lh Ishtirakati-unsigned.ipa
 
       - name: رفع الملف الناتج
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: Ishtirakati-unsigned-ipa
           path: Ishtirakati-unsigned.ipa

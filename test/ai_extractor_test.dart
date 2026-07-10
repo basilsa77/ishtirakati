@@ -3,6 +3,15 @@ import 'package:ishtirakati/models/subscription.dart';
 import 'package:ishtirakati/services/ai_extractor.dart';
 
 void main() {
+  test('يقبل تصنيفات AI الجديدة ويرفض التصنيف غير المعروف', () {
+    final result = parseAiCategories(
+      '{"NordVPN":"اتصالات وإنترنت","X Premium":"أخبار ومجلات",'
+      '"Unknown":"تصنيف غير موجود"}',
+    );
+    expect(result['NordVPN'], 'اتصالات وإنترنت');
+    expect(result['X Premium'], 'أخبار ومجلات');
+    expect(result.containsKey('Unknown'), isFalse);
+  });
   group('تحليل رد الذكاء الاصطناعي', () {
     test('JSON نظيف مع كل الحقول', () {
       const raw = '''

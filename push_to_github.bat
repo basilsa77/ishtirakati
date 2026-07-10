@@ -20,7 +20,7 @@ git remote get-url origin >nul 2>&1 || git remote add origin https://github.com/
 git add .
 git diff --cached --quiet
 if errorlevel 1 (
-  git commit -m "Release v7.0 usage insights and calendar redesign"
+  git commit -m "Release v7.0 command center and smart categories"
   if errorlevel 1 goto :failed
 ) else (
   echo No new changes to commit.
@@ -32,7 +32,7 @@ git push -u origin main
 if errorlevel 1 goto :failed
 
 echo.
-echo ===== Ishtirakati v7.0 pushed successfully =====
+echo ===== Ishtirakati v7.0 command center pushed successfully =====
 echo Open GitHub Actions to run Build iOS IPA.
 pause
 exit /b 0

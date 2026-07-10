@@ -9,7 +9,11 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/subscription.dart';
+import '../data/presets.dart';
+import 'category_classifier.dart';
+import 'ai_extractor.dart';
 import 'notification_service.dart';
+import 'remote_catalog.dart';
 
 class SubscriptionStore extends ChangeNotifier {
   SubscriptionStore._();
@@ -68,7 +72,9 @@ class SubscriptionStore extends ChangeNotifier {
       try {
         final map = jsonDecode(raw);
         if (map is Map<String, dynamic>) {
-          _items.add(Subscription.fromJson(map));
+          final sub = Subscription.fromJson(map);
+          _applyLocalCategory(sub);
+          _items.add(sub);
         }
       } catch (_) {
         // تجاهل السجلات التالفة بدل تعطيل التطبيق.
@@ -130,6 +136,7 @@ class SubscriptionStore extends ChangeNotifier {
   }
 
   Future<void> upsert(Subscription sub) async {
+    _applyLocalCategory(sub);
     final index = _items.indexWhere((s) => s.id == sub.id);
     if (index >= 0) {
       // تسجيل تغيّر السعر في السجل قبل الاستبدال.
@@ -154,6 +161,55 @@ class SubscriptionStore extends ChangeNotifier {
     }
     await _persist();
     notifyListeners();
+  }
+
+  void _applyLocalCategory(Subscription sub) {
+    if (!kCategories.contains(sub.category) || sub.category == 'أخرى') {
+      final suggestion = CategoryClassifier.suggest(sub.name);
+      if (suggestion.category != 'أخرى') sub.category = suggestion.category;
+    }
+  }
+
+  /// يعيد تصنيف العناصر التي بقيت في «أخرى» بعد وصول الكتالوج الشبكي.
+  Future<void> reclassifyUnknowns() async {
+    var changed = false;
+    for (final sub in _items) {
+      if (sub.category != 'أخرى') continue;
+      final suggestion = CategoryClassifier.suggest(
+        sub.name,
+        remote: RemoteCatalog.instance.services,
+      );
+      if (suggestion.category != 'أخرى') {
+        sub.category = suggestion.category;
+        changed = true;
+      }
+    }
+    if (changed) {
+      await _persist();
+      notifyListeners();
+    }
+  }
+
+  Future<int> reclassifyUnknownsWithAi() async {
+    final names = _items
+        .where((s) => s.category == 'أخرى')
+        .map((s) => s.name)
+        .toList();
+    if (names.isEmpty || _aiApiKey.trim().isEmpty) return 0;
+    final categories = await AiExtractor.classifyNames(names, _aiApiKey);
+    var changed = 0;
+    for (final sub in _items) {
+      final category = categories[sub.name];
+      if (sub.category == 'أخرى' && category != null) {
+        sub.category = category;
+        changed += 1;
+      }
+    }
+    if (changed > 0) {
+      await _persist();
+      notifyListeners();
+    }
+    return changed;
   }
 
   Future<void> remove(String id) async {

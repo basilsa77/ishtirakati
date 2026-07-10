@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "updatedAt": "2026-07-07",
+  "version": 3,
+  "updatedAt": "2026-07-10",
   "services": [
     {
       "name": "شاهد VIP",
@@ -101,7 +101,7 @@
     {
       "name": "Snapchat+",
       "emoji": "👻",
-      "category": "أخرى",
+      "category": "ترفيه ومشاهدة",
       "domain": "snapchat.com",
       "manageUrl": "https://accounts.snapchat.com",
       "priceHint": 14.99
@@ -205,7 +205,7 @@
     {
       "name": "Apple One",
       "emoji": "🅰️",
-      "category": "أخرى",
+      "category": "إنتاجية وذكاء اصطناعي",
       "domain": "apple.com",
       "manageUrl": "https://support.apple.com/HT202039",
       "priceHint": 36.95
@@ -285,7 +285,7 @@
     {
       "name": "Telegram Premium",
       "emoji": "✈️",
-      "category": "أخرى",
+      "category": "إنتاجية وذكاء اصطناعي",
       "domain": "telegram.org",
       "manageUrl": "https://t.me/premium",
       "priceHint": 18.99
@@ -293,7 +293,7 @@
     {
       "name": "X Premium",
       "emoji": "✖️",
-      "category": "أخرى",
+      "category": "أخبار ومجلات",
       "domain": "x.com",
       "manageUrl": "https://x.com/settings/subscriptions",
       "priceHint": 32.0
@@ -301,7 +301,7 @@
     {
       "name": "Discord Nitro",
       "emoji": "🎙️",
-      "category": "أخرى",
+      "category": "ألعاب",
       "domain": "discord.com",
       "manageUrl": "https://discord.com/settings/subscriptions",
       "priceHint": 37.99
@@ -373,7 +373,7 @@
     {
       "name": "NordVPN",
       "emoji": "🔒",
-      "category": "أخرى",
+      "category": "اتصالات وإنترنت",
       "domain": "nordvpn.com",
       "manageUrl": "https://my.nordaccount.com",
       "priceHint": 47.0
@@ -381,7 +381,7 @@
     {
       "name": "1Password",
       "emoji": "🔑",
-      "category": "أخرى",
+      "category": "إنتاجية وذكاء اصطناعي",
       "domain": "1password.com",
       "manageUrl": "https://my.1password.com",
       "priceHint": 11.0

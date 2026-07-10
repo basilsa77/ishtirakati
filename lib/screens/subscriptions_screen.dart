@@ -90,6 +90,8 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
           final usedCategories = <String>{
             for (final s in store.items) s.category,
           };
+          final unknownCount =
+              store.items.where((s) => s.category == 'أخرى').length;
 
           return Column(
             children: [
@@ -188,6 +190,45 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                   ],
                 ),
               ),
+              if (unknownCount > 0)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: AppCard(
+                    color: AppColors.goldSoft,
+                    borderColor: AppColors.goldDeep,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 9,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.auto_awesome_rounded,
+                          color: AppColors.gold,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 9),
+                        Expanded(
+                          child: Text(
+                            '$unknownCount خدمات تحتاج تصنيفًا أدق',
+                            style: const TextStyle(
+                              color: AppColors.ink,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            await store.reclassifyUnknowns();
+                            if (context.mounted) setState(() {});
+                          },
+                          child: const Text('تحسين الآن'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               SizedBox(
                 height: 52,
                 child: ListView(

@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/subscription.dart';
+import '../data/presets.dart';
 import 'import_parser.dart';
 
 /// نماذج نجربها بالترتيب (الأحدث أولًا، مع بدائل إن أُوقف نموذج).
@@ -22,7 +23,7 @@ const String _prompt = '''
 الاشتراكات الدورية المدفوعة. أعد النتيجة بصيغة JSON فقط — مصفوفة كائنات:
 [{"name": "اسم الخدمة كما يعرفه الناس",
   "emoji": "إيموجي واحد مناسب",
-  "category": "واحدة من: ترفيه ومشاهدة، موسيقى وبودكاست، إنتاجية وذكاء اصطناعي، ألعاب، رياضة وصحة، تعليم، تسوق وتوصيل، اتصالات وإنترنت، تخزين سحابي، أخرى",
+  "category": "واحدة من: ترفيه ومشاهدة، موسيقى وبودكاست، إنتاجية وذكاء اصطناعي، ألعاب، رياضة وصحة، تعليم، تسوق وتوصيل، اتصالات وإنترنت، تخزين سحابي، مالية وفواتير، أخبار ومجلات، أخرى",
   "price": 55.99,
   "currency": "SAR أو AED أو USD أو EUR أو KWD أو QAR أو BHD أو OMR",
   "cycle": "weekly أو monthly أو quarterly أو yearly",
@@ -70,6 +71,7 @@ List<ImportCandidate> parseAiCandidates(String raw) {
     'ترفيه ومشاهدة', 'موسيقى وبودكاست', 'إنتاجية وذكاء اصطناعي',
     'ألعاب', 'رياضة وصحة', 'تعليم', 'تسوق وتوصيل',
     'اتصالات وإنترنت', 'تخزين سحابي', 'أخرى',
+    'مالية وفواتير', 'أخبار ومجلات',
   };
 
   final seen = <String>{};
@@ -183,5 +185,95 @@ class AiExtractor {
       }
     }
     throw AiExtractionException('تعذر الاتصال بالذكاء الاصطناعي: $lastError');
+  }
+
+  /// يصنف أسماء خدمات موجودة مسبقًا دون إرسال الأسعار أو البيانات المالية.
+  static Future<Map<String, String>> classifyNames(
+    List<String> names,
+    String apiKey,
+  ) async {
+    if (names.isEmpty) return const {};
+    final prompt = '''
+صنف أسماء الخدمات التالية إلى تصنيف واحد فقط من القائمة:
+${kCategories.join('، ')}
+أعد JSON object فقط، بحيث يكون المفتاح اسم الخدمة والقيمة التصنيف.
+لا تستخدم «أخرى» إلا إذا كان الاسم غير قابل للتعرف عليه.
+الأسماء:
+${names.join('\n')}
+''';
+    Object? lastError;
+    for (final model in kGeminiModels) {
+      try {
+        final uri = Uri.parse(
+          'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey',
+        );
+        final res = await http
+            .post(
+              uri,
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'contents': [
+                  {'parts': [{'text': prompt}]},
+                ],
+                'generationConfig': {
+                  'temperature': 0,
+                  'responseMimeType': 'application/json',
+                },
+              }),
+            )
+            .timeout(const Duration(seconds: 45));
+        if (res.statusCode == 404) {
+          lastError = 'model $model not found';
+          continue;
+        }
+        if (res.statusCode == 400 || res.statusCode == 403) {
+          throw const AiExtractionException('مفتاح Gemini API غير صالح');
+        }
+        if (res.statusCode != 200) {
+          lastError = 'HTTP ${res.statusCode}';
+          continue;
+        }
+        final body = jsonDecode(utf8.decode(res.bodyBytes));
+        final candidates = body['candidates'];
+        final parts = candidates is List && candidates.isNotEmpty
+            ? candidates[0]?['content']?['parts']
+            : null;
+        final answer = parts is List && parts.isNotEmpty
+            ? (parts[0]?['text'] as String? ?? '')
+            : '';
+        return parseAiCategories(answer);
+      } on AiExtractionException {
+        rethrow;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    throw AiExtractionException('تعذر تصنيف الخدمات: $lastError');
+  }
+}
+
+Map<String, String> parseAiCategories(String raw) {
+  var value = raw.trim();
+  if (value.startsWith('```')) {
+    value = value
+        .replaceAll(RegExp(r'^```[a-zA-Z]*'), '')
+        .replaceAll('```', '')
+        .trim();
+  }
+  final start = value.indexOf('{');
+  final end = value.lastIndexOf('}');
+  if (start < 0 || end <= start) return const {};
+  try {
+    final data = jsonDecode(value.substring(start, end + 1));
+    if (data is! Map<String, dynamic>) return const {};
+    return {
+      for (final entry in data.entries)
+        if (entry.key.trim().isNotEmpty &&
+            entry.value is String &&
+            kCategories.contains(entry.value))
+          entry.key.trim(): entry.value as String,
+    };
+  } catch (_) {
+    return const {};
   }
 }

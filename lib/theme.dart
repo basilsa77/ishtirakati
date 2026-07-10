@@ -51,6 +51,8 @@ const Map<String, Color> kCategoryColors = {
   'تسوق وتوصيل': Color(0xFFF48FB1),
   'اتصالات وإنترنت': Color(0xFF81C784),
   'تخزين سحابي': Color(0xFF90A4AE),
+  'مالية وفواتير': Color(0xFFFFD166),
+  'أخبار ومجلات': Color(0xFF8AB4F8),
   'أخرى': Color(0xFFE9C46A),
 };
 

@@ -7,8 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:local_auth/local_auth.dart';
 
-import 'screens/dashboard_screen.dart';
 import 'screens/calendar_screen.dart';
+import 'screens/command_center_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/insights_screen.dart';
 import 'screens/settings_screen.dart';
@@ -37,7 +37,7 @@ Future<void> main() async {
         );
   }
   // ignore: unawaited_futures
-  RemoteCatalog.instance.load();
+  RemoteCatalog.instance.load().then((_) => store.reclassifyUnknowns());
   // ignore: unawaited_futures
   UpdateChecker.check();
 }
@@ -221,7 +221,7 @@ class _RootShellState extends State<RootShell> {
   Widget _body() {
     switch (_index) {
       case 0:
-        return const DashboardScreen(key: ValueKey('dash'));
+        return const CommandCenterScreen(key: ValueKey('command-center'));
       case 1:
         return const SubscriptionsScreen(key: ValueKey('subs'));
       case 2:
@@ -236,7 +236,7 @@ class _RootShellState extends State<RootShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_titles[_index])),
+      appBar: _index == 0 ? null : AppBar(title: Text(_titles[_index])),
       body: SafeArea(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 260),

@@ -352,6 +352,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(46),
+                    ),
+                    onPressed: store.aiApiKey.trim().isEmpty
+                        ? null
+                        : () async {
+                            try {
+                              final count =
+                                  await store.reclassifyUnknownsWithAi();
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      count == 0
+                                          ? 'لا توجد خدمات غير مصنفة قابلة للتحديث'
+                                          : 'تم تصنيف $count خدمات بالذكاء الاصطناعي',
+                                    ),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('$e')),
+                                );
+                              }
+                            }
+                          },
+                    icon: const Icon(Icons.auto_awesome_rounded),
+                    label: const Text('تصنيف الخدمات غير المعروفة بالذكاء الاصطناعي'),
+                  ),
                 ],
               ),
             ),
