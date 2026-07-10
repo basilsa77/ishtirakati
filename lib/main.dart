@@ -177,6 +177,7 @@ class _LockGateState extends State<LockGate>
   @override
   Widget build(BuildContext context) {
     if (!_locked) return widget.child;
+    final p = context.palette;
     return Scaffold(
       body: Center(
         child: Column(
@@ -197,12 +198,12 @@ class _LockGateState extends State<LockGate>
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'اشتراكاتي مقفلة',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
-                color: AppColors.ink,
+                color: p.text,
               ),
             ),
             const SizedBox(height: 24),
@@ -219,8 +220,8 @@ class _LockGateState extends State<LockGate>
               Text(
                 _authError!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppColors.danger,
+                style: TextStyle(
+                  color: p.danger,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -242,14 +243,6 @@ class RootShell extends StatefulWidget {
 class _RootShellState extends State<RootShell> {
   int _index = 0;
 
-  static const List<String> _titles = [
-    'اشتراكاتي',
-    'كل الاشتراكات',
-    'تحليلات الإنفاق',
-    'التقويم',
-    'الإعدادات',
-  ];
-
   Widget _body() {
     switch (_index) {
       case 0:
@@ -269,9 +262,6 @@ class _RootShellState extends State<RootShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      appBar: _index == 0 || _index == 3
-          ? null
-          : AppBar(title: Text(_titles[_index])),
       body: SafeArea(
         bottom: false,
         child: AnimatedSwitcher(
@@ -318,12 +308,12 @@ class _ModernBottomBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 7),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(26),
-          border: Border.all(color: Theme.of(context).dividerColor),
-          boxShadow: const [
+          color: context.palette.surface,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: context.palette.stroke),
+          boxShadow: [
             BoxShadow(
-              color: Color(0x180B3D2E),
+              color: context.palette.shadow,
               blurRadius: 24,
               offset: Offset(0, 8),
             ),
@@ -371,9 +361,7 @@ class _BottomBarItem extends StatelessWidget {
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(vertical: 7),
           decoration: BoxDecoration(
-            color: selected
-                ? Theme.of(context).colorScheme.primaryContainer
-                : Colors.transparent,
+            color: selected ? context.palette.accentSoft : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
@@ -382,9 +370,7 @@ class _BottomBarItem extends StatelessWidget {
               Icon(
                 selected ? item.$2 : item.$1,
                 size: 21,
-                color: selected
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                color: selected ? context.palette.accent : context.palette.textMuted,
               ),
               const SizedBox(height: 3),
               Text(
@@ -392,9 +378,7 @@ class _BottomBarItem extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: selected
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: selected ? context.palette.accent : context.palette.textMuted,
                   fontSize: 10.5,
                   fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
                 ),

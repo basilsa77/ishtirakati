@@ -1,4 +1,4 @@
-/// مركز اشتراكاتي 7: لوحة مالية مركزة للعمل اليومي واتخاذ القرار.
+/// لوحة البداية للإصدار 8: متابعة واضحة من دون تكديس بطاقات متشابهة.
 library;
 
 import 'package:flutter/material.dart';
@@ -20,28 +20,29 @@ class CommandCenterScreen extends StatelessWidget {
     return ListenableBuilder(
       listenable: store,
       builder: (context, _) {
-        if (store.items.isEmpty) return const _EmptyWorkspace();
+        if (store.items.isEmpty) return const _DashboardEmpty();
 
         final currency = store.dominantCurrency;
         final monthly = store.monthlyTotals()[currency] ?? 0;
         final yearly = store.yearlyTotals()[currency] ?? 0;
         final budget = store.monthlyBudget;
-        final upcoming = store.upcoming(withinDays: 14);
+        final upcoming = store.upcoming(withinDays: 21);
         final byCategory = store.monthlyByCategory(currency).entries.toList()
           ..sort((a, b) => b.value.compareTo(a.value));
+
         return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 122),
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 132),
           children: [
-            const _TopBar(),
-            const SizedBox(height: 14),
-            _FinancialHero(
+            _DashboardGreeting(activeCount: store.active.length),
+            const SizedBox(height: 22),
+            _CommitmentHero(
               monthly: monthly,
               yearly: yearly,
               budget: budget,
               currency: currency,
             ),
             const SizedBox(height: 14),
-            _ActionGrid(
+            _QuickLane(
               onAdd: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const EditSubscriptionScreen()),
               ),
@@ -51,98 +52,111 @@ class CommandCenterScreen extends StatelessWidget {
               onCalendar: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const CalendarScreen()),
               ),
-              onReview: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const _ReviewRoute(),
-                ),
-              ),
             ),
-            const SizedBox(height: 20),
-            _SectionHeader(
-              title: 'القرار القادم',
-              subtitle: upcoming.isEmpty
-                  ? 'لا توجد خصومات قريبة خلال أسبوعين'
-                  : '${upcoming.length} تجديدات تحتاج انتباهك خلال 14 يومًا',
+            const SizedBox(height: 28),
+            _V8SectionHeader(
+              title: 'القادم على حسابك',
+              detail: upcoming.isEmpty
+                  ? 'الأيام الثلاثة القادمة هادئة'
+                  : '${upcoming.length} عمليات قريبة خلال 21 يومًا',
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             if (upcoming.isEmpty)
-              const _QuietState()
+              const _CalmState()
             else
-              _UpcomingTimeline(
-                subscriptions: upcoming.take(4).toList(),
-                onOpen: (sub) => showSubscriptionDetails(context, sub),
-              ),
-            const SizedBox(height: 20),
-            _SectionHeader(
-              title: 'فرص التوفير',
-              subtitle: 'قرارات صغيرة قد تخفّض مصروفك الشهري',
+              _RenewalStrip(subscriptions: upcoming.take(5).toList()),
+            const SizedBox(height: 28),
+            _V8SectionHeader(
+              title: 'نبض مصروفك',
+              detail: 'لقطة سريعة تساعدك على المتابعة',
             ),
-            const SizedBox(height: 10),
-            _SavingsActions(
-              store: store,
+            const SizedBox(height: 12),
+            _PulseGrid(
+              upcoming: upcoming.length,
+              unused: store.neverUsed.length,
+              saved: store.savingsFor(currency),
               currency: currency,
-              monthlySavings: store.savingsFor(currency),
             ),
-            const SizedBox(height: 20),
-            _SectionHeader(
-              title: 'خريطة المصروف',
-              subtitle: 'أين يذهب مصروفك الشهري؟',
+            const SizedBox(height: 28),
+            _V8SectionHeader(
+              title: 'وجهة الإنفاق',
+              detail: 'أكبر التصنيفات هذا الشهر',
             ),
-            const SizedBox(height: 10),
-            _CategoryBreakdown(
+            const SizedBox(height: 12),
+            _SpendingMap(
               entries: byCategory.take(5).toList(),
               total: monthly,
               currency: currency,
             ),
-            const SizedBox(height: 20),
-            _SectionHeader(
-              title: 'قيمة الاشتراكات',
-              subtitle: 'سجّل الاستخدام لتعرف ما يستحق الاستمرار',
+            const SizedBox(height: 28),
+            _V8SectionHeader(
+              title: 'متابعة الاستخدام',
+              detail: 'سجّل استخدام الخدمة لتتضح قيمتها',
             ),
-            const SizedBox(height: 10),
-            _UsageReview(store: store),
+            const SizedBox(height: 12),
+            _UsageFocus(subscriptions: store.neverUsed.take(3).toList()),
           ],
         );
       },
     );
   }
-
 }
 
-class _TopBar extends StatelessWidget {
-  const _TopBar();
+class _DashboardGreeting extends StatelessWidget {
+  final int activeCount;
+
+  const _DashboardGreeting({required this.activeCount});
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     final hour = DateTime.now().hour;
-    final greeting = hour < 12 ? 'صباح الخير' : hour < 18 ? 'مساء الخير' : 'مساء الهدوء';
+    final salutation = hour < 12
+        ? 'صباحك مرتب'
+        : hour < 18
+            ? 'مساءك هادئ'
+            : 'ليلة مالية هادئة';
     return Row(
       children: [
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(greeting, style: const TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 2),
-              const Text(
-                'مركزك المالي',
-                style: TextStyle(color: AppColors.ink, fontSize: 23, fontWeight: FontWeight.w900),
+              Text(
+                salutation,
+                style: TextStyle(
+                  color: p.textMuted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'مساحتك المالية',
+                style: TextStyle(
+                  color: p.text,
+                  fontSize: 27,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ],
           ),
         ),
         Container(
-          width: 44,
-          height: 44,
+          width: 48,
+          height: 48,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primaryContainer,
-            borderRadius: BorderRadius.circular(15),
+            color: p.accentSoft,
+            borderRadius: BorderRadius.circular(17),
           ),
-          child: const Icon(
-            Icons.account_balance_wallet_rounded,
-            color: AppColors.primary,
-            size: 22,
+          child: Text(
+            '$activeCount',
+            style: TextStyle(
+              color: p.accent,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ),
       ],
@@ -150,13 +164,13 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-class _FinancialHero extends StatelessWidget {
+class _CommitmentHero extends StatelessWidget {
   final double monthly;
   final double yearly;
   final double budget;
   final String currency;
 
-  const _FinancialHero({
+  const _CommitmentHero({
     required this.monthly,
     required this.yearly,
     required this.budget,
@@ -165,19 +179,21 @@ class _FinancialHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final budgetProgress = budget <= 0
-        ? 0.0
-        : (monthly / budget).clamp(0.0, 1.0).toDouble();
+    final p = context.palette;
+    final ratio = budget <= 0 ? 0.0 : (monthly / budget).clamp(0.0, 1.0);
+    final isOver = budget > 0 && monthly > budget;
+    final progressColor = isOver ? p.danger : p.accent;
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        gradient: AppColors.heroGradient,
+        color: p.accentStrong,
         borderRadius: BorderRadius.circular(28),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x260B6F52),
-            blurRadius: 24,
-            offset: Offset(0, 10),
+            color: p.accentStrong.withOpacity(.30),
+            blurRadius: 28,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
@@ -186,61 +202,81 @@ class _FinancialHero extends StatelessWidget {
         children: [
           Row(
             children: [
+              const Icon(
+                Icons.account_balance_wallet_rounded,
+                color: Color(0xD9FFFFFF),
+                size: 19,
+              ),
+              const SizedBox(width: 8),
               const Expanded(
                 child: Text(
-                  'التزامك الشهري',
+                  'التزامك لهذا الشهر',
                   style: TextStyle(
-                    color: Color(0xD9E8FFF5),
+                    color: Color(0xD9FFFFFF),
+                    fontSize: 13,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0x26FFFFFF),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'شهريًا',
-                  style: TextStyle(
-                    color: Color(0xE6FFFFFF),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                  ),
+              Text(
+                'سنويًا ${fmtMoney(yearly, currency)}',
+                style: const TextStyle(
+                  color: Color(0xBFFFFFFF),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 7),
-          AnimatedMoney(
-            value: monthly,
-            currency: currency,
-            style: const TextStyle(color: Colors.white, fontSize: 38, fontWeight: FontWeight.w900, height: 1),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'توقع سنوي ${fmtMoney(yearly, currency)}',
-            style: const TextStyle(color: Color(0xC9E8FFF5), fontSize: 13, fontWeight: FontWeight.w700),
-          ),
           const SizedBox(height: 18),
-          _HeroMetric(
-            icon: Icons.account_balance_wallet_rounded,
-            label: budget <= 0 ? 'ميزانية' : 'من الميزانية',
-            value: budget <= 0 ? 'غير محددة' : '${(budgetProgress * 100).round()}٪',
-            color: budget > 0 && monthly > budget ? AppColors.danger : AppColors.gold,
+          Text(
+            fmtMoney(monthly, currency),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 35,
+              height: 1,
+              fontWeight: FontWeight.w900,
+            ),
           ),
-          if (budget > 0) ...[
-            const SizedBox(height: 14),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: budgetProgress,
-                minHeight: 7,
-                backgroundColor: const Color(0x3278FFF0),
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  monthly > budget ? AppColors.danger : AppColors.primary,
+          const SizedBox(height: 22),
+          if (budget <= 0)
+            const Text(
+              'أضف ميزانية شهرية من الإعدادات لتتابعها هنا.',
+              style: TextStyle(
+                color: Color(0xBFFFFFFF),
+                fontSize: 12,
+              ),
+            )
+          else ...[
+            Row(
+              children: [
+                Text(
+                  isOver ? 'تجاوزت الميزانية' : 'ضمن الميزانية',
+                  style: TextStyle(
+                    color: isOver ? const Color(0xFFFFC5CA) : const Color(0xCFFFFFFF),
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                  ),
                 ),
+                const Spacer(),
+                Text(
+                  '${(ratio * 100).round()}٪',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(
+                value: ratio,
+                minHeight: 8,
+                backgroundColor: const Color(0x38FFFFFF),
+                valueColor: AlwaysStoppedAnimation<Color>(progressColor),
               ),
             ),
           ],
@@ -250,471 +286,169 @@ class _FinancialHero extends StatelessWidget {
   }
 }
 
-class _HeroMetric extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  const _HeroMetric({required this.icon, required this.label, required this.value, required this.color});
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-        decoration: BoxDecoration(
-          color: const Color(0x26000000),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0x1FFFFFFF)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: color),
-            const SizedBox(width: 7),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: const TextStyle(color: Color(0xC9E8FFF5), fontSize: 10.5, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 2),
-                  Text(value, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-}
-
-class _ActionGrid extends StatelessWidget {
+class _QuickLane extends StatelessWidget {
   final VoidCallback onAdd;
   final VoidCallback onImport;
   final VoidCallback onCalendar;
-  final VoidCallback onReview;
 
-  const _ActionGrid({required this.onAdd, required this.onImport, required this.onCalendar, required this.onReview});
-
-  @override
-  Widget build(BuildContext context) {
-    final actions = [
-      (Icons.add_circle_outline_rounded, 'إضافة', onAdd),
-      (Icons.document_scanner_outlined, 'استيراد', onImport),
-      (Icons.calendar_month_outlined, 'التقويم', onCalendar),
-      (Icons.fact_check_outlined, 'مراجعة', onReview),
-    ];
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 2.35,
-      ),
-      itemCount: actions.length,
-      itemBuilder: (context, index) {
-        final action = actions[index];
-        return Tooltip(
-          message: action.$2,
-          child: InkWell(
-            onTap: action.$3,
-            borderRadius: BorderRadius.circular(18),
-            child: Container(
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Theme.of(context).dividerColor),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0F0B3D2E),
-                    blurRadius: 12,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(action.$1, color: AppColors.primary, size: 19),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(action.$2, style: const TextStyle(color: AppColors.ink, fontSize: 12, fontWeight: FontWeight.w800)),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  const _SectionHeader({required this.title, required this.subtitle});
-
-  @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 7,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(5),
-                ),
-              ),
-              const SizedBox(width: 9),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: AppColors.ink,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(color: AppColors.muted, fontSize: 13),
-          ),
-        ],
-      );
-}
-
-class _UpcomingTimeline extends StatelessWidget {
-  final List<Subscription> subscriptions;
-  final ValueChanged<Subscription> onOpen;
-  const _UpcomingTimeline({required this.subscriptions, required this.onOpen});
-
-  @override
-  Widget build(BuildContext context) => AppCard(
-        padding: EdgeInsets.zero,
-        child: Column(
-          children: [
-            for (var i = 0; i < subscriptions.length; i++) ...[
-              _UpcomingRow(sub: subscriptions[i], onTap: () => onOpen(subscriptions[i])),
-              if (i != subscriptions.length - 1) const Divider(height: 1),
-            ],
-          ],
-        ),
-      );
-}
-
-class _UpcomingRow extends StatelessWidget {
-  final Subscription sub;
-  final VoidCallback onTap;
-  const _UpcomingRow({required this.sub, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) => InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              ServiceAvatar(
-                name: sub.name,
-                emoji: sub.emoji,
-                manageUrl: sub.manageUrl,
-                iconUrl: sub.iconUrl,
-                tint: categoryColor(sub.category),
-                size: 44,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(sub.name, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.ink, fontWeight: FontWeight.w800)),
-                    const SizedBox(height: 2),
-                    Text('بعد ${sub.daysUntilRenewal()} يوم', style: const TextStyle(color: AppColors.muted, fontSize: 12)),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    fmtMoney(sub.price, sub.currency),
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  const Icon(
-                    Icons.chevron_left_rounded,
-                    color: AppColors.muted,
-                    size: 17,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
-}
-
-class _SavingsActions extends StatelessWidget {
-  final SubscriptionStore store;
-  final String currency;
-  final double monthlySavings;
-  const _SavingsActions({required this.store, required this.currency, required this.monthlySavings});
+  const _QuickLane({
+    required this.onAdd,
+    required this.onImport,
+    required this.onCalendar,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final unknown = store.items.where((s) => s.category == 'أخرى').length;
-    final unused = store.neverUsed;
-    return Column(
+    return Row(
       children: [
-        if (monthlySavings > 0)
-          _ActionNotice(
-            icon: Icons.savings_outlined,
-            color: AppColors.primary,
-            title: 'أنت توفّر بالفعل',
-            detail: '${fmtMoney(monthlySavings, currency)} شهريًا من الاشتراكات الموقوفة',
+        Expanded(
+          child: _QuickAction(
+            icon: Icons.add_rounded,
+            label: 'إضافة',
+            onTap: onAdd,
           ),
-        if (unused.isNotEmpty) ...[
-          if (monthlySavings > 0) const SizedBox(height: 8),
-          _ActionNotice(
-            icon: Icons.visibility_off_outlined,
-            color: AppColors.gold,
-            title: 'راجع ${unused.length} اشتراكات بلا استخدام مسجل',
-            detail: 'ابدأ بـ «${unused.first.name}» قبل التجديد القادم',
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _QuickAction(
+            icon: Icons.document_scanner_rounded,
+            label: 'استيراد',
+            onTap: onImport,
           ),
-        ],
-        if (unknown > 0) ...[
-          if (monthlySavings > 0 || unused.isNotEmpty) const SizedBox(height: 8),
-          _ActionNotice(
-            icon: Icons.auto_awesome_outlined,
-            color: AppColors.warn,
-            title: '$unknown خدمات تحتاج تصنيفًا أدق',
-            detail: 'افتح اشتراكاتي ثم اختر تحسين الآن',
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _QuickAction(
+            icon: Icons.calendar_today_rounded,
+            label: 'التقويم',
+            onTap: onCalendar,
           ),
-        ],
-        if (monthlySavings <= 0 && unused.isEmpty && unknown == 0)
-          const _ActionNotice(
-            icon: Icons.check_circle_outline_rounded,
-            color: AppColors.primary,
-            title: 'وضعك منظم',
-            detail: 'لا توجد فرص توفير واضحة حاليًا',
-          ),
+        ),
       ],
     );
   }
 }
 
-class _ActionNotice extends StatelessWidget {
+class _QuickAction extends StatelessWidget {
   final IconData icon;
-  final Color color;
-  final String title;
-  final String detail;
-  const _ActionNotice({required this.icon, required this.color, required this.title, required this.detail});
+  final String label;
+  final VoidCallback onTap;
 
-  @override
-  Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          color: color.withOpacity(.07),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: color.withOpacity(.18)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(color: AppColors.ink, fontWeight: FontWeight.w800, fontSize: 13.5)),
-                  const SizedBox(height: 2),
-                  Text(detail, style: const TextStyle(color: AppColors.muted, fontSize: 12)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-}
-
-class _CategoryBreakdown extends StatelessWidget {
-  final List<MapEntry<String, double>> entries;
-  final double total;
-  final String currency;
-  const _CategoryBreakdown({required this.entries, required this.total, required this.currency});
-
-  @override
-  Widget build(BuildContext context) => AppCard(
-        padding: const EdgeInsets.all(14),
-        child: entries.isEmpty
-            ? const Text('لا توجد بيانات كافية بعد', style: TextStyle(color: AppColors.muted))
-            : Column(
-                children: [
-                  for (final entry in entries) ...[
-                    Row(
-                      children: [
-                        Container(width: 8, height: 8, decoration: BoxDecoration(color: categoryColor(entry.key), shape: BoxShape.circle)),
-                        const SizedBox(width: 8),
-                        Expanded(child: Text(entry.key, overflow: TextOverflow.ellipsis, style: const TextStyle(color: AppColors.ink, fontWeight: FontWeight.w700, fontSize: 12.5))),
-                        Text(fmtMoney(entry.value, currency), style: const TextStyle(color: AppColors.ink, fontSize: 12.5, fontWeight: FontWeight.w800)),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(3),
-                      child: LinearProgressIndicator(
-                        value: total <= 0 ? 0 : entry.value / total,
-                        minHeight: 5,
-                        backgroundColor: AppColors.cardAlt,
-                        valueColor: AlwaysStoppedAnimation<Color>(categoryColor(entry.key)),
-                      ),
-                    ),
-                    if (entry != entries.last) const SizedBox(height: 12),
-                  ],
-                ],
-              ),
-      );
-}
-
-class _UsageReview extends StatelessWidget {
-  final SubscriptionStore store;
-  const _UsageReview({required this.store});
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final pending = store.neverUsed.take(3).toList();
-    if (pending.isEmpty) {
-      return const _ActionNotice(
-        icon: Icons.verified_outlined,
-        color: AppColors.primary,
-        title: 'سجل استخدامك جيد',
-        detail: 'استمر في تسجيل الاستخدام عند فتح الخدمة',
-      );
-    }
-    return AppCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: [
-          for (var i = 0; i < pending.length; i++) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-              child: Row(
-                children: [
-                  Text(pending[i].emoji, style: const TextStyle(fontSize: 20)),
-                  const SizedBox(width: 9),
-                  Expanded(child: Text(pending[i].name, style: const TextStyle(color: AppColors.ink, fontWeight: FontWeight.w800))),
-                  IconButton(
-                    tooltip: 'تسجيل استخدام',
-                    onPressed: () => store.recordUsage(pending[i].id),
-                    icon: const Icon(Icons.check_circle_outline_rounded, color: AppColors.primary),
-                  ),
-                ],
+    final p = context.palette;
+    return Tooltip(
+      message: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Ink(
+          height: 76,
+          decoration: BoxDecoration(
+            color: p.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: p.stroke),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: p.accent, size: 22),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: p.text,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
-            if (i != pending.length - 1) const Divider(height: 1),
-          ],
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _QuietState extends StatelessWidget {
-  const _QuietState();
-  @override
-  Widget build(BuildContext context) => const AppCard(
-        child: Row(
-          children: [
-            Icon(Icons.event_available_outlined, color: AppColors.primary),
-            SizedBox(width: 10),
-            Expanded(child: Text('الأسبوعان القادمان هادئان.', style: TextStyle(color: AppColors.ink, fontWeight: FontWeight.w700))),
-          ],
-        ),
-      );
-}
+class _V8SectionHeader extends StatelessWidget {
+  final String title;
+  final String detail;
 
-class _EmptyWorkspace extends StatelessWidget {
-  const _EmptyWorkspace();
-  @override
-  Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(color: AppColors.primarySoft, borderRadius: BorderRadius.circular(12)),
-                child: const Icon(Icons.account_balance_wallet_outlined, color: AppColors.primary, size: 36),
-              ),
-              const SizedBox(height: 16),
-              const Text('ابدأ صورة مالية أوضح', style: TextStyle(color: AppColors.ink, fontSize: 20, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 6),
-              const Text('أضف أول اشتراك وستظهر لك التوقعات والتنبيهات وفرص التوفير هنا.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.muted, height: 1.6)),
-              const SizedBox(height: 18),
-              FilledButton.icon(
-                onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditSubscriptionScreen())),
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('إضافة اشتراك'),
-              ),
-            ],
-          ),
-        ),
-      );
-}
+  const _V8SectionHeader({required this.title, required this.detail});
 
-class _ReviewRoute extends StatelessWidget {
-  const _ReviewRoute();
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('مراجعة الاشتراكات')),
-        body: const _ReviewList(),
-      );
-}
-
-class _ReviewList extends StatelessWidget {
-  const _ReviewList();
   @override
   Widget build(BuildContext context) {
-    final store = SubscriptionStore.instance;
-    return ListenableBuilder(
-      listenable: store,
-      builder: (context, _) {
-        final review = store.neverUsed;
-        if (review.isEmpty) {
-          return const Center(child: Text('لا توجد اشتراكات تحتاج مراجعة الآن.', style: TextStyle(color: AppColors.muted)));
-        }
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: review.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
-          itemBuilder: (context, index) {
-            final sub = review[index];
-            return AppCard(
-              padding: const EdgeInsets.all(13),
-              child: Row(
+    final p = context.palette;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            color: p.text,
+            fontSize: 19,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          detail,
+          style: TextStyle(color: p.textMuted, fontSize: 12.5),
+        ),
+      ],
+    );
+  }
+}
+
+class _RenewalStrip extends StatelessWidget {
+  final List<Subscription> subscriptions;
+
+  const _RenewalStrip({required this.subscriptions});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 154,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: subscriptions.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, index) => _RenewalCard(sub: subscriptions[index]),
+      ),
+    );
+  }
+}
+
+class _RenewalCard extends StatelessWidget {
+  final Subscription sub;
+
+  const _RenewalCard({required this.sub});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return SizedBox(
+      width: 166,
+      child: InkWell(
+        onTap: () => showSubscriptionDetails(context, sub),
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: p.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: p.stroke),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
                   ServiceAvatar(
                     name: sub.name,
@@ -722,18 +456,362 @@ class _ReviewList extends StatelessWidget {
                     manageUrl: sub.manageUrl,
                     iconUrl: sub.iconUrl,
                     tint: categoryColor(sub.category),
-                    size: 44,
+                    size: 38,
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(sub.name, style: const TextStyle(color: AppColors.ink, fontWeight: FontWeight.w900)), Text('${fmtMoney(sub.monthlyCost, sub.currency)} شهريًا', style: const TextStyle(color: AppColors.muted, fontSize: 12))])),
-                  IconButton(tooltip: 'تسجيل استخدام', onPressed: () => store.recordUsage(sub.id), icon: const Icon(Icons.check_circle_outline_rounded, color: AppColors.primary)),
-                  IconButton(tooltip: 'فتح التفاصيل', onPressed: () => showSubscriptionDetails(context, sub), icon: const Icon(Icons.open_in_new_rounded, color: AppColors.muted)),
+                  const Spacer(),
+                  Icon(Icons.arrow_outward_rounded, color: p.textMuted, size: 17),
                 ],
               ),
-            );
-          },
-        );
-      },
+              const Spacer(),
+              Text(
+                sub.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: p.text,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                'بعد ${sub.daysUntilRenewal()} يوم',
+                style: TextStyle(color: p.textMuted, fontSize: 11.5),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                fmtMoney(sub.price, sub.currency),
+                style: TextStyle(
+                  color: p.accent,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PulseGrid extends StatelessWidget {
+  final int upcoming;
+  final int unused;
+  final double saved;
+  final String currency;
+
+  const _PulseGrid({
+    required this.upcoming,
+    required this.unused,
+    required this.saved,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _PulseTile(
+            icon: Icons.notifications_active_outlined,
+            label: 'قريب',
+            value: '$upcoming',
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _PulseTile(
+            icon: Icons.visibility_off_outlined,
+            label: 'بلا استخدام',
+            value: '$unused',
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _PulseTile(
+            icon: Icons.savings_outlined,
+            label: 'توفير',
+            value: saved <= 0 ? '—' : fmtMoney(saved, currency),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PulseTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _PulseTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Container(
+      constraints: const BoxConstraints(minHeight: 106),
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: p.surfaceAlt,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: p.accent, size: 20),
+          const Spacer(),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: p.text,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(label, style: TextStyle(color: p.textMuted, fontSize: 10.5)),
+        ],
+      ),
+    );
+  }
+}
+
+class _SpendingMap extends StatelessWidget {
+  final List<MapEntry<String, double>> entries;
+  final double total;
+  final String currency;
+
+  const _SpendingMap({
+    required this.entries,
+    required this.total,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    if (entries.isEmpty) {
+      return const _CalmState(message: 'تحتاج بعض الاشتراكات لتظهر خريطة الإنفاق.');
+    }
+    return AppCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          for (var i = 0; i < entries.length; i++) ...[
+            _CategoryLine(
+              name: entries[i].key,
+              amount: entries[i].value,
+              total: total,
+              currency: currency,
+            ),
+            if (i != entries.length - 1) const SizedBox(height: 16),
+          ],
+          const SizedBox(height: 2),
+          Divider(color: p.stroke, height: 22),
+          Row(
+            children: [
+              Text('إجمالي الشهر', style: TextStyle(color: p.textMuted, fontSize: 12)),
+              const Spacer(),
+              Text(
+                fmtMoney(total, currency),
+                style: TextStyle(color: p.text, fontWeight: FontWeight.w900),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryLine extends StatelessWidget {
+  final String name;
+  final double amount;
+  final double total;
+  final String currency;
+
+  const _CategoryLine({
+    required this.name,
+    required this.amount,
+    required this.total,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final color = categoryColor(name);
+    final value = total <= 0 ? 0.0 : amount / total;
+    return Column(
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 9,
+              height: 9,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: 12.5),
+              ),
+            ),
+            Text(
+              fmtMoney(amount, currency),
+              style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: 12),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(99),
+          child: LinearProgressIndicator(
+            value: value.clamp(0.0, 1.0),
+            minHeight: 6,
+            backgroundColor: p.surfaceAlt,
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _UsageFocus extends StatelessWidget {
+  final List<Subscription> subscriptions;
+
+  const _UsageFocus({required this.subscriptions});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    if (subscriptions.isEmpty) {
+      return const _CalmState(message: 'لا توجد خدمات تحتاج متابعة الآن.');
+    }
+    final store = SubscriptionStore.instance;
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          for (var i = 0; i < subscriptions.length; i++) ...[
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              leading: ServiceAvatar(
+                name: subscriptions[i].name,
+                emoji: subscriptions[i].emoji,
+                manageUrl: subscriptions[i].manageUrl,
+                iconUrl: subscriptions[i].iconUrl,
+                tint: categoryColor(subscriptions[i].category),
+                size: 40,
+              ),
+              title: Text(
+                subscriptions[i].name,
+                style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: 13),
+              ),
+              subtitle: Text(
+                'لم يُسجل له استخدام بعد',
+                style: TextStyle(color: p.textMuted, fontSize: 11.5),
+              ),
+              trailing: IconButton(
+                tooltip: 'تسجيل استخدام',
+                onPressed: () => store.recordUsage(subscriptions[i].id),
+                icon: Icon(Icons.check_circle_outline_rounded, color: p.accent),
+              ),
+            ),
+            if (i != subscriptions.length - 1)
+              Divider(height: 1, color: p.stroke),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CalmState extends StatelessWidget {
+  final String message;
+
+  const _CalmState({this.message = 'لا توجد دفعات قريبة تحتاج انتباهك.'});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: p.accentSoft,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.verified_rounded, color: p.accent),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(color: p.text, fontSize: 12.5, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardEmpty extends StatelessWidget {
+  const _DashboardEmpty();
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 76,
+              height: 76,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: p.accentSoft, shape: BoxShape.circle),
+              child: Icon(Icons.space_dashboard_rounded, color: p.accent, size: 34),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'ابدأ مساحة مالية خاصة بك',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: p.text, fontSize: 21, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'أضف أول اشتراك لتظهر لك الدفعات، الإنفاق، والتنبيهات في مكان واحد.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: p.textMuted, height: 1.6),
+            ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const EditSubscriptionScreen()),
+              ),
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('إضافة اشتراك'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

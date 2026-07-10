@@ -1,4 +1,4 @@
-/// قائمة كل الاشتراكات: بحث، فلترة، فرز، وورقة تفاصيل كاملة.
+/// مكتبة الاشتراكات للإصدار 8.
 library;
 
 import 'package:flutter/material.dart';
@@ -6,27 +6,12 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../data/presets.dart';
 import '../models/subscription.dart';
-import '../services/remote_catalog.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
 import 'edit_subscription_screen.dart';
 import 'import_screen.dart';
 
-enum SortMode { renewal, priceDesc, name }
-
-extension SortModeX on SortMode {
-  String get labelAr => switch (this) {
-        SortMode.renewal => 'الأقرب تجديدًا',
-        SortMode.priceDesc => 'الأعلى سعرًا',
-        SortMode.name => 'الاسم أبجديًا',
-      };
-
-  IconData get icon => switch (this) {
-        SortMode.renewal => Icons.schedule_rounded,
-        SortMode.priceDesc => Icons.trending_down_rounded,
-        SortMode.name => Icons.sort_by_alpha_rounded,
-      };
-}
+enum _SortOrder { renewal, cost, name }
 
 class SubscriptionsScreen extends StatefulWidget {
   const SubscriptionsScreen({super.key});
@@ -36,10 +21,10 @@ class SubscriptionsScreen extends StatefulWidget {
 }
 
 class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
-  final TextEditingController _search = TextEditingController();
-  String _category = 'الكل';
-  PaymentKind? _kindFilter; // null = الكل
-  SortMode _sort = SortMode.renewal;
+  final _search = TextEditingController();
+  PaymentKind? _kind;
+  String? _category;
+  _SortOrder _sort = _SortOrder.renewal;
 
   @override
   void dispose() {
@@ -53,295 +38,63 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 86),
+        padding: const EdgeInsets.only(bottom: 84),
         child: FloatingActionButton(
+          tooltip: 'إضافة اشتراك',
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const EditSubscriptionScreen()),
           ),
-          tooltip: 'إضافة اشتراك',
           child: const Icon(Icons.add_rounded),
         ),
       ),
       body: ListenableBuilder(
         listenable: store,
         builder: (context, _) {
-          final query = _search.text.trim();
-          var list = store.items.where((s) {
-            final matchesQuery = query.isEmpty || s.name.contains(query);
-            final matchesCat =
-                _category == 'الكل' || s.category == _category;
-            final matchesKind =
-                _kindFilter == null || s.kind == _kindFilter;
-            return matchesQuery && matchesCat && matchesKind;
-          }).toList();
-
-          switch (_sort) {
-            case SortMode.renewal:
-              list.sort((a, b) {
-                if (a.isPaused != b.isPaused) return a.isPaused ? 1 : -1;
-                return a.daysUntilRenewal().compareTo(b.daysUntilRenewal());
-              });
-            case SortMode.priceDesc:
-              list.sort((a, b) => b.monthlyCost.compareTo(a.monthlyCost));
-            case SortMode.name:
-              list.sort((a, b) => a.name.compareTo(b.name));
-          }
-
-          final usedCategories = <String>{
-            for (final s in store.items) s.category,
-          };
-          final unknownCount =
-              store.items.where((s) => s.category == 'أخرى').length;
-
+          final subscriptions = _filtered(store);
           return Column(
             children: [
+              _LibraryHeader(total: store.active.length),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-                child: Row(
-                  children: [
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'مكتبتك المالية',
-                            style: TextStyle(
-                              color: AppColors.ink,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          SizedBox(height: 3),
-                          Text(
-                            'كل خدماتك ودفعاتك في مكان واحد',
-                            style: TextStyle(
-                              color: AppColors.muted,
-                              fontSize: 12.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 11,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primarySoft,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Text(
-                        '${store.active.length} نشط',
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _search,
-                        onChanged: (_) => setState(() {}),
-                        decoration: InputDecoration(
-                          hintText: 'ابحث باسم الاشتراك...',
-                          prefixIcon: const Icon(
-                            Icons.search_rounded,
-                            color: AppColors.muted,
-                          ),
-                          suffixIcon: query.isEmpty
-                              ? null
-                              : IconButton(
-                                  icon: const Icon(Icons.close_rounded),
-                                  color: AppColors.muted,
-                                  onPressed: () {
-                                    _search.clear();
-                                    setState(() {});
-                                  },
-                                ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.card,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: PopupMenuButton<SortMode>(
-                        tooltip: 'فرز',
-                        color: AppColors.cardAlt,
-                        icon: const Icon(
-                          Icons.swap_vert_rounded,
-                          color: AppColors.primary,
-                        ),
-                        onSelected: (m) => setState(() => _sort = m),
-                        itemBuilder: (ctx) => [
-                          for (final m in SortMode.values)
-                            PopupMenuItem(
-                              value: m,
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    m.icon,
-                                    size: 19,
-                                    color: _sort == m
-                                        ? AppColors.primary
-                                        : AppColors.muted,
-                                  ),
-                                  const SizedBox(width: 9),
-                                  Text(
-                                    m.labelAr,
-                                    style: TextStyle(
-                                      color: _sort == m
-                                          ? AppColors.primary
-                                          : AppColors.ink,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 13.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.card,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: IconButton(
-                        tooltip: 'الاستيراد الذكي',
-                        icon: const Icon(
-                          Icons.auto_awesome_rounded,
-                          color: AppColors.gold,
-                        ),
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const ImportScreen(),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (unknownCount > 0)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: AppCard(
-                    color: AppColors.goldSoft,
-                    borderColor: AppColors.goldDeep,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 9,
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.auto_awesome_rounded,
-                          color: AppColors.gold,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 9),
-                        Expanded(
-                          child: Text(
-                            '$unknownCount خدمات تحتاج تصنيفًا أدق',
-                            style: const TextStyle(
-                              color: AppColors.ink,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 12.5,
-                            ),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            await store.reclassifyUnknowns();
-                            if (context.mounted) setState(() {});
-                          },
-                          child: const Text('تحسين الآن'),
-                        ),
-                      ],
-                    ),
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                child: _SearchLine(
+                  controller: _search,
+                  sort: _sort,
+                  onChanged: () => setState(() {}),
+                  onSort: (sort) => setState(() => _sort = sort),
+                  onImport: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ImportScreen()),
                   ),
                 ),
-              SizedBox(
-                height: 52,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                  children: [
-                    _CatChip(
-                      label: 'الكل',
-                      selected: _category == 'الكل' && _kindFilter == null,
-                      onTap: () => setState(() {
-                        _category = 'الكل';
-                        _kindFilter = null;
-                      }),
-                    ),
-                    for (final k in PaymentKind.values)
-                      if (store.items.any((s) => s.kind == k) &&
-                          store.items.any((s) => s.kind != k))
-                        Padding(
-                          padding:
-                              const EdgeInsetsDirectional.only(start: 8),
-                          child: _CatChip(
-                            label: switch (k) {
-                              PaymentKind.subscription => 'اشتراكات',
-                              PaymentKind.installment => 'أقساط',
-                              PaymentKind.bill => 'فواتير',
-                            },
-                            selected: _kindFilter == k,
-                            onTap: () => setState(() =>
-                                _kindFilter = _kindFilter == k ? null : k),
-                          ),
-                        ),
-                    for (final c in kCategories)
-                      if (usedCategories.contains(c))
-                        Padding(
-                          padding: const EdgeInsetsDirectional.only(start: 8),
-                          child: _CatChip(
-                            label: '${kCategoryEmoji[c] ?? ''} $c',
-                            selected: _category == c,
-                            onTap: () => setState(() => _category = c),
-                          ),
-                        ),
-                  ],
-                ),
               ),
+              const SizedBox(height: 12),
+              _FilterRail(
+                selectedKind: _kind,
+                selectedCategory: _category,
+                usedCategories: {for (final item in store.items) item.category},
+                onKind: (value) => setState(() {
+                  _kind = value;
+                  _category = null;
+                }),
+                onCategory: (value) => setState(() {
+                  _category = value;
+                  _kind = null;
+                }),
+                onAll: () => setState(() {
+                  _kind = null;
+                  _category = null;
+                }),
+              ),
+              const SizedBox(height: 8),
               Expanded(
-                child: list.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'لا توجد اشتراكات مطابقة.\nاضغط «إضافة» للبدء.',
-                          textAlign: TextAlign.center,
-                          style:
-                              TextStyle(color: AppColors.muted, height: 1.7),
-                        ),
-                      )
+                child: subscriptions.isEmpty
+                    ? const _LibraryEmpty()
                     : ListView.separated(
-                        keyboardDismissBehavior:
-                            ScrollViewKeyboardDismissBehavior.onDrag,
-                        padding:
-                            const EdgeInsets.fromLTRB(20, 4, 20, 132),
-                        itemCount: list.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: 10),
-                        itemBuilder: (context, i) =>
-                            _SubTile(sub: list[i]),
+                        padding: const EdgeInsets.fromLTRB(20, 6, 20, 132),
+                        itemCount: subscriptions.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) => _SubscriptionRow(
+                          subscription: subscriptions[index],
+                        ),
                       ),
               ),
             ],
@@ -350,289 +103,401 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       ),
     );
   }
+
+  List<Subscription> _filtered(SubscriptionStore store) {
+    final query = _search.text.trim().toLowerCase();
+    final output = store.items.where((item) {
+      final matchesName = query.isEmpty || item.name.toLowerCase().contains(query);
+      final matchesKind = _kind == null || item.kind == _kind;
+      final matchesCategory = _category == null || item.category == _category;
+      return matchesName && matchesKind && matchesCategory;
+    }).toList();
+    switch (_sort) {
+      case _SortOrder.renewal:
+        output.sort((a, b) => a.daysUntilRenewal().compareTo(b.daysUntilRenewal()));
+      case _SortOrder.cost:
+        output.sort((a, b) => b.monthlyCost.compareTo(a.monthlyCost));
+      case _SortOrder.name:
+        output.sort((a, b) => a.name.compareTo(b.name));
+    }
+    return output;
+  }
 }
 
-class _CatChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
+class _LibraryHeader extends StatelessWidget {
+  final int total;
 
-  const _CatChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
+  const _LibraryHeader({required this.total});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('اشتراكاتك', style: TextStyle(color: p.text, fontSize: 27, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 4),
+                Text('مكتبتك الخاصة للدفعات والخدمات.', style: TextStyle(color: p.textMuted, fontSize: 12.5)),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(color: p.accentSoft, borderRadius: BorderRadius.circular(15)),
+            child: Text('$total نشط', style: TextStyle(color: p.accent, fontSize: 12, fontWeight: FontWeight.w900)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SearchLine extends StatelessWidget {
+  final TextEditingController controller;
+  final _SortOrder sort;
+  final VoidCallback onChanged;
+  final ValueChanged<_SortOrder> onSort;
+  final VoidCallback onImport;
+
+  const _SearchLine({
+    required this.controller,
+    required this.sort,
+    required this.onChanged,
+    required this.onSort,
+    required this.onImport,
   });
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: controller,
+            onChanged: (_) => onChanged(),
+            decoration: InputDecoration(
+              hintText: 'ابحث عن خدمة أو دفعة',
+              prefixIcon: Icon(Icons.search_rounded, color: p.textMuted),
+              suffixIcon: controller.text.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: 'مسح البحث',
+                      onPressed: () {
+                        controller.clear();
+                        onChanged();
+                      },
+                      icon: Icon(Icons.close_rounded, color: p.textMuted),
+                    ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 9),
+        PopupMenuButton<_SortOrder>(
+          tooltip: 'ترتيب القائمة',
+          color: p.surface,
+          onSelected: onSort,
+          itemBuilder: (_) => const [
+            PopupMenuItem(value: _SortOrder.renewal, child: Text('الأقرب تجديدًا')),
+            PopupMenuItem(value: _SortOrder.cost, child: Text('الأعلى تكلفة')),
+            PopupMenuItem(value: _SortOrder.name, child: Text('حسب الاسم')),
+          ],
+          child: _RoundTool(icon: Icons.tune_rounded, active: sort != _SortOrder.renewal),
+        ),
+        const SizedBox(width: 8),
+        Tooltip(
+          message: 'استيراد ذكي',
+          child: InkWell(
+            onTap: onImport,
+            borderRadius: BorderRadius.circular(16),
+            child: _RoundTool(icon: Icons.auto_awesome_rounded),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RoundTool extends StatelessWidget {
+  final IconData icon;
+  final bool active;
+
+  const _RoundTool({required this.icon, this.active = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Container(
+      width: 52,
+      height: 52,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: active ? p.accentSoft : p.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: active ? p.accent.withOpacity(.35) : p.stroke),
+      ),
+      child: Icon(icon, color: p.accent, size: 21),
+    );
+  }
+}
+
+class _FilterRail extends StatelessWidget {
+  final PaymentKind? selectedKind;
+  final String? selectedCategory;
+  final Set<String> usedCategories;
+  final ValueChanged<PaymentKind?> onKind;
+  final ValueChanged<String?> onCategory;
+  final VoidCallback onAll;
+
+  const _FilterRail({
+    required this.selectedKind,
+    required this.selectedCategory,
+    required this.usedCategories,
+    required this.onKind,
+    required this.onCategory,
+    required this.onAll,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 39,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        children: [
+          _FilterChip(label: 'الكل', selected: selectedKind == null && selectedCategory == null, onTap: onAll),
+          for (final kind in PaymentKind.values) ...[
+            const SizedBox(width: 8),
+            _FilterChip(
+              label: kind.labelAr,
+              selected: selectedKind == kind,
+              onTap: () => onKind(selectedKind == kind ? null : kind),
+            ),
+          ],
+          for (final category in kCategories)
+            if (usedCategories.contains(category)) ...[
+              const SizedBox(width: 8),
+              _FilterChip(
+                label: category,
+                selected: selectedCategory == category,
+                onTap: () => onCategory(selectedCategory == category ? null : category),
+              ),
+            ],
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _FilterChip({required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(99),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.card,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.border,
-          ),
+          color: selected ? p.accent : p.surface,
+          borderRadius: BorderRadius.circular(99),
+          border: Border.all(color: selected ? p.accent : p.stroke),
         ),
         child: Text(
           label,
-          style: TextStyle(
-            color: selected ? Colors.white : AppColors.ink,
-            fontWeight: FontWeight.w700,
-            fontSize: 13,
-          ),
+          style: TextStyle(color: selected ? Colors.white : p.text, fontSize: 12, fontWeight: FontWeight.w800),
         ),
       ),
     );
   }
 }
 
-class _SubTile extends StatelessWidget {
-  final Subscription sub;
+class _SubscriptionRow extends StatelessWidget {
+  final Subscription subscription;
 
-  const _SubTile({required this.sub});
+  const _SubscriptionRow({required this.subscription});
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
     final store = SubscriptionStore.instance;
-    final catColor = categoryColor(sub.category);
     return Dismissible(
-      key: ValueKey(sub.id),
+      key: ValueKey(subscription.id),
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: AlignmentDirectional.centerEnd,
         padding: const EdgeInsetsDirectional.only(end: 22),
-        decoration: BoxDecoration(
-          color: AppColors.danger,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child:
-            const Icon(Icons.delete_rounded, color: Colors.white, size: 26),
+        decoration: BoxDecoration(color: p.danger, borderRadius: BorderRadius.circular(22)),
+        child: const Icon(Icons.delete_outline_rounded, color: Colors.white),
       ),
-      confirmDismiss: (_) async {
-        return await showDialog<bool>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('حذف الاشتراك؟'),
-                content: Text('سيتم حذف «${sub.name}» نهائيًا.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('إلغاء'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.danger,
+      confirmDismiss: (_) => _confirmDelete(context, subscription.name),
+      onDismissed: (_) => store.remove(subscription.id),
+      child: InkWell(
+        onTap: () => showSubscriptionDetails(context, subscription),
+        borderRadius: BorderRadius.circular(22),
+        child: Ink(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: p.surface,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: p.stroke),
+          ),
+          child: Row(
+            children: [
+              ServiceAvatar(
+                name: subscription.name,
+                emoji: subscription.emoji,
+                manageUrl: subscription.manageUrl,
+                iconUrl: subscription.iconUrl,
+                tint: categoryColor(subscription.category),
+                size: 50,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            subscription.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: 15),
+                          ),
+                        ),
+                        if (subscription.isPaused) _StatePill(text: 'موقوف', color: p.warning, background: p.warningSoft),
+                        if (subscription.isTrialActive()) _StatePill(text: 'تجربة', color: p.danger, background: p.dangerSoft),
+                      ],
                     ),
-                    child: const Text('حذف'),
+                    const SizedBox(height: 5),
+                    Text(
+                      '${subscription.category} · ${subscription.cycle.labelAr}',
+                      style: TextStyle(color: p.textMuted, fontSize: 11.5),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    fmtMoney(subscription.price, subscription.currency),
+                    style: TextStyle(color: p.accent, fontWeight: FontWeight.w900, fontSize: 14),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    subscription.isPaused ? 'متوقف' : _renewalText(subscription.daysUntilRenewal()),
+                    style: TextStyle(color: p.textMuted, fontSize: 10.5, fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
-            ) ??
-            false;
-      },
-      onDismissed: (_) => store.remove(sub.id),
-      child: Opacity(
-        opacity: sub.isPaused ? 0.55 : 1,
-        child: AppCard(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: InkWell(
-            onTap: () => showSubscriptionDetails(context, sub),
-            child: Row(
-              children: [
-                ServiceAvatar(
-                  name: sub.name,
-                  emoji: sub.emoji,
-                  manageUrl: sub.manageUrl,
-                  iconUrl: sub.iconUrl,
-                  tint: catColor,
-                  size: 48,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              sub.name,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 15.5,
-                                color: AppColors.ink,
-                              ),
-                            ),
-                          ),
-                          if (sub.kind != PaymentKind.subscription) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.cardAlt,
-                                borderRadius: BorderRadius.circular(10),
-                                border:
-                                    Border.all(color: AppColors.border),
-                              ),
-                              child: Text(
-                                sub.isCompleted()
-                                    ? '${sub.kind.labelAr} مكتمل'
-                                    : sub.kind.labelAr,
-                                style: const TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.muted,
-                                ),
-                              ),
-                            ),
-                          ],
-                          if (sub.isTrialActive()) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.dangerSoft,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Text(
-                                'تجربة',
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.danger,
-                                ),
-                              ),
-                            ),
-                          ],
-                          if (sub.isFamily) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.primarySoft,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Text(
-                                'عائلي',
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ),
-                          ],
-                          if (sub.isPaused) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.goldSoft,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Text(
-                                'موقوف',
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.gold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        '${sub.category} • ${sub.cycle.labelAr}',
-                        style: const TextStyle(
-                          color: AppColors.muted,
-                          fontSize: 12.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      fmtMoney(sub.price, sub.currency),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 15,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    if (!sub.isPaused)
-                      RenewalBadge(days: sub.daysUntilRenewal()),
-                  ],
-                ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
     );
   }
+
+  Future<bool> _confirmDelete(BuildContext context, String name) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('حذف الاشتراك؟'),
+            content: Text('سيُحذف «$name» من قائمتك.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')),
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                style: TextButton.styleFrom(foregroundColor: context.palette.danger),
+                child: const Text('حذف'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
 }
 
-/// ورقة تفاصيل الاشتراك الكاملة.
-Future<void> showSubscriptionDetails(
-  BuildContext context,
-  Subscription sub,
-) async {
+class _StatePill extends StatelessWidget {
+  final String text;
+  final Color color;
+  final Color background;
+
+  const _StatePill({required this.text, required this.color, required this.background});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsetsDirectional.only(start: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(99)),
+        child: Text(text, style: TextStyle(color: color, fontSize: 9.5, fontWeight: FontWeight.w900)),
+      );
+}
+
+class _LibraryEmpty extends StatelessWidget {
+  const _LibraryEmpty();
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.search_off_rounded, color: p.textMuted, size: 32),
+          const SizedBox(height: 10),
+          Text('لا توجد نتائج مطابقة.', style: TextStyle(color: p.text, fontWeight: FontWeight.w800)),
+        ],
+      ),
+    );
+  }
+}
+
+String _renewalText(int days) {
+  if (days <= 0) return 'اليوم';
+  if (days == 1) return 'غدًا';
+  return 'بعد $days يوم';
+}
+
+Future<void> showSubscriptionDetails(BuildContext context, Subscription sub) async {
   final store = SubscriptionStore.instance;
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: AppColors.card,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-    ),
-    builder: (ctx) {
-      final catColor = categoryColor(sub.category);
-      final next = sub.nextRenewal();
-      final payments = sub.paymentsMade();
-      final spent = sub.totalSpent();
+    backgroundColor: Colors.transparent,
+    builder: (sheetContext) {
+      final p = sheetContext.palette;
       return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+          decoration: BoxDecoration(
+            color: p.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+          ),
+          child: Wrap(
+            runSpacing: 14,
             children: [
               Center(
-                child: Container(
-                  width: 44,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
+                child: Container(width: 40, height: 4, decoration: BoxDecoration(color: p.stroke, borderRadius: BorderRadius.circular(99))),
               ),
-              const SizedBox(height: 18),
               Row(
                 children: [
                   ServiceAvatar(
@@ -640,241 +505,70 @@ Future<void> showSubscriptionDetails(
                     emoji: sub.emoji,
                     manageUrl: sub.manageUrl,
                     iconUrl: sub.iconUrl,
-                    tint: catColor,
+                    tint: categoryColor(sub.category),
                     size: 58,
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          sub.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 19,
-                            color: AppColors.ink,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '${sub.category} • ${sub.cycle.labelAr}',
-                          style: const TextStyle(
-                            color: AppColors.muted,
-                            fontSize: 13,
-                          ),
-                        ),
+                        Text(sub.name, style: TextStyle(color: p.text, fontSize: 19, fontWeight: FontWeight.w900)),
+                        const SizedBox(height: 4),
+                        Text('${sub.category} · ${sub.cycle.labelAr}', style: TextStyle(color: p.textMuted, fontSize: 12)),
                       ],
                     ),
                   ),
-                  Text(
-                    fmtMoney(sub.price, sub.currency),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 18,
-                      color: AppColors.primary,
-                    ),
-                  ),
+                  Text(fmtMoney(sub.price, sub.currency), style: TextStyle(color: p.accent, fontWeight: FontWeight.w900, fontSize: 16)),
                 ],
               ),
-              const SizedBox(height: 18),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.cardAlt,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    _DetailRow(
-                      icon: Icons.event_repeat_rounded,
-                      label: 'التجديد القادم',
-                      value:
-                          '${fmtDate(next)} (بعد ${sub.daysUntilRenewal()} يوم)',
-                    ),
-                    _DetailRow(
-                      icon: Icons.flag_rounded,
-                      label: 'تاريخ البداية',
-                      value: fmtDate(sub.anchorDate),
-                    ),
-                    _DetailRow(
-                      icon: Icons.receipt_long_rounded,
-                      label: 'عدد الدفعات حتى الآن',
-                      value: '$payments دفعة',
-                    ),
-                    _DetailRow(
-                      icon: Icons.savings_rounded,
-                      label: 'إجمالي ما دفعته',
-                      value: fmtMoney(spent, sub.currency),
-                      valueColor: AppColors.gold,
-                    ),
-                    _DetailRow(
-                      icon: Icons.payments_rounded,
-                      label: 'التكلفة الشهرية',
-                      value: fmtMoney(sub.monthlyCost, sub.currency),
-                    ),
-                    _DetailRow(
-                      icon: Icons.insights_rounded,
-                      label: 'الاستخدام المسجل',
-                      value: sub.usageCount == 0
-                          ? 'لم تسجل استخدامًا بعد'
-                          : '${sub.usageCount} مرة'
-                              '${sub.costPerUse == null ? '' : ' • ${fmtMoney(sub.costPerUse!, sub.currency)} لكل استخدام'}',
-                    ),
-                    if (sub.kind == PaymentKind.installment &&
-                        sub.totalInstallments != null) ...[
-                      _DetailRow(
-                        icon: Icons.pie_chart_outline_rounded,
-                        label: 'الأقساط المدفوعة',
-                        value:
-                            '${sub.paymentsMade()} من ${sub.totalInstallments}',
-                      ),
-                      _DetailRow(
-                        icon: Icons.flag_circle_rounded,
-                        label: 'آخر قسط في',
-                        value: sub.lastInstallmentDate == null
-                            ? '—'
-                            : fmtDate(sub.lastInstallmentDate!),
-                        valueColor: sub.isCompleted()
-                            ? AppColors.primary
-                            : null,
-                      ),
-                    ],
-                    if (sub.isTrialActive())
-                      _DetailRow(
-                        icon: Icons.hourglass_bottom_rounded,
-                        label: 'التجربة المجانية تنتهي في',
-                        value: fmtDate(sub.trialEndDate!),
-                        valueColor: AppColors.danger,
-                      ),
-                    if (sub.reminderDays > 0)
-                      _DetailRow(
-                        icon: Icons.notifications_active_rounded,
-                        label: 'التذكير قبل التجديد',
-                        value: 'بـ ${sub.reminderDays} '
-                            '${sub.reminderDays == 1 ? "يوم" : "أيام"}',
-                      ),
-                    if (RemoteCatalog.instance.byName(sub.name)?.priceHint
-                        case final double hint
-                        when (hint - sub.price).abs() > hint * 0.05)
-                      _DetailRow(
-                        icon: Icons.sell_rounded,
-                        label: 'السعر المعتاد حاليًا',
-                        value: fmtMoney(hint, 'SAR'),
-                        valueColor: sub.price > hint
-                            ? AppColors.warn
-                            : AppColors.primary,
-                      ),
-                    if (sub.isFamily)
-                      _DetailRow(
-                        icon: Icons.group_rounded,
-                        label: 'عائلي — نصيبك من ${sub.familyMembers} أفراد',
-                        value: fmtMoney(sub.pricePerMember, sub.currency),
-                        valueColor: AppColors.primary,
-                      ),
-                    if (sub.paymentMethod != 'غير محدد')
-                      _DetailRow(
-                        icon: Icons.credit_card_rounded,
-                        label: 'طريقة الدفع',
-                        value: sub.paymentMethod,
-                      ),
-                    if (sub.priceHistory.isNotEmpty) ...[
-                      _DetailRow(
-                        icon: Icons.trending_up_rounded,
-                        label: 'تغيّر السعر منذ البداية',
-                        value:
-                            '${sub.priceHistory.first.oldPrice == sub.price ? '' : '${fmtMoney(sub.priceHistory.first.oldPrice, sub.currency)} ← ${fmtMoney(sub.price, sub.currency)}'}'
-                            '${sub.priceChangePercent == null ? '' : ' (${sub.priceChangePercent! >= 0 ? '+' : ''}${sub.priceChangePercent!.toStringAsFixed(0)}٪)'}',
-                        valueColor: (sub.priceChangePercent ?? 0) > 0
-                            ? AppColors.warn
-                            : AppColors.primary,
-                      ),
-                    ],
-                    if (sub.notes.isNotEmpty)
-                      _DetailRow(
-                        icon: Icons.sticky_note_2_rounded,
-                        label: 'ملاحظات',
-                        value: sub.notes,
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: () async {
-                  await store.recordUsage(sub.id);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-                icon: const Icon(Icons.check_circle_outline_rounded),
-                label: const Text('سجّل استخدامًا الآن'),
-              ),
-              const SizedBox(height: 8),
-              if (sub.manageUrl.isNotEmpty) ...[
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48),
-                  ),
-                  onPressed: () async {
-                    var raw = sub.manageUrl.trim();
-                    if (!raw.startsWith('http')) raw = 'https://$raw';
-                    final uri = Uri.tryParse(raw);
-                    if (uri != null &&
-                        uri.scheme == 'https' &&
-                        uri.host.isNotEmpty &&
-                        uri.userInfo.isEmpty) {
-                      await launchUrl(
-                        uri,
-                        mode: LaunchMode.externalApplication,
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.open_in_new_rounded),
-                  label: const Text('فتح صفحة إدارة الاشتراك'),
-                ),
-                const SizedBox(height: 8),
-              ],
+              _DetailMetric(icon: Icons.event_repeat_rounded, label: 'التجديد القادم', value: _renewalText(sub.daysUntilRenewal())),
+              _DetailMetric(icon: Icons.payments_outlined, label: 'التكلفة الشهرية', value: fmtMoney(sub.monthlyCost, sub.currency)),
+              if (sub.notes.trim().isNotEmpty)
+                _DetailMetric(icon: Icons.notes_rounded, label: 'ملاحظة', value: sub.notes),
               Row(
                 children: [
                   Expanded(
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48),
-                      ),
+                    child: OutlinedButton.icon(
                       onPressed: () {
-                        Navigator.pop(ctx);
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                EditSubscriptionScreen(existing: sub),
-                          ),
-                        );
+                        Navigator.pop(sheetContext);
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => EditSubscriptionScreen(existing: sub)));
                       },
-                      icon: const Icon(Icons.edit_rounded, size: 20),
+                      icon: const Icon(Icons.edit_outlined, size: 18),
                       label: const Text('تعديل'),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48),
-                        foregroundColor: AppColors.gold,
-                        side: const BorderSide(color: AppColors.goldDeep),
-                      ),
+                    child: FilledButton.icon(
                       onPressed: () async {
                         await store.togglePause(sub.id);
-                        if (ctx.mounted) Navigator.pop(ctx);
+                        if (sheetContext.mounted) Navigator.pop(sheetContext);
                       },
-                      icon: Icon(
-                        sub.isPaused
-                            ? Icons.play_arrow_rounded
-                            : Icons.pause_rounded,
-                        size: 20,
-                      ),
+                      icon: Icon(sub.isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded, size: 18),
                       label: Text(sub.isPaused ? 'استئناف' : 'إيقاف'),
                     ),
                   ),
                 ],
+              ),
+              if (sub.manageUrl.trim().isNotEmpty)
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(46)),
+                  onPressed: () async {
+                    var raw = sub.manageUrl.trim();
+                    if (!raw.startsWith('http')) raw = 'https://$raw';
+                    await launchUrl(Uri.parse(raw), mode: LaunchMode.externalApplication);
+                  },
+                  icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                  label: const Text('إدارة الاشتراك'),
+                ),
+              TextButton.icon(
+                onPressed: () async {
+                  await store.recordUsage(sub.id);
+                  if (sheetContext.mounted) Navigator.pop(sheetContext);
+                },
+                icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                label: const Text('تسجيل استخدام'),
               ),
             ],
           ),
@@ -884,48 +578,27 @@ Future<void> showSubscriptionDetails(
   );
 }
 
-class _DetailRow extends StatelessWidget {
+class _DetailMetric extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  final Color? valueColor;
 
-  const _DetailRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
+  const _DetailMetric({required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+    final p = context.palette;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(color: p.surfaceAlt, borderRadius: BorderRadius.circular(16)),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 19, color: AppColors.muted),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.muted,
-                fontSize: 13.5,
-              ),
-            ),
-          ),
-          Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.left,
-              style: TextStyle(
-                color: valueColor ?? AppColors.ink,
-                fontWeight: FontWeight.w800,
-                fontSize: 13.5,
-              ),
-            ),
-          ),
+          Icon(icon, color: p.accent, size: 19),
+          const SizedBox(width: 9),
+          Text(label, style: TextStyle(color: p.textMuted, fontSize: 12)),
+          const Spacer(),
+          Flexible(child: Text(value, textAlign: TextAlign.end, style: TextStyle(color: p.text, fontSize: 12.5, fontWeight: FontWeight.w800))),
         ],
       ),
     );

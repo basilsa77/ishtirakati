@@ -1,4 +1,4 @@
-/// تقويم التجديدات: شبكة شهرية تُظهر أيام الخصم ومبالغها.
+/// تقويم الدفعات للإصدار 8.
 library;
 
 import 'package:flutter/material.dart';
@@ -16,335 +16,294 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  late DateTime _month;
-
-  static const List<String> _monthNames = [
+  static const _months = [
     'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
     'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
   ];
-  static const List<String> _weekDays = [
-    'أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت',
-  ];
+  static const _weekdays = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'];
+
+  late DateTime _month;
 
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
-    _month = DateTime(now.year, now.month, 1);
-  }
-
-  void _shift(int delta) {
-    setState(() {
-      _month = DateTime(_month.year, _month.month + delta, 1);
-    });
+    _month = DateTime(now.year, now.month);
   }
 
   @override
   Widget build(BuildContext context) {
     final store = SubscriptionStore.instance;
-    final today = DateTime.now();
+    return ListenableBuilder(
+      listenable: store,
+      builder: (context, _) {
+        final byDay = <int, List<Subscription>>{};
+        for (final subscription in store.active) {
+          for (final date in subscription.renewalsInMonth(_month.year, _month.month)) {
+            byDay.putIfAbsent(date.day, () => []).add(subscription);
+          }
+        }
+        final currency = store.dominantCurrency;
+        final total = byDay.values
+            .expand((items) => items)
+            .where((item) => item.currency == currency)
+            .fold<double>(0, (sum, item) => sum + item.price);
 
-    // اجمع تجديدات الشهر: يوم → قائمة اشتراكات.
-    final byDay = <int, List<Subscription>>{};
-    for (final s in store.active) {
-      for (final d in s.renewalsInMonth(_month.year, _month.month)) {
-        byDay.putIfAbsent(d.day, () => []).add(s);
-      }
-    }
-    var monthTotal = 0.0;
-    final currency = store.dominantCurrency;
-    for (final list in byDay.values) {
-      for (final s in list.where((s) => s.currency == currency)) {
-        monthTotal += s.price;
-      }
-    }
-
-    final daysInMonth =
-        DateTime(_month.year, _month.month + 1, 0).day;
-    // weekday: الإثنين=1 ... الأحد=7؛ شبكتنا تبدأ بالأحد.
-    final firstWeekday = DateTime(_month.year, _month.month, 1).weekday % 7;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('تقويم التجديدات')),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 132),
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 132),
           children: [
-            AppCard(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => _shift(1),
-                        icon: const Icon(
-                          Icons.chevron_right_rounded,
-                          color: AppColors.primary,
-                          size: 30,
-                        ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Text(
-                              '${_monthNames[_month.month - 1]} ${_month.year}',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 17,
-                                color: AppColors.ink,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              monthTotal <= 0
-                                  ? 'لا خصومات هذا الشهر'
-                                  : 'خصومات الشهر ≈ ${fmtMoney(monthTotal, currency)}',
-                              style: const TextStyle(
-                                color: AppColors.muted,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => _shift(-1),
-                        icon: const Icon(
-                          Icons.chevron_left_rounded,
-                          color: AppColors.primary,
-                          size: 30,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      for (final w in _weekDays)
-                        Expanded(
-                          child: Text(
-                            w,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: AppColors.muted,
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 7,
-                      mainAxisSpacing: 6,
-                      crossAxisSpacing: 6,
-                      childAspectRatio: 0.82,
-                    ),
-                    itemCount: firstWeekday + daysInMonth,
-                    itemBuilder: (context, i) {
-                      if (i < firstWeekday) return const SizedBox();
-                      final day = i - firstWeekday + 1;
-                      final subs = byDay[day] ?? const <Subscription>[];
-                      final isToday = today.year == _month.year &&
-                          today.month == _month.month &&
-                          today.day == day;
-                      return InkWell(
-                        onTap: subs.isEmpty
-                            ? null
-                            : () => _showDay(context, day, subs),
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: subs.isNotEmpty
-                                ? AppColors.primarySoft
-                                : AppColors.cardAlt,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: isToday
-                                  ? AppColors.primary
-                                  : subs.isNotEmpty
-                                      ? AppColors.primaryDeep
-                                      : AppColors.border,
-                              width: isToday ? 1.6 : 1,
-                            ),
-                          ),
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Column(
-                            children: [
-                              Text(
-                                '$day',
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: subs.isNotEmpty
-                                      ? AppColors.primary
-                                      : AppColors.muted,
-                                ),
-                              ),
-                              if (subs.isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Wrap(
-                                  spacing: 2,
-                                  alignment: WrapAlignment.center,
-                                  children: [
-                                    for (final s in subs.take(3))
-                                      Container(
-                                        width: 6,
-                                        height: 6,
-                                        decoration: BoxDecoration(
-                                          color:
-                                              categoryColor(s.category),
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
+            _CalendarHeader(total: total, currency: currency, itemCount: byDay.values.expand((items) => items).length),
+            const SizedBox(height: 22),
+            _MonthControl(
+              label: '${_months[_month.month - 1]} ${_month.year}',
+              onPrevious: () => setState(() => _month = DateTime(_month.year, _month.month - 1)),
+              onNext: () => setState(() => _month = DateTime(_month.year, _month.month + 1)),
+              onToday: () {
+                final today = DateTime.now();
+                setState(() => _month = DateTime(today.year, today.month));
+              },
             ),
-            const SizedBox(height: 14),
-            if (byDay.isNotEmpty) ...[
-              const SectionTitle('خصومات هذا الشهر'),
+            const SizedBox(height: 12),
+            _CalendarGrid(
+              month: _month,
+              weekdays: _weekdays,
+              entries: byDay,
+              onOpen: (day, subscriptions) => _openDay(context, day, subscriptions),
+            ),
+            const SizedBox(height: 28),
+            Text('دفعات هذا الشهر', style: TextStyle(color: context.palette.text, fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 5),
+            Text(byDay.isEmpty ? 'لا توجد دفعات مسجلة لهذا الشهر.' : 'اختر أي خدمة لعرض تفاصيلها.', style: TextStyle(color: context.palette.textMuted, fontSize: 12.5)),
+            const SizedBox(height: 12),
+            if (byDay.isEmpty)
+              const _CalendarEmpty()
+            else
               for (final day in (byDay.keys.toList()..sort()))
-                for (final s in byDay[day]!)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: AppCard(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      child: InkWell(
-                        onTap: () => showSubscriptionDetails(context, s),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: AppColors.primarySoft,
-                                borderRadius: BorderRadius.circular(11),
-                              ),
-                              child: Text(
-                                '$day',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            ServiceAvatar(
-                              name: s.name,
-                              emoji: s.emoji,
-                              manageUrl: s.manageUrl,
-                              iconUrl: s.iconUrl,
-                              tint: categoryColor(s.category),
-                              size: 42,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                s.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.ink,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              fmtMoney(s.price, s.currency),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                for (final subscription in byDay[day]!) ...[
+                  _CalendarPayment(day: day, subscription: subscription),
+                  const SizedBox(height: 9),
+                ],
+          ],
+        );
+      },
+    );
+  }
+
+  void _openDay(BuildContext context, int day, List<Subscription> subscriptions) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final p = sheetContext.palette;
+        return SafeArea(
+          top: false,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+            decoration: BoxDecoration(color: p.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(28))),
+            child: Wrap(
+              runSpacing: 10,
+              children: [
+                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: p.stroke, borderRadius: BorderRadius.circular(99)))),
+                const SizedBox(height: 4),
+                Text('دفعات يوم $day', style: TextStyle(color: p.text, fontSize: 18, fontWeight: FontWeight.w900)),
+                for (final subscription in subscriptions)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      showSubscriptionDetails(context, subscription);
+                    },
+                    leading: ServiceAvatar(name: subscription.name, emoji: subscription.emoji, manageUrl: subscription.manageUrl, iconUrl: subscription.iconUrl, tint: categoryColor(subscription.category), size: 42),
+                    title: Text(subscription.name, style: TextStyle(color: p.text, fontWeight: FontWeight.w800)),
+                    trailing: Text(fmtMoney(subscription.price, subscription.currency), style: TextStyle(color: p.accent, fontWeight: FontWeight.w900)),
                   ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CalendarHeader extends StatelessWidget {
+  final double total;
+  final String currency;
+  final int itemCount;
+
+  const _CalendarHeader({required this.total, required this.currency, required this.itemCount});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('التقويم', style: TextStyle(color: p.text, fontSize: 27, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 5),
+        Text('موعد كل خصم أمامك، بلا مفاجآت.', style: TextStyle(color: p.textMuted, fontSize: 13)),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(17),
+          decoration: BoxDecoration(color: p.surfaceAlt, borderRadius: BorderRadius.circular(21)),
+          child: Row(
+            children: [
+              Icon(Icons.event_available_rounded, color: p.accent),
+              const SizedBox(width: 10),
+              Expanded(child: Text('$itemCount دفعات في هذا الشهر', style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: 13))),
+              Text(fmtMoney(total, currency), style: TextStyle(color: p.accent, fontWeight: FontWeight.w900)),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MonthControl extends StatelessWidget {
+  final String label;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+  final VoidCallback onToday;
+
+  const _MonthControl({required this.label, required this.onPrevious, required this.onNext, required this.onToday});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Row(
+      children: [
+        IconButton(
+          tooltip: 'الشهر التالي',
+          onPressed: onNext,
+          icon: Icon(Icons.chevron_right_rounded, color: p.text),
+        ),
+        Expanded(child: Text(label, textAlign: TextAlign.center, style: TextStyle(color: p.text, fontSize: 18, fontWeight: FontWeight.w900))),
+        IconButton(
+          tooltip: 'الشهر السابق',
+          onPressed: onPrevious,
+          icon: Icon(Icons.chevron_left_rounded, color: p.text),
+        ),
+        TextButton(onPressed: onToday, child: const Text('اليوم')),
+      ],
+    );
+  }
+}
+
+class _CalendarGrid extends StatelessWidget {
+  final DateTime month;
+  final List<String> weekdays;
+  final Map<int, List<Subscription>> entries;
+  final void Function(int day, List<Subscription> subscriptions) onOpen;
+
+  const _CalendarGrid({required this.month, required this.weekdays, required this.entries, required this.onOpen});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final first = DateTime(month.year, month.month, 1).weekday % 7;
+    final days = DateTime(month.year, month.month + 1, 0).day;
+    final today = DateTime.now();
+    return AppCard(
+      padding: const EdgeInsets.all(13),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              for (final weekday in weekdays)
+                Expanded(child: Center(child: Text(weekday, style: TextStyle(color: p.textMuted, fontSize: 11, fontWeight: FontWeight.w800)))),
+            ],
+          ),
+          const SizedBox(height: 9),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7, mainAxisSpacing: 6, crossAxisSpacing: 6, childAspectRatio: .87),
+            itemCount: first + days,
+            itemBuilder: (context, index) {
+              if (index < first) return const SizedBox();
+              final day = index - first + 1;
+              final subscriptions = entries[day] ?? const <Subscription>[];
+              final todaySelected = today.year == month.year && today.month == month.month && today.day == day;
+              return InkWell(
+                onTap: subscriptions.isEmpty ? null : () => onOpen(day, subscriptions),
+                borderRadius: BorderRadius.circular(12),
+                child: Ink(
+                  decoration: BoxDecoration(
+                    color: todaySelected ? p.accent : subscriptions.isNotEmpty ? p.accentSoft : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('$day', style: TextStyle(color: todaySelected ? Colors.white : subscriptions.isNotEmpty ? p.accent : p.text, fontSize: 12, fontWeight: FontWeight.w900)),
+                      if (subscriptions.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Container(width: 5, height: 5, decoration: BoxDecoration(color: todaySelected ? Colors.white : categoryColor(subscriptions.first.category), shape: BoxShape.circle)),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CalendarPayment extends StatelessWidget {
+  final int day;
+  final Subscription subscription;
+
+  const _CalendarPayment({required this.day, required this.subscription});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return InkWell(
+      onTap: () => showSubscriptionDetails(context, subscription),
+      borderRadius: BorderRadius.circular(20),
+      child: Ink(
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(20), border: Border.all(color: p.stroke)),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: p.accentSoft, borderRadius: BorderRadius.circular(13)),
+              child: Text('$day', style: TextStyle(color: p.accent, fontWeight: FontWeight.w900)),
+            ),
+            const SizedBox(width: 10),
+            ServiceAvatar(name: subscription.name, emoji: subscription.emoji, manageUrl: subscription.manageUrl, iconUrl: subscription.iconUrl, tint: categoryColor(subscription.category), size: 40),
+            const SizedBox(width: 10),
+            Expanded(child: Text(subscription.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: 13.5))),
+            Text(fmtMoney(subscription.price, subscription.currency), style: TextStyle(color: p.accent, fontWeight: FontWeight.w900, fontSize: 12.5)),
           ],
         ),
       ),
     );
   }
+}
 
-  void _showDay(BuildContext context, int day, List<Subscription> subs) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'خصومات يوم $day ${_monthNames[_month.month - 1]}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 16,
-                  color: AppColors.ink,
-                ),
-              ),
-              const SizedBox(height: 12),
-              for (final s in subs)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      ServiceAvatar(
-                        name: s.name,
-                        emoji: s.emoji,
-                        manageUrl: s.manageUrl,
-                        iconUrl: s.iconUrl,
-                        tint: categoryColor(s.category),
-                        size: 40,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          s.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.ink,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        fmtMoney(s.price, s.currency),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ),
+class _CalendarEmpty extends StatelessWidget {
+  const _CalendarEmpty();
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: p.surfaceAlt, borderRadius: BorderRadius.circular(18)),
+      child: Row(
+        children: [
+          Icon(Icons.event_busy_rounded, color: p.textMuted),
+          const SizedBox(width: 10),
+          Expanded(child: Text('الشهر هادئ. حرّك التقويم لرؤية الدفعات القادمة.', style: TextStyle(color: p.textMuted, fontSize: 12.5))),
+        ],
       ),
     );
   }

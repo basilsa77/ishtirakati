@@ -1,4 +1,4 @@
-/// تحليلات الإنفاق: رسم دائري تفاعلي، مؤشرات ذكية، وأعلى الاشتراكات.
+/// تحليلات الإصدار 8: قراءة هادئة قابلة للتنفيذ.
 library;
 
 import 'dart:math' as math;
@@ -20,322 +20,51 @@ class InsightsScreen extends StatelessWidget {
     return ListenableBuilder(
       listenable: store,
       builder: (context, _) {
-        if (store.active.isEmpty) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(28),
-              child: Text(
-                'أضف اشتراكات نشطة أولًا\nلتظهر لك تحليلات إنفاقك هنا.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.muted,
-                  height: 1.8,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          );
-        }
-
         final currency = store.dominantCurrency;
-        final byCategory = store.monthlyByCategory(currency);
-        final sortedCats = byCategory.entries.toList()
+        final entries = store.monthlyByCategory(currency).entries.toList()
           ..sort((a, b) => b.value.compareTo(a.value));
-        final totalMonthly =
-            sortedCats.fold<double>(0, (sum, e) => sum + e.value);
-
-        final top = store.active
-            .where((s) => s.currency == currency)
-            .toList()
+        final total = entries.fold<double>(0, (sum, entry) => sum + entry.value);
+        final history = store.monthlySpendHistory(currency, months: 6);
+        final top = store.active.where((item) => item.currency == currency).toList()
           ..sort((a, b) => b.monthlyCost.compareTo(a.monthlyCost));
-
-        final otherCurrencies = store
-            .monthlyTotals()
-            .entries
-            .where((e) => e.key != currency)
-            .toList();
-
-        final avgPerSub =
-            top.isEmpty ? 0.0 : totalMonthly / top.length;
-        final within7 = store.upcoming(withinDays: 7).length;
-        final heaviest = sortedCats.isEmpty ? null : sortedCats.first;
+        final upcoming = store.upcoming(withinDays: 7).length;
+        final average = top.isEmpty ? 0.0 : total / top.length;
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 132),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 132),
           children: [
-            const Padding(
-              padding: EdgeInsets.only(bottom: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            const _InsightsHeader(),
+            const SizedBox(height: 22),
+            if (top.isEmpty)
+              const _InsightsEmpty()
+            else ...[
+              _InsightHero(total: total, currency: currency, categories: entries.length),
+              const SizedBox(height: 14),
+              Row(
                 children: [
-                  Text(
-                    'قراءة إنفاقك',
-                    style: TextStyle(
-                      color: AppColors.ink,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  SizedBox(height: 3),
-                  Text(
-                    'صورة واضحة تساعدك على اتخاذ قرار أفضل',
-                    style: TextStyle(color: AppColors.muted, fontSize: 12.5),
-                  ),
-                ],
-              ),
-            ),
-            FadeSlideIn(
-              child: AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'توزيع مصروفك الشهري',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 16,
-                        color: AppColors.ink,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Row(
-                      children: [
-                        SizedBox(
-                          width: 150,
-                          height: 150,
-                          child: TweenAnimationBuilder<double>(
-                            tween: Tween(begin: 0, end: 1),
-                            duration: const Duration(milliseconds: 1000),
-                            curve: Curves.easeOutCubic,
-                            builder: (context, t, _) => CustomPaint(
-                              painter: _DonutPainter(
-                                entries: sortedCats,
-                                total: totalMonthly,
-                                progress: t,
-                              ),
-                              child: Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      fmtMoney(totalMonthly, currency),
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 16,
-                                        color: AppColors.ink,
-                                      ),
-                                    ),
-                                    const Text(
-                                      'شهريًا',
-                                      style: TextStyle(
-                                        color: AppColors.muted,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              for (final e in sortedCats.take(6))
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.only(bottom: 8),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 10,
-                                        height: 10,
-                                        decoration: BoxDecoration(
-                                          color: categoryColor(e.key),
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 7),
-                                      Expanded(
-                                        child: Text(
-                                          e.key,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: AppColors.ink,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                      Text(
-                                        totalMonthly <= 0
-                                            ? ''
-                                            : '${(e.value / totalMonthly * 100).round()}٪',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: AppColors.muted,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (otherCurrencies.isNotEmpty) ...[
-                      const Divider(height: 24),
-                      Text(
-                        'اشتراكات بعملات أخرى: '
-                        '${otherCurrencies.map((e) => fmtMoney(e.value, e.key)).join(' + ')} شهريًا',
-                        style: const TextStyle(
-                          color: AppColors.muted,
-                          fontSize: 12.5,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            const FadeSlideIn(
-              delayMs: 40,
-              child: _AdvisorCard(),
-            ),
-            const SizedBox(height: 12),
-            FadeSlideIn(
-              delayMs: 60,
-              child: _HistoryCard(
-                history: store.monthlySpendHistory(currency, months: 6),
-                currency: currency,
-              ),
-            ),
-            const SizedBox(height: 12),
-            FadeSlideIn(
-              delayMs: 80,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _InsightChip(
-                      icon: Icons.balance_rounded,
-                      label: 'متوسط الاشتراك',
-                      value: fmtMoney(avgPerSub, currency),
-                    ),
-                  ),
+                  Expanded(child: _MiniMetric(label: 'متوسط الخدمة', value: fmtMoney(average, currency), icon: Icons.balance_rounded)),
                   const SizedBox(width: 10),
-                  Expanded(
-                    child: _InsightChip(
-                      icon: Icons.schedule_rounded,
-                      label: 'تجديد خلال ٧ أيام',
-                      value: '$within7',
-                    ),
-                  ),
+                  Expanded(child: _MiniMetric(label: 'خلال أسبوع', value: '$upcoming تجديد', icon: Icons.timer_outlined)),
                 ],
               ),
-            ),
-            if (heaviest != null) ...[
+              const SizedBox(height: 28),
+              const _InsightsLabel('توزيع الالتزامات'),
               const SizedBox(height: 10),
-              FadeSlideIn(
-                delayMs: 120,
-                child: AppCard(
-                  color: AppColors.goldSoft,
-                  borderColor: AppColors.goldDeep,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 13,
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.workspace_premium_rounded,
-                        color: AppColors.gold,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'أثقل تصنيف على جيبك: «${heaviest.key}» '
-                          'بـ ${fmtMoney(heaviest.value, currency)} شهريًا',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.ink,
-                            fontSize: 13.5,
-                            height: 1.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 12),
-            FadeSlideIn(
-              delayMs: 160,
-              child: AppCard(
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.event_repeat_rounded,
-                      color: AppColors.gold,
-                      size: 30,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'توقّع إنفاقك السنوي',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.ink,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            store
-                                .yearlyTotals()
-                                .entries
-                                .map((e) => fmtMoney(e.value, e.key))
-                                .join(' + '),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 20,
-                              color: AppColors.gold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const SectionTitle('أغلى اشتراكاتك (شهريًا)'),
-            for (var i = 0; i < top.take(5).length; i++) ...[
-              FadeSlideIn(
-                delayMs: 200 + i * 60,
-                child: _TopTile(sub: top[i], rank: i),
-              ),
+              _DistributionCard(entries: entries, total: total, currency: currency),
+              const SizedBox(height: 28),
+              const _InsightsLabel('مسار الإنفاق'),
               const SizedBox(height: 10),
+              _TrendCard(history: history, currency: currency),
+              const SizedBox(height: 28),
+              const _InsightsLabel('الخدمات الأعلى أثرًا'),
+              const SizedBox(height: 10),
+              for (var index = 0; index < top.take(4).length; index++) ...[
+                _TopServiceRow(subscription: top[index], rank: index + 1),
+                const SizedBox(height: 9),
+              ],
+              const SizedBox(height: 18),
+              const _AdvisorPanel(),
             ],
-            const SizedBox(height: 6),
-            const Text(
-              'نصيحة: أي اشتراك لم تستخدمه خلال آخر ٣٠ يومًا مرشّح قوي '
-              'للإيقاف المؤقت — جرّب إيقافه وشاهد أثره على مصروفك أعلاه.',
-              style: TextStyle(
-                color: AppColors.muted,
-                fontSize: 12.5,
-                height: 1.7,
-              ),
-            ),
           ],
         );
       },
@@ -343,383 +72,152 @@ class InsightsScreen extends StatelessWidget {
   }
 }
 
-
-class _AdvisorCard extends StatefulWidget {
-  const _AdvisorCard();
-
-  @override
-  State<_AdvisorCard> createState() => _AdvisorCardState();
-}
-
-class _AdvisorCardState extends State<_AdvisorCard> {
-  bool _busy = false;
-
-  Future<void> _run() async {
-    final store = SubscriptionStore.instance;
-    if (store.aiApiKey.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'أضف مفتاح الذكاء الاصطناعي المجاني من الإعدادات أولًا',
-          ),
-        ),
-      );
-      return;
-    }
-    setState(() => _busy = true);
-    try {
-      final advice =
-          await AiAdvisor.advise(
-        store.items,
-        store.aiApiKey,
-        providerId: store.aiProvider,
-      );
-      if (!mounted) return;
-      setState(() => _busy = false);
-      showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: AppColors.card,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        builder: (ctx) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 44,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: AppColors.border,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Row(
-                  children: [
-                    Icon(
-                      Icons.psychology_rounded,
-                      color: AppColors.primary,
-                      size: 24,
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      'نصائح مستشارك الذكي',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 17,
-                        color: AppColors.ink,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Flexible(
-                  child: SingleChildScrollView(
-                    child: Text(
-                      advice,
-                      style: const TextStyle(
-                        color: AppColors.ink,
-                        fontSize: 14.5,
-                        height: 1.9,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    } on AiExtractionException catch (e) {
-      if (!mounted) return;
-      setState(() => _busy = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _busy = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر الاتصال — تأكد من الإنترنت')),
-      );
-    }
-  }
+class _InsightsHeader extends StatelessWidget {
+  const _InsightsHeader();
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      color: AppColors.primarySoft,
-      borderColor: AppColors.primary.withOpacity(.22),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.psychology_rounded,
-            color: AppColors.primary,
-            size: 30,
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'المستشار الذكي',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 15,
-                    color: AppColors.ink,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'تحليل اشتراكاتك: تكرارات، فرص توفير، وبدائل',
-                  style: TextStyle(
-                    color: AppColors.muted,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(84, 44),
-            ),
-            onPressed: _busy ? null : _run,
-            child: _busy
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Text('حلّل'),
-          ),
-        ],
-      ),
+    final p = context.palette;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('تحليلاتك', style: TextStyle(color: p.text, fontSize: 27, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 5),
+        Text('قراءة مختصرة لما يذهب إليه إنفاقك.', style: TextStyle(color: p.textMuted, fontSize: 13)),
+      ],
     );
   }
 }
 
-class _DonutPainter extends CustomPainter {
-  final List<MapEntry<String, double>> entries;
+class _InsightHero extends StatelessWidget {
   final double total;
-  final double progress;
-
-  _DonutPainter({
-    required this.entries,
-    required this.total,
-    required this.progress,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (total <= 0 || entries.isEmpty) return;
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = math.min(size.width, size.height) / 2 - 10;
-    const stroke = 18.0;
-    const gap = 0.045; // فجوة صغيرة بين الشرائح (راديان)
-
-    var start = -math.pi / 2;
-    for (final e in entries) {
-      final sweep =
-          (e.value / total) * 2 * math.pi * progress - gap;
-      if (sweep <= 0) {
-        start += (e.value / total) * 2 * math.pi * progress;
-        continue;
-      }
-      final paint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = stroke
-        ..strokeCap = StrokeCap.round
-        ..color = categoryColor(e.key);
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        start + gap / 2,
-        sweep,
-        false,
-        paint,
-      );
-      start += (e.value / total) * 2 * math.pi * progress;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DonutPainter old) =>
-      old.progress != progress ||
-      old.total != total ||
-      old.entries.length != entries.length;
-}
-
-class _HistoryCard extends StatelessWidget {
-  final List<MapEntry<String, double>> history;
   final String currency;
+  final int categories;
 
-  const _HistoryCard({required this.history, required this.currency});
+  const _InsightHero({required this.total, required this.currency, required this.categories});
 
   @override
   Widget build(BuildContext context) {
-    final maxVal = history.fold<double>(
-      0,
-      (m, e) => e.value > m ? e.value : m,
-    );
-    final trendUp = history.length >= 2 &&
-        history.last.value > history[history.length - 2].value;
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text(
-                'إنفاقك آخر ٦ أشهر',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 16,
-                  color: AppColors.ink,
-                ),
-              ),
-              const Spacer(),
-              if (maxVal > 0)
-                Text(
-                  trendUp ? 'في ازدياد ↑' : 'مستقر ↓',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color:
-                        trendUp ? AppColors.warn : AppColors.primary,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 130,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                for (var i = 0; i < history.length; i++) ...[
-                  if (i > 0) const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text(
-                          history[i].value <= 0
-                              ? ''
-                              : history[i].value.toStringAsFixed(0),
-                          style: const TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.muted,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        TweenAnimationBuilder<double>(
-                          tween: Tween(
-                            begin: 0,
-                            end: maxVal <= 0
-                                ? 0.02
-                                : (history[i].value / maxVal)
-                                    .clamp(0.02, 1.0),
-                          ),
-                          duration: Duration(
-                            milliseconds: 500 + i * 90,
-                          ),
-                          curve: Curves.easeOutCubic,
-                          builder: (context, t, _) => Container(
-                            height: 80 * t,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                begin: Alignment.bottomCenter,
-                                end: Alignment.topCenter,
-                                colors: [
-                                  AppColors.primaryDeep,
-                                  AppColors.primary,
-                                ],
-                              ),
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(6),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          history[i].key,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.muted,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'محسوب من دفعات اشتراكاتك الفعلية',
-            style: TextStyle(
-              color: AppColors.muted,
-              fontSize: 11.5,
-            ),
-          ),
-        ],
+    final p = context.palette;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: p.surfaceAlt,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: p.stroke),
       ),
-    );
-  }
-}
-
-class _InsightChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _InsightChip({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.primary, size: 22),
-          const SizedBox(width: 10),
+          Container(
+            width: 48,
+            height: 48,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: p.accentSoft, borderRadius: BorderRadius.circular(16)),
+            child: Icon(Icons.insights_rounded, color: p.accent),
+          ),
+          const SizedBox(width: 13),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.primary,
-                  ),
+                Text('إجمالي الالتزامات الشهرية', style: TextStyle(color: p.textMuted, fontSize: 12)),
+                const SizedBox(height: 4),
+                Text(fmtMoney(total, currency), style: TextStyle(color: p.text, fontSize: 22, fontWeight: FontWeight.w900)),
+              ],
+            ),
+          ),
+          Text('$categories\nتصنيفات', textAlign: TextAlign.center, style: TextStyle(color: p.accent, fontSize: 11, height: 1.5, fontWeight: FontWeight.w900)),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+
+  const _MiniMetric({required this.label, required this.value, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(18), border: Border.all(color: p.stroke)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: p.accent, size: 20),
+          const SizedBox(height: 14),
+          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: 13.5, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 3),
+          Text(label, style: TextStyle(color: p.textMuted, fontSize: 10.5)),
+        ],
+      ),
+    );
+  }
+}
+
+class _InsightsLabel extends StatelessWidget {
+  final String text;
+
+  const _InsightsLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) => Text(
+        text,
+        style: TextStyle(color: context.palette.text, fontSize: 18, fontWeight: FontWeight.w900),
+      );
+}
+
+class _DistributionCard extends StatelessWidget {
+  final List<MapEntry<String, double>> entries;
+  final double total;
+  final String currency;
+
+  const _DistributionCard({required this.entries, required this.total, required this.currency});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return AppCard(
+      padding: const EdgeInsets.all(18),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 128,
+            height: 128,
+            child: CustomPaint(
+              painter: _DistributionPainter(entries: entries, total: total, track: p.surfaceAlt),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('${entries.length}', style: TextStyle(color: p.text, fontSize: 24, fontWeight: FontWeight.w900)),
+                    Text('تصنيفات', style: TextStyle(color: p.textMuted, fontSize: 10.5)),
+                  ],
                 ),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    color: AppColors.muted,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              children: [
+                for (final entry in entries.take(5))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Row(
+                      children: [
+                        Container(width: 8, height: 8, decoration: BoxDecoration(color: categoryColor(entry.key), shape: BoxShape.circle)),
+                        const SizedBox(width: 7),
+                        Expanded(child: Text(entry.key, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: 11.5, fontWeight: FontWeight.w700))),
+                        Text('${total <= 0 ? 0 : (entry.value / total * 100).round()}٪', style: TextStyle(color: p.textMuted, fontSize: 11, fontWeight: FontWeight.w800)),
+                      ],
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -729,66 +227,235 @@ class _InsightChip extends StatelessWidget {
   }
 }
 
-class _TopTile extends StatelessWidget {
-  final Subscription sub;
-  final int rank;
+class _DistributionPainter extends CustomPainter {
+  final List<MapEntry<String, double>> entries;
+  final double total;
+  final Color track;
 
-  const _TopTile({required this.sub, required this.rank});
+  const _DistributionPainter({required this.entries, required this.total, required this.track});
 
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2 - 9;
+    final base = Paint()
+      ..color = track
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 15
+      ..strokeCap = StrokeCap.round;
+    canvas.drawCircle(center, radius, base);
+    if (total <= 0) return;
+    var start = -math.pi / 2;
+    for (final entry in entries) {
+      final sweep = math.max(0.035, entry.value / total * (math.pi * 2 - .20));
+      final paint = Paint()
+        ..color = categoryColor(entry.key)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 15
+        ..strokeCap = StrokeCap.round;
+      canvas.drawArc(Rect.fromCircle(center: center, radius: radius), start, sweep, false, paint);
+      start += sweep + .04;
+    }
+  }
 
+  @override
+  bool shouldRepaint(covariant _DistributionPainter oldDelegate) => oldDelegate.entries != entries || oldDelegate.total != total || oldDelegate.track != track;
+}
+
+class _TrendCard extends StatelessWidget {
+  final List<MapEntry<String, double>> history;
+  final String currency;
+
+  const _TrendCard({required this.history, required this.currency});
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    final maxValue = history.fold<double>(0, (max, item) => math.max(max, item.value));
+    final current = history.isEmpty ? 0.0 : history.last.value;
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('آخر 6 أشهر', style: TextStyle(color: p.textMuted, fontSize: 12)),
+          const SizedBox(height: 4),
+          Text(fmtMoney(current, currency), style: TextStyle(color: p.text, fontSize: 20, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 18),
+          SizedBox(
+            height: 118,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                for (final item in history)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.bottomCenter,
+                              child: FractionallySizedBox(
+                                heightFactor: maxValue <= 0 ? .05 : (item.value / maxValue).clamp(.05, 1.0),
+                                child: Container(
+                                  decoration: BoxDecoration(color: p.accent, borderRadius: BorderRadius.circular(8)),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 7),
+                          Text(item.key, style: TextStyle(color: p.textMuted, fontSize: 10.5, fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TopServiceRow extends StatelessWidget {
+  final Subscription subscription;
+  final int rank;
+
+  const _TopServiceRow({required this.subscription, required this.rank});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
     return AppCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
           Container(
-            width: 26,
-            height: 26,
+            width: 25,
+            height: 25,
             alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: rank == 0 ? AppColors.goldSoft : AppColors.cardAlt,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: rank == 0 ? AppColors.goldDeep : AppColors.border,
-              ),
-            ),
-            child: Text(
-              '${rank + 1}',
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w900,
-                color: rank == 0 ? AppColors.gold : AppColors.muted,
-              ),
-            ),
+            decoration: BoxDecoration(color: rank == 1 ? p.warningSoft : p.surfaceAlt, shape: BoxShape.circle),
+            child: Text('$rank', style: TextStyle(color: rank == 1 ? p.warning : p.textMuted, fontSize: 11, fontWeight: FontWeight.w900)),
           ),
           const SizedBox(width: 10),
-          ServiceAvatar(
-            name: sub.name,
-            emoji: sub.emoji,
-            manageUrl: sub.manageUrl,
-            iconUrl: sub.iconUrl,
-            tint: categoryColor(sub.category),
-            size: 42,
-          ),
+          ServiceAvatar(name: subscription.name, emoji: subscription.emoji, manageUrl: subscription.manageUrl, iconUrl: subscription.iconUrl, tint: categoryColor(subscription.category), size: 40),
           const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              sub.name,
-              style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                color: AppColors.ink,
+          Expanded(child: Text(subscription.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: 13.5, fontWeight: FontWeight.w800))),
+          Text(fmtMoney(subscription.monthlyCost, subscription.currency), style: TextStyle(color: p.accent, fontSize: 12.5, fontWeight: FontWeight.w900)),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdvisorPanel extends StatefulWidget {
+  const _AdvisorPanel();
+
+  @override
+  State<_AdvisorPanel> createState() => _AdvisorPanelState();
+}
+
+class _AdvisorPanelState extends State<_AdvisorPanel> {
+  bool _loading = false;
+
+  Future<void> _advise() async {
+    final store = SubscriptionStore.instance;
+    if (store.aiApiKey.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('أضف مفتاح الذكاء الاصطناعي من الإعدادات أولًا.')));
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      final answer = await AiAdvisor.advise(store.items, store.aiApiKey, providerId: store.aiProvider);
+      if (!mounted) return;
+      setState(() => _loading = false);
+      await showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (sheetContext) => SafeArea(
+          top: false,
+          child: Container(
+            constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(sheetContext).height * .72),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+            decoration: BoxDecoration(color: sheetContext.palette.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(30))),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: sheetContext.palette.stroke, borderRadius: BorderRadius.circular(99)))),
+                  const SizedBox(height: 18),
+                  Text('قراءة المستشار', style: TextStyle(color: sheetContext.palette.text, fontSize: 19, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 12),
+                  Text(answer, style: TextStyle(color: sheetContext.palette.text, height: 1.8, fontSize: 14)),
+                ],
               ),
             ),
           ),
-          Text(
-            '${fmtMoney(sub.monthlyCost, sub.currency)} / شهر',
-            style: const TextStyle(
-              fontWeight: FontWeight.w900,
-              color: AppColors.primary,
+        ),
+      );
+    } on AiExtractionException catch (error) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر الاتصال بالمستشار الآن.')));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(color: p.accentStrong, borderRadius: BorderRadius.circular(22)),
+      child: Row(
+        children: [
+          const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 25),
+          const SizedBox(width: 11),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('اسأل مستشارك', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15)),
+                SizedBox(height: 3),
+                Text('اقرأ فرص التوفير والتكرارات.', style: TextStyle(color: Color(0xCCFFFFFF), fontSize: 11.5)),
+              ],
             ),
           ),
+          IconButton.filled(
+            tooltip: 'تحليل ذكي',
+            style: IconButton.styleFrom(backgroundColor: Colors.white, foregroundColor: p.accentStrong),
+            onPressed: _loading ? null : _advise,
+            icon: _loading
+                ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: p.accentStrong))
+                : const Icon(Icons.arrow_back_rounded),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InsightsEmpty extends StatelessWidget {
+  const _InsightsEmpty();
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Padding(
+      padding: const EdgeInsets.only(top: 80),
+      child: Column(
+        children: [
+          Icon(Icons.query_stats_rounded, size: 44, color: p.textMuted),
+          const SizedBox(height: 12),
+          Text('أضف اشتراكًا نشطًا لتبدأ القراءة.', style: TextStyle(color: p.text, fontWeight: FontWeight.w800)),
         ],
       ),
     );

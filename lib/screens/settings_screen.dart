@@ -1,18 +1,16 @@
-/// الإعدادات: العملة، الميزانية، الذكاء الاصطناعي، والحساب.
+/// إعدادات الإصدار 8: مجموعات قصيرة واضحة من دون صفحات متراكبة.
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../models/subscription.dart';
-import '../services/ai_extractor.dart'
-    show kAiProviders, aiProviderById;
+import '../models/subscription.dart' show currencySymbols;
+import '../services/ai_extractor.dart' show aiProviderById, kAiProviders;
 import '../services/auth_service.dart';
 import '../services/cloud_sync.dart';
 import '../services/notification_service.dart';
-import '../services/update_checker.dart';
 import '../services/subscription_store.dart';
+import '../services/update_checker.dart';
 import '../theme.dart';
 import 'email_link_screen.dart';
 import 'import_screen.dart';
@@ -29,19 +27,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _budget;
   late final TextEditingController _aiKey;
 
-  // Portable backup is intentionally hidden from the product UI.
-  bool get _showPortableBackup => false;
-
   @override
   void initState() {
     super.initState();
-    final b = SubscriptionStore.instance.monthlyBudget;
+    final store = SubscriptionStore.instance;
+    final budget = store.monthlyBudget;
     _budget = TextEditingController(
-      text: b <= 0 ? '' : (b == b.roundToDouble() ? b.toStringAsFixed(0) : '$b'),
+      text: budget <= 0
+          ? ''
+          : budget == budget.roundToDouble()
+              ? budget.toStringAsFixed(0)
+              : budget.toStringAsFixed(2),
     );
-    _aiKey = TextEditingController(
-      text: SubscriptionStore.instance.aiApiKey,
-    );
+    _aiKey = TextEditingController(text: store.aiApiKey);
   }
 
   @override
@@ -56,800 +54,464 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final store = SubscriptionStore.instance;
     return ListenableBuilder(
       listenable: store,
-      builder: (context, _) {
-        return ListView(
-          keyboardDismissBehavior:
-              ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 132),
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(bottom: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'تحكم في تجربتك',
-                    style: TextStyle(
-                      color: AppColors.ink,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  SizedBox(height: 3),
-                  Text(
-                    'إعدادات بسيطة تجعل اشتراكاتك تعمل كما تريد',
-                    style: TextStyle(color: AppColors.muted, fontSize: 12.5),
-                  ),
-                ],
-              ),
-            ),
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'الحساب والمزامنة',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                      color: AppColors.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    !AuthService.isAvailable
-                        ? 'المزامنة السحابية قيد التجهيز — ستتوفر في تحديث قريب.'
-                        : AuthService.isSignedIn
-                            ? 'مسجل الدخول: ${AuthService.userEmail}'
-                            : 'سجّل دخولك لتُحفظ بياناتك مع حسابك وتستعيدها على أي جهاز.',
-                    style: const TextStyle(
-                      color: AppColors.muted,
-                      fontSize: 12.5,
-                      height: 1.6,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (!AuthService.isSignedIn)
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48),
-                      ),
-                      onPressed: !AuthService.isAvailable
-                          ? null
-                          : () async {
-                              await Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      const LoginScreen(fromSettings: true),
-                                ),
-                              );
-                              if (context.mounted) setState(() {});
-                            },
-                      icon: const Icon(Icons.login_rounded, size: 20),
-                      label: const Text('تسجيل الدخول'),
-                    )
-                  else
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(46),
-                            ),
-                            onPressed: () async {
-                              final ok = await CloudSync.push();
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      ok
-                                          ? 'تمت المزامنة بنجاح'
-                                          : 'تعذرت المزامنة — تأكد من الإنترنت',
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
-                            icon: const Icon(Icons.cloud_upload_rounded,
-                                size: 19),
-                            label: const Text('مزامنة الآن'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(46),
-                              foregroundColor: AppColors.danger,
-                              side: const BorderSide(
-                                color: AppColors.danger,
-                              ),
-                            ),
-                            onPressed: () async {
-                              await AuthService.signOut();
-                              if (context.mounted) setState(() {});
-                            },
-                            icon: const Icon(Icons.logout_rounded, size: 19),
-                            label: const Text('خروج'),
-                          ),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            const _SettingsGroupLabel('التنبيهات والخصوصية'),
-            AppCard(
-              child: SwitchListTile(
-                value: store.notificationsEnabled,
-                onChanged: (v) async {
-                  if (v) {
-                    final ok = await NotificationService.instance
-                        .requestPermission();
-                    if (!ok && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'فعّل الإشعارات لتطبيق «اشتراكاتي» من إعدادات iOS أولًا',
-                          ),
-                        ),
-                      );
-                    }
-                  }
-                  await store.setNotificationsEnabled(v);
-                },
-                title: const Text(
-                  'إشعارات التجديد',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16,
-                    color: AppColors.ink,
-                  ),
-                ),
-                subtitle: const Text(
-                  'تذكير قبل كل خصم وقبل انتهاء التجارب المجانية '
-                  '(يُضبط لكل اشتراك من شاشة التعديل)',
-                  style: TextStyle(
-                    color: AppColors.muted,
-                    fontSize: 12.5,
-                    height: 1.6,
-                  ),
-                ),
-                activeColor: AppColors.primary,
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-            const SizedBox(height: 14),
-            AppCard(
-              child: SwitchListTile(
-                value: store.appLockEnabled,
-                onChanged: (v) => store.setAppLockEnabled(v),
-                title: const Text(
-                  'قفل التطبيق ببصمة الوجه',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16,
-                    color: AppColors.ink,
-                  ),
-                ),
-                subtitle: const Text(
-                  'يُطلب Face ID عند فتح التطبيق أو العودة إليه',
-                  style: TextStyle(
-                    color: AppColors.muted,
-                    fontSize: 12.5,
-                  ),
-                ),
-                activeColor: AppColors.primary,
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-            const SizedBox(height: 14),
-            const _SettingsGroupLabel('الميزانية والعملات'),
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'الميزانية الشهرية',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                      color: AppColors.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'حدد سقفًا لمصروفك الشهري وسيظهر لك شريط متابعة في الرئيسية.',
-                    style:
-                        TextStyle(color: AppColors.muted, fontSize: 12.5),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _budget,
-                          keyboardType:
-                              const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          textDirection: TextDirection.ltr,
-                          decoration: InputDecoration(
-                            hintText: 'مثال: 300',
-                            suffixText:
-                                currencySymbols[store.defaultCurrency],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      FilledButton(
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(90, 52),
-                        ),
-                        onPressed: () async {
-                          final v = double.tryParse(
-                                _budget.text
-                                    .trim()
-                                    .replaceAll('،', '.')
-                                    .replaceAll(',', '.'),
-                              ) ??
-                              0;
-                          await store.setMonthlyBudget(v);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  v <= 0
-                                      ? 'تم إلغاء الميزانية'
-                                      : 'تم ضبط الميزانية على ${fmtMoney(v, store.defaultCurrency)}',
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                        child: const Text('حفظ'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'العملة الافتراضية',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                      color: AppColors.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'تُستخدم تلقائيًا عند إضافة اشتراك جديد.',
-                    style:
-                        TextStyle(color: AppColors.muted, fontSize: 12.5),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: store.defaultCurrency,
-                    dropdownColor: AppColors.cardAlt,
-                    items: [
-                      for (final c in currencySymbols.keys)
-                        DropdownMenuItem(
-                          value: c,
-                          child: Text('${currencySymbols[c]} ($c)'),
-                        ),
-                    ],
-                    onChanged: (v) {
-                      if (v != null) store.setDefaultCurrency(v);
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            const _SettingsGroupLabel('الاستيراد والأتمتة'),
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'الاستيراد الذكي وربط البريد',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                      color: AppColors.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'الصق رسائل البنك أو إيصالات Apple وسنستخرج '
-                    'اشتراكاتك بأسعارها تلقائيًا.',
-                    style: TextStyle(
-                      color: AppColors.muted,
-                      fontSize: 12.5,
-                      height: 1.6,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
-                    ),
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const ImportScreen(),
-                      ),
-                    ),
-                    icon: const Icon(Icons.auto_awesome_rounded, size: 20),
-                    label: const Text('فتح الاستيراد الذكي'),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
-                    ),
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const EmailLinkScreen(),
-                      ),
-                    ),
-                    icon: const Icon(Icons.alternate_email_rounded, size: 20),
-                    label: const Text('ربط البريد وجلب الاشتراكات'),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'الذكاء الاصطناعي الخاص بك',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                      color: AppColors.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'اختر مزودك المفضل وأدخل مفتاحك الخاص — يجعل الاستيراد '
-                    'والمستشار الذكي يعملان لحسابك أنت (المفتاح يبقى على جهازك).',
-                    style: TextStyle(
-                      color: AppColors.muted,
-                      fontSize: 12.5,
-                      height: 1.7,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: store.aiProvider,
-                    dropdownColor: AppColors.cardAlt,
-                    decoration:
-                        const InputDecoration(labelText: 'المزود'),
-                    items: [
-                      for (final p in kAiProviders)
-                        DropdownMenuItem(
-                          value: p.id,
-                          child: Text(p.label),
-                        ),
-                    ],
-                    onChanged: (v) {
-                      if (v != null) store.setAiProvider(v);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _aiKey,
-                    obscureText: true,
-                    textDirection: TextDirection.ltr,
-                    decoration: InputDecoration(
-                      labelText: 'مفتاح API',
-                      hintText: aiProviderById(store.aiProvider).hint,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size.fromHeight(46),
-                          ),
-                          onPressed: () => launchUrl(
-                            Uri.parse(
-                              aiProviderById(store.aiProvider).keyUrl,
-                            ),
-                            mode: LaunchMode.externalApplication,
-                          ),
-                          icon: const Icon(Icons.open_in_new_rounded,
-                              size: 18),
-                          label: const Text('إنشاء مفتاح'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton(
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(90, 46),
-                        ),
-                        onPressed: () async {
-                          try {
-                            await store.setAiApiKey(_aiKey.text);
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('$e')),
-                              );
-                            }
-                            return;
-                          }
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  _aiKey.text.trim().isEmpty
-                                      ? 'تم إيقاف الذكاء الاصطناعي'
-                                      : 'تم حفظ المفتاح — الاستيراد الآن أذكى',
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                        child: const Text('حفظ'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(46),
-                    ),
-                    onPressed: store.aiApiKey.trim().isEmpty
-                        ? null
-                        : () async {
-                            final approved = await showDialog<bool>(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: const Text('تصنيف بالخدمة السحابية؟'),
-                                content: const Text(
-                                  'سيُرسل اسم كل خدمة غير مصنفة فقط إلى Gemini. '
-                                  'لن تُرسل الأسعار أو الملاحظات أو بيانات البريد.',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, false),
-                                    child: const Text('إلغاء'),
-                                  ),
-                                  FilledButton(
-                                    onPressed: () => Navigator.pop(ctx, true),
-                                    child: const Text('أوافق'),
-                                  ),
-                                ],
-                              ),
-                            );
-                            if (approved != true) return;
-                            try {
-                              final count =
-                                  await store.reclassifyUnknownsWithAi();
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      count == 0
-                                          ? 'لا توجد خدمات غير مصنفة قابلة للتحديث'
-                                          : 'تم تصنيف $count خدمات بالذكاء الاصطناعي',
-                                    ),
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('$e')),
-                                );
-                              }
-                            }
-                          },
-                    icon: const Icon(Icons.auto_awesome_rounded),
-                    label: const Text('تصنيف الخدمات غير المعروفة بالذكاء الاصطناعي'),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            if (_showPortableBackup) ...[
-              AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'النسخ الاحتياطي',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 16,
-                        color: AppColors.ink,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'النسخة الاحتياطية قابلة للنقل بين الأجهزة، لكنها نص قابل '
-                      'للقراءة. لا تحفظها إلا في مكان خاص ومحمٍ.',
-                      style: TextStyle(
-                        color: AppColors.muted,
-                        fontSize: 12.5,
-                        height: 1.6,
-                      ),
-                    ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size.fromHeight(48),
-                          ),
-                          onPressed: () async {
-                            final approved = await showDialog<bool>(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: const Text('تصدير نسخة قابلة للقراءة؟'),
-                                content: const Text(
-                                  'سيُنَسخ ملف JSON غير مشفّر إلى الحافظة لتتمكن '
-                                  'من نقله إلى جهاز آخر. لا تلصقه في تطبيقات عامة '
-                                  'ولا تشاركه مع أي شخص.',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, false),
-                                    child: const Text('إلغاء'),
-                                  ),
-                                  FilledButton(
-                                    onPressed: () => Navigator.pop(ctx, true),
-                                    child: const Text('أفهم، صدّر'),
-                                  ),
-                                ],
-                              ),
-                            );
-                            if (approved != true) return;
-                            await Clipboard.setData(
-                              ClipboardData(text: store.exportJson()),
-                            );
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'تم نسخ البيانات — ألصقها في الملاحظات لحفظها',
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                          icon: const Icon(Icons.upload_rounded, size: 20),
-                          label: const Text('تصدير'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size.fromHeight(48),
-                            foregroundColor: AppColors.gold,
-                            side:
-                                const BorderSide(color: AppColors.goldDeep),
-                          ),
-                          onPressed: () => _import(context, store),
-                          icon:
-                              const Icon(Icons.download_rounded, size: 20),
-                          label: const Text('استعادة'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
-                    ),
-                    onPressed: () async {
-                      await Clipboard.setData(
-                        ClipboardData(text: buildCsv(store.items)),
-                      );
-                      if (context.mounted) {
+      builder: (context, _) => ListView(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 132),
+        children: [
+          const _SettingsIntro(),
+          const SizedBox(height: 22),
+          _AccountCard(onChanged: () => setState(() {})),
+          const SizedBox(height: 26),
+          const _SettingsLabel('الحماية والتنبيهات'),
+          const SizedBox(height: 10),
+          AppCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                _SettingsSwitch(
+                  icon: Icons.notifications_none_rounded,
+                  title: 'تنبيهات التجديد',
+                  detail: 'تذكير قبل الخصم والتجارب المجانية',
+                  value: store.notificationsEnabled,
+                  onChanged: (value) async {
+                    if (value) {
+                      final permitted = await NotificationService.instance.requestPermission();
+                      if (!permitted && context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'تم نسخ جدول CSV — ألصقه في Excel أو Numbers',
-                            ),
-                          ),
+                          const SnackBar(content: Text('فعّل الإشعارات من إعدادات iPhone أولًا.')),
                         );
                       }
-                    },
-                    icon: const Icon(Icons.table_chart_rounded, size: 20),
-                    label: const Text('تصدير جدول CSV'),
-                  ),
-                ],
-              ),
-              ),
-              const SizedBox(height: 14),
-            ],
-            const _SettingsGroupLabel('عن التطبيق'),
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'حول التطبيق',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                      color: AppColors.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  const _AboutRow(label: 'الاسم', value: 'اشتراكاتي'),
-                  const _AboutRow(label: 'الإصدار', value: kAppVersion),
-                  const _AboutRow(label: 'المطوّر', value: 'باسل'),
-                  const _AboutRow(
-                    label: 'الخصوصية',
-                    value: 'بيانات الاشتراكات مشفّرة على جهازك.\n'
-                        'التحليل بالذكاء الاصطناعي وربط البريد اختياريان\n'
-                        'ولا يرسلان بيانات إلا بعد موافقتك.',
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'صُنع بحب في السعودية 🇸🇦',
-                    style: TextStyle(
-                      color: AppColors.muted,
-                      fontSize: 12.5,
-                    ),
-                  ),
-                ],
-              ),
+                    }
+                    await store.setNotificationsEnabled(value);
+                  },
+                ),
+                Divider(height: 1, color: context.palette.stroke),
+                _SettingsSwitch(
+                  icon: Icons.face_retouching_natural_rounded,
+                  title: 'قفل التطبيق',
+                  detail: 'استخدم Face ID عند الفتح أو العودة',
+                  value: store.appLockEnabled,
+                  onChanged: store.setAppLockEnabled,
+                ),
+              ],
             ),
-            const SizedBox(height: 14),
-            const _SettingsGroupLabel('إدارة البيانات'),
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'إدارة البيانات',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                      color: AppColors.ink,
-                    ),
+          ),
+          const SizedBox(height: 26),
+          const _SettingsLabel('التخطيط المالي'),
+          const SizedBox(height: 10),
+          _BudgetCard(controller: _budget, onSave: _saveBudget),
+          const SizedBox(height: 26),
+          const _SettingsLabel('أدواتك الذكية'),
+          const SizedBox(height: 10),
+          AppCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                _SettingsAction(
+                  icon: Icons.document_scanner_rounded,
+                  title: 'استيراد من النصوص',
+                  detail: 'حلّل رسائل البنك أو الإيصالات',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ImportScreen()),
                   ),
-                  const SizedBox(height: 10),
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.danger,
-                      side: const BorderSide(color: AppColors.danger),
-                      minimumSize: const Size.fromHeight(48),
-                    ),
-                    onPressed: () => _confirmWipe(context, store),
-                    icon: const Icon(Icons.delete_forever_rounded),
-                    label: const Text('حذف جميع الاشتراكات'),
+                ),
+                Divider(height: 1, color: context.palette.stroke),
+                _SettingsAction(
+                  icon: Icons.alternate_email_rounded,
+                  title: 'ربط البريد',
+                  detail: 'اكتشف الاشتراكات من إيصالاتك',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const EmailLinkScreen()),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _import(
-    BuildContext context,
-    SubscriptionStore store,
-  ) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('استعادة من الحافظة؟'),
-        content: const Text(
-          'انسخ نص النسخة الاحتياطية أولًا (من الملاحظات مثلًا)، '
-          'ثم اضغط «استعادة». سيتم دمج الاشتراكات مع الموجود حاليًا.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('إلغاء'),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('استعادة'),
+          const SizedBox(height: 14),
+          _AiStudio(
+            controller: _aiKey,
+            onSave: _saveAiKey,
+            onClassify: _classifyUnknowns,
           ),
+          const SizedBox(height: 26),
+          const _SettingsLabel('عن اشتراكاتي'),
+          const SizedBox(height: 10),
+          _AboutCard(onCheckUpdates: _checkUpdates),
+          const SizedBox(height: 26),
+          const _SettingsLabel('منطقة حساسة'),
+          const SizedBox(height: 10),
+          _DangerZone(onDelete: _confirmWipe),
         ],
       ),
     );
-    if (ok != true) return;
-    final data = await Clipboard.getData('text/plain');
-    final raw = data?.text ?? '';
-    final count = raw.trim().isEmpty ? -1 : await store.importJson(raw);
-    if (!context.mounted) return;
+  }
+
+  Future<void> _saveBudget() async {
+    final value = double.tryParse(
+          _budget.text.trim().replaceAll('،', '.').replaceAll(',', '.'),
+        ) ??
+        0;
+    await SubscriptionStore.instance.setMonthlyBudget(value);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(value <= 0 ? 'تم إيقاف الميزانية الشهرية.' : 'تم حفظ الميزانية الشهرية.'),
+      ),
+    );
+  }
+
+  Future<void> _saveAiKey() async {
+    try {
+      await SubscriptionStore.instance.setAiApiKey(_aiKey.text);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+      return;
+    }
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          count >= 0
-              ? 'تمت استعادة $count اشتراكًا بنجاح ✅'
-              : 'الحافظة لا تحتوي نسخة احتياطية صالحة',
+          _aiKey.text.trim().isEmpty ? 'تم إيقاف الذكاء الاصطناعي.' : 'تم حفظ مفتاح الذكاء الاصطناعي.',
         ),
       ),
     );
   }
 
-  Future<void> _confirmWipe(
-    BuildContext context,
-    SubscriptionStore store,
-  ) async {
-    final ok = await showDialog<bool>(
+  Future<void> _classifyUnknowns() async {
+    final store = SubscriptionStore.instance;
+    if (store.aiApiKey.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('أضف مفتاح الذكاء الاصطناعي أولًا.')),
+      );
+      return;
+    }
+    final approved = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('حذف كل البيانات؟'),
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('تصنيف الخدمات؟'),
         content: const Text(
-          'سيتم حذف جميع اشتراكاتك نهائيًا من هذا الجهاز. '
-          'لا يمكن التراجع عن هذه الخطوة.',
+          'سيُرسل اسم الخدمة غير المصنفة فقط إلى المزود الذي اخترته. لا تُرسل الأسعار أو الملاحظات.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('إلغاء'),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-            child: const Text('حذف الكل'),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('متابعة'),
           ),
         ],
       ),
     );
-    if (ok == true) {
-      await store.clearAll();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم حذف جميع البيانات')),
-        );
-      }
+    if (approved != true) return;
+    try {
+      final count = await store.reclassifyUnknownsWithAi();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(count == 0 ? 'لا توجد خدمات تحتاج تصنيفًا.' : 'تم تصنيف $count خدمات.')),
+      );
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+    }
+  }
+
+  Future<void> _checkUpdates() async {
+    await UpdateChecker.check();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم التحقق من وجود تحديثات.')),
+      );
+    }
+  }
+
+  Future<void> _confirmWipe() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('حذف جميع الاشتراكات؟'),
+        content: const Text('سيُحذف سجل الاشتراكات من هذا الجهاز نهائيًا.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: context.palette.danger),
+            child: const Text('حذف نهائي'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await SubscriptionStore.instance.clearAll();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم حذف جميع الاشتراكات.')),
+      );
     }
   }
 }
 
-class _SettingsGroupLabel extends StatelessWidget {
-  final String text;
-
-  const _SettingsGroupLabel(this.text);
+class _SettingsIntro extends StatelessWidget {
+  const _SettingsIntro();
 
   @override
   Widget build(BuildContext context) {
+    final p = context.palette;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('الإعدادات', style: TextStyle(color: p.text, fontSize: 27, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 5),
+        Text('رتّب حماية التطبيق وطريقة متابعته على ذوقك.', style: TextStyle(color: p.textMuted, fontSize: 13)),
+      ],
+    );
+  }
+}
+
+class _AccountCard extends StatelessWidget {
+  final VoidCallback onChanged;
+
+  const _AccountCard({required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final signedIn = AuthService.isSignedIn;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: p.accentSoft,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: p.accent.withOpacity(.24)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: p.accent, borderRadius: BorderRadius.circular(14)),
+                child: const Icon(Icons.cloud_done_rounded, color: Colors.white, size: 21),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('الحساب والمزامنة', style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: 15)),
+                    const SizedBox(height: 3),
+                    Text(
+                      !AuthService.isAvailable
+                          ? 'الخدمة غير متاحة في هذا البناء'
+                          : signedIn
+                              ? AuthService.userEmail
+                              : 'سجّل دخولك لتستعيد بياناتك على أجهزتك',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: p.textMuted, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (!signedIn)
+            FilledButton.icon(
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46)),
+              onPressed: !AuthService.isAvailable
+                  ? null
+                  : () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const LoginScreen(fromSettings: true)),
+                      );
+                      onChanged();
+                    },
+              icon: const Icon(Icons.login_rounded, size: 19),
+              label: const Text('تسجيل الدخول'),
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46)),
+                    onPressed: () async {
+                      final ok = await CloudSync.push();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(ok ? 'اكتملت المزامنة.' : 'تعذرت المزامنة، تحقق من الإنترنت.')),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.sync_rounded, size: 19),
+                    label: const Text('مزامنة'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                IconButton(
+                  tooltip: 'تسجيل الخروج',
+                  style: IconButton.styleFrom(
+                    minimumSize: const Size(46, 46),
+                    foregroundColor: p.danger,
+                    side: BorderSide(color: p.danger.withOpacity(.45)),
+                  ),
+                  onPressed: () async {
+                    await AuthService.signOut();
+                    onChanged();
+                  },
+                  icon: const Icon(Icons.logout_rounded),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsLabel extends StatelessWidget {
+  final String text;
+
+  const _SettingsLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) => Text(
+        text,
+        style: TextStyle(color: context.palette.textMuted, fontSize: 12, fontWeight: FontWeight.w900),
+      );
+}
+
+class _SettingsSwitch extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String detail;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _SettingsSwitch({
+    required this.icon,
+    required this.title,
+    required this.detail,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
     return Padding(
-      padding: const EdgeInsetsDirectional.only(start: 4, bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Container(
-            width: 6,
-            height: 18,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              borderRadius: BorderRadius.circular(4),
+          Icon(icon, color: p.accent, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: 14)),
+                const SizedBox(height: 3),
+                Text(detail, style: TextStyle(color: p.textMuted, fontSize: 11.5)),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontSize: 13,
-              fontWeight: FontWeight.w900,
+          Switch.adaptive(value: value, activeColor: p.accent, onChanged: onChanged),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsAction extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String detail;
+  final VoidCallback onTap;
+
+  const _SettingsAction({
+    required this.icon,
+    required this.title,
+    required this.detail,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        child: Row(
+          children: [
+            Icon(icon, color: p.accent, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: 14)),
+                  const SizedBox(height: 3),
+                  Text(detail, style: TextStyle(color: p.textMuted, fontSize: 11.5)),
+                ],
+              ),
             ),
+            Icon(Icons.chevron_left_rounded, color: p.textMuted),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BudgetCard extends StatelessWidget {
+  final TextEditingController controller;
+  final VoidCallback onSave;
+
+  const _BudgetCard({required this.controller, required this.onSave});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final currency = SubscriptionStore.instance.defaultCurrency;
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.pie_chart_outline_rounded, color: p.accent),
+              const SizedBox(width: 9),
+              Text('ميزانية الشهر', style: TextStyle(color: p.text, fontSize: 15, fontWeight: FontWeight.w900)),
+            ],
+          ),
+          const SizedBox(height: 7),
+          Text('ضع سقفًا مرنًا لمتابعة الالتزامات الشهرية.', style: TextStyle(color: p.textMuted, fontSize: 12)),
+          const SizedBox(height: 15),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  textDirection: TextDirection.ltr,
+                  decoration: InputDecoration(hintText: '0', suffixText: currencySymbols[currency]),
+                ),
+              ),
+              const SizedBox(width: 10),
+              IconButton.filled(
+                tooltip: 'حفظ الميزانية',
+                onPressed: onSave,
+                icon: const Icon(Icons.check_rounded),
+              ),
+            ],
           ),
         ],
       ),
@@ -857,40 +519,180 @@ class _SettingsGroupLabel extends StatelessWidget {
   }
 }
 
-class _AboutRow extends StatelessWidget {
-  final String label;
-  final String value;
+class _AiStudio extends StatefulWidget {
+  final TextEditingController controller;
+  final Future<void> Function() onSave;
+  final Future<void> Function() onClassify;
 
-  const _AboutRow({required this.label, required this.value});
+  const _AiStudio({
+    required this.controller,
+    required this.onSave,
+    required this.onClassify,
+  });
+
+  @override
+  State<_AiStudio> createState() => _AiStudioState();
+}
+
+class _AiStudioState extends State<_AiStudio> {
+  bool _showKey = false;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
+    final p = context.palette;
+    final store = SubscriptionStore.instance;
+    return AppCard(
+      color: p.surfaceAlt,
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 84,
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.muted,
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
+          Row(
+            children: [
+              Icon(Icons.auto_awesome_rounded, color: p.accent),
+              const SizedBox(width: 9),
+              Text('استوديو الذكاء الاصطناعي', style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: 15)),
+            ],
+          ),
+          const SizedBox(height: 7),
+          Text('المفتاح يُحفظ على جهازك ويُستخدم فقط بعد موافقتك.', style: TextStyle(color: p.textMuted, fontSize: 12)),
+          const SizedBox(height: 14),
+          DropdownButtonFormField<String>(
+            value: store.aiProvider,
+            dropdownColor: p.surface,
+            decoration: const InputDecoration(labelText: 'المزود'),
+            items: [
+              for (final provider in kAiProviders)
+                DropdownMenuItem(value: provider.id, child: Text(provider.label)),
+            ],
+            onChanged: (value) {
+              if (value != null) store.setAiProvider(value);
+            },
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: widget.controller,
+            obscureText: !_showKey,
+            textDirection: TextDirection.ltr,
+            decoration: InputDecoration(
+              labelText: 'مفتاح API',
+              hintText: aiProviderById(store.aiProvider).hint,
+              suffixIcon: IconButton(
+                tooltip: _showKey ? 'إخفاء المفتاح' : 'إظهار المفتاح',
+                onPressed: () => setState(() => _showKey = !_showKey),
+                icon: Icon(_showKey ? Icons.visibility_off_rounded : Icons.visibility_rounded),
               ),
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: AppColors.ink,
-                fontWeight: FontWeight.w700,
-                fontSize: 13.5,
-                height: 1.5,
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => launchUrl(
+                    Uri.parse(aiProviderById(store.aiProvider).keyUrl),
+                    mode: LaunchMode.externalApplication,
+                  ),
+                  icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                  label: const Text('إنشاء مفتاح'),
+                ),
               ),
-            ),
+              const SizedBox(width: 10),
+              IconButton.filled(
+                tooltip: 'حفظ المفتاح',
+                onPressed: widget.onSave,
+                icon: const Icon(Icons.check_rounded),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(46)),
+            onPressed: store.aiApiKey.trim().isEmpty ? null : widget.onClassify,
+            icon: const Icon(Icons.category_rounded, size: 18),
+            label: const Text('تصنيف الخدمات غير المعروفة'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AboutCard extends StatelessWidget {
+  final Future<void> Function() onCheckUpdates;
+
+  const _AboutCard({required this.onCheckUpdates});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          _AboutLine(label: 'التطبيق', value: 'اشتراكاتي'),
+          Divider(height: 1, color: p.stroke),
+          _AboutLine(label: 'الإصدار', value: kAppVersion),
+          Divider(height: 1, color: p.stroke),
+          _SettingsAction(
+            icon: Icons.system_update_alt_rounded,
+            title: 'التحقق من التحديثات',
+            detail: 'ابحث عن أحدث إصدار متاح',
+            onTap: onCheckUpdates,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AboutLine extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _AboutLine({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Text(label, style: TextStyle(color: p.textMuted, fontSize: 12)),
+          const Spacer(),
+          Text(value, style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: 13)),
+        ],
+      ),
+    );
+  }
+}
+
+class _DangerZone extends StatelessWidget {
+  final Future<void> Function() onDelete;
+
+  const _DangerZone({required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: p.dangerSoft,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: p.danger.withOpacity(.28)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.delete_outline_rounded, color: p.danger),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text('حذف جميع الاشتراكات من الجهاز', style: TextStyle(color: p.danger, fontWeight: FontWeight.w900, fontSize: 13)),
+          ),
+          IconButton(
+            tooltip: 'حذف جميع الاشتراكات',
+            onPressed: onDelete,
+            icon: Icon(Icons.arrow_back_rounded, color: p.danger),
           ),
         ],
       ),

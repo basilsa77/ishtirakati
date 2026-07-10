@@ -47,6 +47,137 @@ class AppColors {
   );
 }
 
+/// رموز ألوان الإصدار 8. تُقرأ من الثيم الحالي لكي يكون الوضع الليلي
+/// متكاملاً بدل الاعتماد على ألوان ثابتة داخل الواجهات.
+@immutable
+class AppPalette extends ThemeExtension<AppPalette> {
+  final Color canvas;
+  final Color surface;
+  final Color surfaceAlt;
+  final Color stroke;
+  final Color text;
+  final Color textMuted;
+  final Color accent;
+  final Color accentStrong;
+  final Color accentSoft;
+  final Color danger;
+  final Color dangerSoft;
+  final Color warning;
+  final Color warningSoft;
+  final Color shadow;
+
+  const AppPalette({
+    required this.canvas,
+    required this.surface,
+    required this.surfaceAlt,
+    required this.stroke,
+    required this.text,
+    required this.textMuted,
+    required this.accent,
+    required this.accentStrong,
+    required this.accentSoft,
+    required this.danger,
+    required this.dangerSoft,
+    required this.warning,
+    required this.warningSoft,
+    required this.shadow,
+  });
+
+  static const light = AppPalette(
+    canvas: Color(0xFFF7F8F5),
+    surface: Color(0xFFFFFFFF),
+    surfaceAlt: Color(0xFFF0F4F1),
+    stroke: Color(0xFFDDE7E1),
+    text: Color(0xFF15251F),
+    textMuted: Color(0xFF6E8177),
+    accent: Color(0xFF007A5A),
+    accentStrong: Color(0xFF00543E),
+    accentSoft: Color(0xFFDDF4EA),
+    danger: Color(0xFFD9515D),
+    dangerSoft: Color(0xFFFFE9EC),
+    warning: Color(0xFFB7791F),
+    warningSoft: Color(0xFFFFF3D7),
+    shadow: Color(0x140B2E22),
+  );
+
+  static const dark = AppPalette(
+    canvas: Color(0xFF0C1210),
+    surface: Color(0xFF141D19),
+    surfaceAlt: Color(0xFF1D2923),
+    stroke: Color(0xFF2A3A32),
+    text: Color(0xFFF0F7F2),
+    textMuted: Color(0xFFA8BBB0),
+    accent: Color(0xFF46D3A2),
+    accentStrong: Color(0xFF28AE80),
+    accentSoft: Color(0xFF173D30),
+    danger: Color(0xFFFF8992),
+    dangerSoft: Color(0xFF40252A),
+    warning: Color(0xFFF0C36B),
+    warningSoft: Color(0xFF42361D),
+    shadow: Color(0x66000000),
+  );
+
+  @override
+  AppPalette copyWith({
+    Color? canvas,
+    Color? surface,
+    Color? surfaceAlt,
+    Color? stroke,
+    Color? text,
+    Color? textMuted,
+    Color? accent,
+    Color? accentStrong,
+    Color? accentSoft,
+    Color? danger,
+    Color? dangerSoft,
+    Color? warning,
+    Color? warningSoft,
+    Color? shadow,
+  }) =>
+      AppPalette(
+        canvas: canvas ?? this.canvas,
+        surface: surface ?? this.surface,
+        surfaceAlt: surfaceAlt ?? this.surfaceAlt,
+        stroke: stroke ?? this.stroke,
+        text: text ?? this.text,
+        textMuted: textMuted ?? this.textMuted,
+        accent: accent ?? this.accent,
+        accentStrong: accentStrong ?? this.accentStrong,
+        accentSoft: accentSoft ?? this.accentSoft,
+        danger: danger ?? this.danger,
+        dangerSoft: dangerSoft ?? this.dangerSoft,
+        warning: warning ?? this.warning,
+        warningSoft: warningSoft ?? this.warningSoft,
+        shadow: shadow ?? this.shadow,
+      );
+
+  @override
+  AppPalette lerp(covariant AppPalette? other, double t) {
+    if (other == null) return this;
+    return AppPalette(
+      canvas: Color.lerp(canvas, other.canvas, t)!,
+      surface: Color.lerp(surface, other.surface, t)!,
+      surfaceAlt: Color.lerp(surfaceAlt, other.surfaceAlt, t)!,
+      stroke: Color.lerp(stroke, other.stroke, t)!,
+      text: Color.lerp(text, other.text, t)!,
+      textMuted: Color.lerp(textMuted, other.textMuted, t)!,
+      accent: Color.lerp(accent, other.accent, t)!,
+      accentStrong: Color.lerp(accentStrong, other.accentStrong, t)!,
+      accentSoft: Color.lerp(accentSoft, other.accentSoft, t)!,
+      danger: Color.lerp(danger, other.danger, t)!,
+      dangerSoft: Color.lerp(dangerSoft, other.dangerSoft, t)!,
+      warning: Color.lerp(warning, other.warning, t)!,
+      warningSoft: Color.lerp(warningSoft, other.warningSoft, t)!,
+      shadow: Color.lerp(shadow, other.shadow, t)!,
+    );
+  }
+}
+
+extension AppPaletteContext on BuildContext {
+  AppPalette get palette =>
+      Theme.of(this).extension<AppPalette>() ?? AppPalette.light;
+}
+
 /// ألوان مميزة لكل تصنيف (تُستخدم في الرسوم والقوائم).
 const Map<String, Color> kCategoryColors = {
   'ترفيه ومشاهدة': Color(0xFFFF7A85),
@@ -67,6 +198,7 @@ Color categoryColor(String category) =>
     kCategoryColors[category] ?? AppColors.gold;
 
 ThemeData buildAppTheme({bool dark = false}) {
+  final palette = dark ? AppPalette.dark : AppPalette.light;
   final scheme = dark
       ? const ColorScheme.dark(
           primary: AppColors.primary,
@@ -98,6 +230,7 @@ ThemeData buildAppTheme({bool dark = false}) {
     useMaterial3: true,
     brightness: dark ? Brightness.dark : Brightness.light,
     colorScheme: scheme,
+    extensions: [palette],
   );
 
   return base.copyWith(
@@ -242,10 +375,10 @@ class AppCard extends StatelessWidget {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: color ?? Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
+        color: color ?? context.palette.surface,
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: borderColor ?? Theme.of(context).dividerColor,
+          color: borderColor ?? context.palette.stroke,
         ),
         boxShadow: const [
           BoxShadow(
