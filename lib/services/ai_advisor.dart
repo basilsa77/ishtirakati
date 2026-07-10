@@ -2,13 +2,11 @@
 /// ويعيد تحليلًا عربيًا عمليًا — فرص توفير، تكرارات، ومقارنات أسعار.
 library;
 
-import 'dart:convert';
 
-import 'package:http/http.dart' as http;
 
 import '../models/subscription.dart';
 import 'ai_extractor.dart'
-    show kGeminiModels, AiExtractionException, extractGeminiResponseText;
+    show AiExtractionException, aiGenerateText;
 
 /// يبني ملخص الاشتراكات المُرسل للنموذج — دالة نقية قابلة للاختبار.
 String buildAdvisorSummary(List<Subscription> subs) {
@@ -41,63 +39,18 @@ class AiAdvisor {
   /// يعيد نص النصائح، أو يرمي [AiExtractionException] برسالة واضحة.
   static Future<String> advise(
     List<Subscription> subs,
-    String apiKey,
-  ) async {
+    String apiKey, {
+    String providerId = 'gemini',
+  }) async {
     final summary = buildAdvisorSummary(subs);
-    Object? lastError;
-    for (final model in kGeminiModels) {
-      final uri = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent',
-      );
-      try {
-        final res = await http
-            .post(
-              uri,
-              headers: {
-                'Content-Type': 'application/json',
-                'x-goog-api-key': apiKey,
-              },
-              body: jsonEncode({
-                'contents': [
-                  {
-                    'parts': [
-                      {'text': '$_advisorPrompt\n$summary'},
-                    ],
-                  },
-                ],
-                'generationConfig': {'temperature': 0.4},
-              }),
-            )
-            .timeout(const Duration(seconds: 60));
-
-        if (res.statusCode == 404) {
-          lastError = 'model $model not found';
-          continue;
-        }
-        if (res.statusCode == 400 || res.statusCode == 403) {
-          throw const AiExtractionException(
-            'مفتاح API غير صالح — راجعه في الإعدادات',
-          );
-        }
-        if (res.statusCode == 429) {
-          throw const AiExtractionException(
-            'تجاوزت الحد المجاني مؤقتًا — انتظر دقيقة',
-          );
-        }
-        if (res.statusCode != 200) {
-          lastError = 'HTTP ${res.statusCode}';
-          continue;
-        }
-        final body = jsonDecode(utf8.decode(res.bodyBytes));
-        final answer = extractGeminiResponseText(body).trim();
-        return answer.isEmpty ? 'لم يصلنا تحليل — أعد المحاولة.' : answer;
-      } on AiExtractionException {
-        rethrow;
-      } catch (e) {
-        lastError = e;
-        continue;
-      }
-    }
-    throw AiExtractionException('تعذر الاتصال: $lastError');
+    final answer = (await aiGenerateText(
+      '$_advisorPrompt\n$summary',
+      apiKey,
+      providerId: providerId,
+      temperature: 0.4,
+      timeout: const Duration(seconds: 60),
+    ))
+        .trim();
+    return answer.isEmpty ? 'لم يصلنا تحليل — أعد المحاولة.' : answer;
   }
 }

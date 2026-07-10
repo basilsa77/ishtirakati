@@ -128,26 +128,86 @@ List<ImportCandidate> parseAiCandidates(String raw) {
   return out;
 }
 
-class AiExtractor {
-  /// يستخرج الاشتراكات من نص حر عبر Gemini.
-  /// يرمي [AiExtractionException] برسالة واضحة عند الفشل.
-  static Future<List<ImportCandidate>> extract(
-    String text,
-    String apiKey,
-  ) async {
-    // نقتصر على حجم معقول حتى لا نتجاوز حدود الطلب.
-    final clipped =
-        text.length > 60000 ? text.substring(0, 60000) : text;
+/// مزودات الذكاء الاصطناعي المدعومة — يختار المستخدم مزوده ومفتاحه الخاص.
+class AiProviderInfo {
+  final String id;
+  final String label;
+  final String keyUrl;
+  final String base; // فارغ = Gemini
+  final String model;
+  final String hint;
 
+  const AiProviderInfo({
+    required this.id,
+    required this.label,
+    required this.keyUrl,
+    required this.base,
+    required this.model,
+    required this.hint,
+  });
+}
+
+const List<AiProviderInfo> kAiProviders = [
+  AiProviderInfo(
+    id: 'gemini',
+    label: 'Google Gemini — مجاني',
+    keyUrl: 'https://aistudio.google.com/apikey',
+    base: '',
+    model: '',
+    hint: 'AIza...',
+  ),
+  AiProviderInfo(
+    id: 'groq',
+    label: 'Groq — مجاني وسريع',
+    keyUrl: 'https://console.groq.com/keys',
+    base: 'https://api.groq.com/openai/v1',
+    model: 'llama-3.3-70b-versatile',
+    hint: 'gsk_...',
+  ),
+  AiProviderInfo(
+    id: 'openai',
+    label: 'OpenAI (ChatGPT)',
+    keyUrl: 'https://platform.openai.com/api-keys',
+    base: 'https://api.openai.com/v1',
+    model: 'gpt-4o-mini',
+    hint: 'sk-...',
+  ),
+  AiProviderInfo(
+    id: 'deepseek',
+    label: 'DeepSeek',
+    keyUrl: 'https://platform.deepseek.com/api_keys',
+    base: 'https://api.deepseek.com/v1',
+    model: 'deepseek-chat',
+    hint: 'sk-...',
+  ),
+];
+
+AiProviderInfo aiProviderById(String id) => kAiProviders.firstWhere(
+      (p) => p.id == id,
+      orElse: () => kAiProviders.first,
+    );
+
+/// طلب توليد نص موحّد يعمل مع Gemini وكل المزودات المتوافقة مع OpenAI.
+Future<String> aiGenerateText(
+  String prompt,
+  String apiKey, {
+  String providerId = 'gemini',
+  double temperature = 0,
+  bool jsonOutput = false,
+  Duration timeout = const Duration(seconds: 90),
+}) async {
+  final provider = aiProviderById(providerId);
+
+  if (provider.base.isEmpty) {
+    // Gemini
     Object? lastError;
     for (final model in kGeminiModels) {
-      final uri = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent',
-      );
       try {
         final res = await http
             .post(
-              uri,
+              Uri.parse(
+                'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent',
+              ),
               headers: {
                 'Content-Type': 'application/json',
                 'x-goog-api-key': apiKey,
@@ -156,57 +216,129 @@ class AiExtractor {
                 'contents': [
                   {
                     'parts': [
-                      {'text': '$_prompt\n$clipped'},
+                      {'text': prompt},
                     ],
                   },
                 ],
                 'generationConfig': {
-                  'temperature': 0,
-                  'responseMimeType': 'application/json',
+                  'temperature': temperature,
+                  if (jsonOutput) 'responseMimeType': 'application/json',
                 },
               }),
             )
-            .timeout(const Duration(seconds: 90));
-
+            .timeout(timeout);
         if (res.statusCode == 404) {
-          // النموذج غير متاح — جرّب التالي.
           lastError = 'model $model not found';
           continue;
         }
         if (res.statusCode == 400 || res.statusCode == 403) {
           throw const AiExtractionException(
-            'مفتاح API غير صالح — تأكد من نسخه كاملًا من aistudio.google.com',
+            'مفتاح API غير صالح — راجعه في الإعدادات',
           );
         }
         if (res.statusCode == 429) {
           throw const AiExtractionException(
-            'تجاوزت حد الاستخدام المجاني مؤقتًا — انتظر دقيقة وأعد المحاولة',
+            'تجاوزت حد الاستخدام مؤقتًا — انتظر دقيقة وأعد المحاولة',
           );
         }
         if (res.statusCode != 200) {
           lastError = 'HTTP ${res.statusCode}';
           continue;
         }
-
-        final body = jsonDecode(utf8.decode(res.bodyBytes));
-        final answer = extractGeminiResponseText(body);
-        if (answer.isEmpty) return const [];
-        return parseAiCandidates(answer);
+        return extractGeminiResponseText(
+          jsonDecode(utf8.decode(res.bodyBytes)),
+        );
       } on AiExtractionException {
         rethrow;
       } catch (e) {
         lastError = e;
-        continue;
       }
     }
     throw AiExtractionException('تعذر الاتصال بالذكاء الاصطناعي: $lastError');
   }
 
+  // مزودات متوافقة مع OpenAI (Groq / OpenAI / DeepSeek)
+  try {
+    final res = await http
+        .post(
+          Uri.parse('${provider.base}/chat/completions'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $apiKey',
+          },
+          body: jsonEncode({
+            'model': provider.model,
+            'temperature': temperature,
+            if (jsonOutput)
+              'response_format': {'type': 'json_object'},
+            'messages': [
+              {'role': 'user', 'content': prompt},
+            ],
+          }),
+        )
+        .timeout(timeout);
+    if (res.statusCode == 401 || res.statusCode == 403) {
+      throw AiExtractionException(
+        'مفتاح ${provider.label} غير صالح — راجعه في الإعدادات',
+      );
+    }
+    if (res.statusCode == 429) {
+      throw const AiExtractionException(
+        'تجاوزت حد الاستخدام مؤقتًا — انتظر دقيقة وأعد المحاولة',
+      );
+    }
+    if (res.statusCode != 200) {
+      throw AiExtractionException('تعذر الاتصال: HTTP ${res.statusCode}');
+    }
+    return extractOpenAiResponseText(
+      jsonDecode(utf8.decode(res.bodyBytes)),
+    );
+  } on AiExtractionException {
+    rethrow;
+  } catch (e) {
+    throw AiExtractionException('تعذر الاتصال بالذكاء الاصطناعي: $e');
+  }
+}
+
+/// يقرأ نص استجابة المزودات المتوافقة مع OpenAI بفحص أنواع صارم.
+String extractOpenAiResponseText(dynamic body) {
+  if (body is! Map) return '';
+  final choices = body['choices'];
+  if (choices is! List || choices.isEmpty) return '';
+  final first = choices.first;
+  if (first is! Map) return '';
+  final message = first['message'];
+  if (message is! Map) return '';
+  return (message['content'] as String?) ?? '';
+}
+
+class AiExtractor {
+  /// يستخرج الاشتراكات من نص حر عبر Gemini.
+  /// يرمي [AiExtractionException] برسالة واضحة عند الفشل.
+  static Future<List<ImportCandidate>> extract(
+    String text,
+    String apiKey, {
+    String providerId = 'gemini',
+  }) async {
+    // نقتصر على حجم معقول حتى لا نتجاوز حدود الطلب.
+    final clipped =
+        text.length > 60000 ? text.substring(0, 60000) : text;
+    final answer = await aiGenerateText(
+      '$_prompt\n$clipped',
+      apiKey,
+      providerId: providerId,
+      jsonOutput: true,
+    );
+    if (answer.isEmpty) return const [];
+    return parseAiCandidates(answer);
+  }
+
   /// يصنف أسماء خدمات موجودة مسبقًا دون إرسال الأسعار أو البيانات المالية.
   static Future<Map<String, String>> classifyNames(
     List<String> names,
-    String apiKey,
-  ) async {
+    String apiKey, {
+    String providerId = 'gemini',
+  }) async {
     if (names.isEmpty) return const {};
     final prompt = '''
 صنف أسماء الخدمات التالية إلى تصنيف واحد فقط من القائمة:
@@ -216,51 +348,14 @@ ${kCategories.join('، ')}
 الأسماء:
 ${names.join('\n')}
 ''';
-    Object? lastError;
-    for (final model in kGeminiModels) {
-      try {
-        final uri = Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent',
-        );
-        final res = await http
-            .post(
-              uri,
-              headers: {
-                'Content-Type': 'application/json',
-                'x-goog-api-key': apiKey,
-              },
-              body: jsonEncode({
-                'contents': [
-                  {'parts': [{'text': prompt}]},
-                ],
-                'generationConfig': {
-                  'temperature': 0,
-                  'responseMimeType': 'application/json',
-                },
-              }),
-            )
-            .timeout(const Duration(seconds: 45));
-        if (res.statusCode == 404) {
-          lastError = 'model $model not found';
-          continue;
-        }
-        if (res.statusCode == 400 || res.statusCode == 403) {
-          throw const AiExtractionException('مفتاح Gemini API غير صالح');
-        }
-        if (res.statusCode != 200) {
-          lastError = 'HTTP ${res.statusCode}';
-          continue;
-        }
-        final body = jsonDecode(utf8.decode(res.bodyBytes));
-        final answer = extractGeminiResponseText(body);
-        return parseAiCategories(answer);
-      } on AiExtractionException {
-        rethrow;
-      } catch (e) {
-        lastError = e;
-      }
-    }
-    throw AiExtractionException('تعذر تصنيف الخدمات: $lastError');
+    final answer = await aiGenerateText(
+      prompt,
+      apiKey,
+      providerId: providerId,
+      jsonOutput: true,
+      timeout: const Duration(seconds: 45),
+    );
+    return parseAiCategories(answer);
   }
 }
 

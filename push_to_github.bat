@@ -23,7 +23,7 @@ git remote get-url origin >nul 2>&1 || git remote add origin https://github.com/
 git add .
 git diff --cached --quiet
 if errorlevel 1 (
-  git commit -m "%COMMIT_MESSAGE%"
+  git commit -m "v7.3: unbreakable storage, multi-provider AI, latest actions"
   if errorlevel 1 goto :failed
 ) else (
   echo No new changes to commit.

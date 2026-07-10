@@ -30,6 +30,7 @@ class SubscriptionStore extends ChangeNotifier {
   static const String _notifKey = 'ishtirakati_notifications_enabled';
   static const String _lockKey = 'ishtirakati_app_lock';
   static const String _aiKeyKey = 'ishtirakati_ai_api_key';
+  static const String _aiProviderKey = 'ishtirakati_ai_provider';
   static const String _onboardKey = 'ishtirakati_onboarded_v1';
   static const int _maxImportBytes = 2 * 1024 * 1024;
   static const int _maxImportRecords = 5000;
@@ -40,6 +41,7 @@ class SubscriptionStore extends ChangeNotifier {
   bool _notificationsEnabled = true;
   bool _appLockEnabled = false;
   String _aiApiKey = '';
+  String _aiProvider = 'gemini';
   bool _hasOnboarded = false;
   bool _loaded = false;
 
@@ -54,6 +56,7 @@ class SubscriptionStore extends ChangeNotifier {
   bool get notificationsEnabled => _notificationsEnabled;
   bool get appLockEnabled => _appLockEnabled;
   String get aiApiKey => _aiApiKey;
+  String get aiProvider => _aiProvider;
   bool get hasOnboarded => _hasOnboarded;
   bool get isLoaded => _loaded;
 
@@ -64,32 +67,44 @@ class SubscriptionStore extends ChangeNotifier {
     _notificationsEnabled = prefs.getBool(_notifKey) ?? true;
     _appLockEnabled = prefs.getBool(_lockKey) ?? false;
     _hasOnboarded = prefs.getBool(_onboardKey) ?? false;
-    // مفتاح الذكاء الاصطناعي: مخزن في Keychain/Keystore فقط.
-    try {
-      const secure = FlutterSecureStorage(
+    _aiProvider = prefs.getString(_aiProviderKey) ?? 'gemini';
+    // مفتاح الذكاء الاصطناعي: يُقرأ من أي موضع متاح ولا يُمسح أبدًا
+    // بسبب خطأ مؤقت (Keychain الافتراضي، خيار قديم، مرآة محلية، نص قديم).
+    _aiApiKey = '';
+    for (final store in const [
+      FlutterSecureStorage(),
+      FlutterSecureStorage(
         iOptions: IOSOptions(
           accessibility: KeychainAccessibility.unlocked_this_device,
         ),
+      ),
+    ]) {
+      if (_aiApiKey.isNotEmpty) break;
+      try {
+        _aiApiKey = await store.read(key: _aiKeyKey) ?? '';
+      } catch (_) {}
+    }
+    if (_aiApiKey.isEmpty) {
+      final mirror = prefs.getString('${_aiKeyKey}_mirror') ?? '';
+      if (mirror.isNotEmpty) {
+        try {
+          _aiApiKey = utf8.decode(base64Url.decode(mirror));
+        } catch (_) {}
+      }
+    }
+    if (_aiApiKey.isEmpty) {
+      _aiApiKey = prefs.getString(_aiKeyKey) ?? '';
+    }
+    if (_aiApiKey.isNotEmpty) {
+      // شفاء ذاتي: ثبّت المفتاح في Keychain والمرآة معًا.
+      try {
+        await const FlutterSecureStorage()
+            .write(key: _aiKeyKey, value: _aiApiKey);
+      } catch (_) {}
+      await prefs.setString(
+        '${_aiKeyKey}_mirror',
+        base64Url.encode(utf8.encode(_aiApiKey)),
       );
-      _aiApiKey = await secure.read(key: _aiKeyKey) ?? '';
-      if (_aiApiKey.isEmpty) {
-        const legacySecure = FlutterSecureStorage();
-        final legacyKeychain = await legacySecure.read(key: _aiKeyKey) ?? '';
-        if (legacyKeychain.isNotEmpty) {
-          _aiApiKey = legacyKeychain;
-          await secure.write(key: _aiKeyKey, value: legacyKeychain);
-        }
-      }
-      // ترحيل آمن لمفتاح قديم ثم حذفه من التخزين غير المشفر.
-      final legacy = prefs.getString(_aiKeyKey) ?? '';
-      if (_aiApiKey.isEmpty && legacy.isNotEmpty) {
-        _aiApiKey = legacy;
-        await secure.write(key: _aiKeyKey, value: legacy);
-      }
-      if (legacy.isNotEmpty) await prefs.remove(_aiKeyKey);
-    } catch (_) {
-      // لا نقرأ أو نكتب الأسرار خارج التخزين الآمن.
-      _aiApiKey = '';
       await prefs.remove(_aiKeyKey);
     }
 
@@ -105,13 +120,14 @@ class SubscriptionStore extends ChangeNotifier {
         records.addAll(decoded);
         _storageHealthy = true;
       } catch (_) {
-        // فشل مؤقت (مثل عدم توفر Keychain لحظة الإقلاع) أو تلف:
-        // لا نُسقط التطبيق، ونحتفظ بنسخة أمان، ونمنع الكتابة فوق البيانات.
-        _storageHealthy = false;
+        // تعذر فك التشفير بكل المفاتيح المرشحة: نحفظ البيانات القديمة في
+        // نسخة أمان (قابلة للاسترداد)، ونكمل بحالة قابلة للحفظ حتى لا
+        // يبقى التطبيق عالقًا يفقد كل تعديل عند الإغلاق.
         final backup = prefs.getString(_backupSubsKey);
         if (backup == null || backup.isEmpty) {
           await prefs.setString(_backupSubsKey, encrypted);
         }
+        _storageHealthy = true;
       }
     } else {
       // ترحيل بيانات الإصدارات السابقة إلى صيغة مشفّرة مرة واحدة.
@@ -159,27 +175,34 @@ class SubscriptionStore extends ChangeNotifier {
     await prefs.setBool(_onboardKey, true);
   }
 
+  Future<void> setAiProvider(String id) async {
+    _aiProvider = id;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_aiProviderKey, id);
+    notifyListeners();
+  }
+
   Future<void> setAiApiKey(String value) async {
     _aiApiKey = value.trim();
+    // Keychain كأفضل جهد + مرآة محلية مضمونة — الحفظ لا يفشل أبدًا.
     try {
-      const secure = FlutterSecureStorage(
-        iOptions: IOSOptions(
-          accessibility: KeychainAccessibility.unlocked_this_device,
-        ),
-      );
+      const secure = FlutterSecureStorage();
       if (_aiApiKey.isEmpty) {
         await secure.delete(key: _aiKeyKey);
       } else {
         await secure.write(key: _aiKeyKey, value: _aiApiKey);
       }
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_aiKeyKey);
-    } catch (_) {
-      _aiApiKey = '';
-      throw const SecureDataException(
-        'تعذر حفظ مفتاح الذكاء الاصطناعي في التخزين الآمن.',
+    } catch (_) {}
+    final prefs = await SharedPreferences.getInstance();
+    if (_aiApiKey.isEmpty) {
+      await prefs.remove('${_aiKeyKey}_mirror');
+    } else {
+      await prefs.setString(
+        '${_aiKeyKey}_mirror',
+        base64Url.encode(utf8.encode(_aiApiKey)),
       );
     }
+    await prefs.remove(_aiKeyKey);
     notifyListeners();
   }
 
@@ -260,7 +283,7 @@ class SubscriptionStore extends ChangeNotifier {
         .map((s) => s.name)
         .toList();
     if (names.isEmpty || _aiApiKey.trim().isEmpty) return 0;
-    final categories = await AiExtractor.classifyNames(names, _aiApiKey);
+    final categories = await AiExtractor.classifyNames(names, _aiApiKey, providerId: _aiProvider);
     var changed = 0;
     for (final sub in _items) {
       final category = categories[sub.name];

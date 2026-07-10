@@ -68,7 +68,11 @@ class _ImportScreenState extends State<ImportScreen> {
       _aiNote = null;
     });
     try {
-      final ai = await AiExtractor.extract(_text.text, apiKey);
+      final ai = await AiExtractor.extract(
+        _text.text,
+        apiKey,
+        providerId: SubscriptionStore.instance.aiProvider,
+      );
       // دمج: نتائج الذكاء الاصطناعي أولًا، ثم المحلي لما لم يذكره.
       final names = ai.map((c) => c.name).toSet();
       final merged = [

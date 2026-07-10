@@ -348,7 +348,11 @@ class _AdvisorCardState extends State<_AdvisorCard> {
     setState(() => _busy = true);
     try {
       final advice =
-          await AiAdvisor.advise(store.items, store.aiApiKey);
+          await AiAdvisor.advise(
+        store.items,
+        store.aiApiKey,
+        providerId: store.aiProvider,
+      );
       if (!mounted) return;
       setState(() => _busy = false);
       showModalBottomSheet<void>(

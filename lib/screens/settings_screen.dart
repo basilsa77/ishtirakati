@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/subscription.dart';
+import '../services/ai_extractor.dart'
+    show kAiProviders, aiProviderById;
 import '../services/auth_service.dart';
 import '../services/cloud_sync.dart';
 import '../services/notification_service.dart';
@@ -382,7 +384,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'الذكاء الاصطناعي (مجاني)',
+                    'الذكاء الاصطناعي الخاص بك',
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 16,
@@ -391,10 +393,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'يجعل استيراد البريد والنصوص أذكى بكثير: يلتقط كل '
-                    'الاشتراكات حتى غير المعروفة، بأسعارها وتواريخها. '
-                    'أنشئ مفتاحًا مجانيًا من Google AI Studio والصقه هنا '
-                    '(يبقى على جهازك).',
+                    'اختر مزودك المفضل وأدخل مفتاحك الخاص — يجعل الاستيراد '
+                    'والمستشار الذكي يعملان لحسابك أنت (المفتاح يبقى على جهازك).',
                     style: TextStyle(
                       color: AppColors.muted,
                       fontSize: 12.5,
@@ -402,13 +402,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: store.aiProvider,
+                    dropdownColor: AppColors.cardAlt,
+                    decoration:
+                        const InputDecoration(labelText: 'المزود'),
+                    items: [
+                      for (final p in kAiProviders)
+                        DropdownMenuItem(
+                          value: p.id,
+                          child: Text(p.label),
+                        ),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) store.setAiProvider(v);
+                    },
+                  ),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: _aiKey,
                     obscureText: true,
                     textDirection: TextDirection.ltr,
-                    decoration: const InputDecoration(
-                      labelText: 'مفتاح Gemini API',
-                      hintText: 'AIza...',
+                    decoration: InputDecoration(
+                      labelText: 'مفتاح API',
+                      hintText: aiProviderById(store.aiProvider).hint,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -420,12 +437,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             minimumSize: const Size.fromHeight(46),
                           ),
                           onPressed: () => launchUrl(
-                            Uri.parse('https://aistudio.google.com/apikey'),
+                            Uri.parse(
+                              aiProviderById(store.aiProvider).keyUrl,
+                            ),
                             mode: LaunchMode.externalApplication,
                           ),
                           icon: const Icon(Icons.open_in_new_rounded,
                               size: 18),
-                          label: const Text('إنشاء مفتاح مجاني'),
+                          label: const Text('إنشاء مفتاح'),
                         ),
                       ),
                       const SizedBox(width: 8),
