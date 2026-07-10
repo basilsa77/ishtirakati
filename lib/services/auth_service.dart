@@ -83,13 +83,19 @@ class AuthService {
       final result =
           await FirebaseAuth.instance.signInWithCredential(credential);
       return result.user;
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled ||
+          e.code == GoogleSignInExceptionCode.interrupted) {
+        return null; // ألغى المستخدم
+      }
+      throw AuthException(
+        'تعذر تسجيل الدخول بقوقل (${e.code.name}). '
+        '${e.description ?? 'تحقق من إعدادات المشروع في Firebase.'}',
+      );
     } on FirebaseAuthException catch (e) {
       throw AuthException('تعذر تسجيل الدخول: ${e.code}');
-    } catch (_) {
-      throw const AuthException(
-        'تعذر تسجيل الدخول بقوقل. فعّل موفر Google في Firebase، ثم نزّل '
-        'ملف GoogleService-Info.plist المحدّث وأعد بناء التطبيق.',
-      );
+    } catch (error) {
+      throw AuthException('تعذر تسجيل الدخول بقوقل: $error');
     }
   }
 

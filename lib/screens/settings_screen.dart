@@ -2,17 +2,16 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/subscription.dart' show currencySymbols;
-import '../services/ai_extractor.dart' show aiProviderById, kAiProviders;
 import '../services/auth_service.dart';
 import '../services/cloud_sync.dart';
 import '../services/notification_service.dart';
 import '../services/subscription_store.dart';
 import '../services/update_checker.dart';
 import '../theme.dart';
+import 'ai_tools_screen.dart';
 import 'email_link_screen.dart';
 import 'import_screen.dart';
 import 'login_screen.dart';
@@ -26,7 +25,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _budget;
-  late final TextEditingController _aiKey;
 
   @override
   void initState() {
@@ -40,13 +38,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ? budget.toStringAsFixed(0)
               : budget.toStringAsFixed(2),
     );
-    _aiKey = TextEditingController(text: store.aiApiKey);
   }
 
   @override
   void dispose() {
     _budget.dispose();
-    _aiKey.dispose();
     super.dispose();
   }
 
@@ -128,27 +124,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     MaterialPageRoute(builder: (_) => const EmailLinkScreen()),
                   ),
                 ),
+                Divider(height: 1, color: context.palette.stroke),
+                _SettingsAction(
+                  icon: Icons.auto_awesome_rounded,
+                  title: 'أدوات الذكاء الاصطناعي',
+                  detail: 'المزود والمفتاح وتصنيف الخدمات',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const AiToolsScreen()),
+                  ),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 14),
-          _AiStudio(
-            controller: _aiKey,
-            onSave: _saveAiKey,
-            onClassify: _classifyUnknowns,
-          ),
           const SizedBox(height: 26),
-          const _SettingsLabel('النسخ الاحتياطي والبيانات'),
+          const _SettingsLabel('البيانات'),
           const SizedBox(height: 10),
-          _DataCard(
-            onExport: _exportBackup,
-            onRestore: _importBackup,
-            onDelete: _confirmWipe,
-          ),
+          _DataCard(onDelete: _confirmWipe),
           const SizedBox(height: 26),
           const _SettingsLabel('حول التطبيق'),
           const SizedBox(height: 10),
-          _AboutCard(onCheckUpdates: _checkUpdates),
+          const _AboutCard(),
+          const SizedBox(height: 30),
+          Center(
+            child: Text(
+              'صُنع بحب في السعودية 🇸🇦',
+              style: TextStyle(color: context.palette.textMuted, fontSize: 12.5, fontWeight: FontWeight.w700),
+            ),
+          ),
         ],
       ),
     );
@@ -164,122 +166,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(value <= 0 ? 'تم إيقاف الميزانية الشهرية.' : 'تم حفظ الميزانية الشهرية.'),
-      ),
-    );
-  }
-
-  Future<void> _saveAiKey() async {
-    try {
-      await SubscriptionStore.instance.setAiApiKey(_aiKey.text);
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
-      return;
-    }
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _aiKey.text.trim().isEmpty ? 'تم إيقاف الذكاء الاصطناعي.' : 'تم حفظ مفتاح الذكاء الاصطناعي.',
-        ),
-      ),
-    );
-  }
-
-  Future<void> _classifyUnknowns() async {
-    final store = SubscriptionStore.instance;
-    if (store.aiApiKey.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('أضف مفتاح الذكاء الاصطناعي أولًا.')),
-      );
-      return;
-    }
-    final approved = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('تصنيف الخدمات؟'),
-        content: const Text(
-          'سيُرسل اسم الخدمة غير المصنفة فقط إلى المزود الذي اخترته. لا تُرسل الأسعار أو الملاحظات.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('متابعة'),
-          ),
-        ],
-      ),
-    );
-    if (approved != true) return;
-    try {
-      final count = await store.reclassifyUnknownsWithAi();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(count == 0 ? 'لا توجد خدمات تحتاج تصنيفًا.' : 'تم تصنيف $count خدمات.')),
-      );
-    } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
-    }
-  }
-
-  Future<void> _checkUpdates() async {
-    await UpdateChecker.check();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم التحقق من وجود تحديثات.')),
-      );
-    }
-  }
-
-  Future<void> _exportBackup() async {
-    final json = SubscriptionStore.instance.exportJson();
-    await Clipboard.setData(ClipboardData(text: json));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('تم نسخ النسخة الاحتياطية. احفظها في الملاحظات أو الملفات.'),
-      ),
-    );
-  }
-
-  Future<void> _importBackup() async {
-    final controller = TextEditingController();
-    final raw = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('استعادة نسخة احتياطية'),
-        content: TextField(
-          controller: controller,
-          maxLines: 6,
-          textDirection: TextDirection.ltr,
-          decoration: const InputDecoration(
-            hintText: 'الصق نص النسخة الاحتياطية هنا',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, controller.text),
-            child: const Text('استعادة'),
-          ),
-        ],
-      ),
-    );
-    controller.dispose();
-    if (raw == null || raw.trim().isEmpty) return;
-    final count = await SubscriptionStore.instance.importJson(raw.trim());
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          count < 0 ? 'النص غير صالح. تأكد من نسخه كاملًا.' : 'تمت استعادة $count اشتراكًا.',
-        ),
       ),
     );
   }
@@ -578,108 +464,8 @@ class _BudgetCard extends StatelessWidget {
   }
 }
 
-class _AiStudio extends StatefulWidget {
-  final TextEditingController controller;
-  final Future<void> Function() onSave;
-  final Future<void> Function() onClassify;
-
-  const _AiStudio({
-    required this.controller,
-    required this.onSave,
-    required this.onClassify,
-  });
-
-  @override
-  State<_AiStudio> createState() => _AiStudioState();
-}
-
-class _AiStudioState extends State<_AiStudio> {
-  bool _showKey = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final p = context.palette;
-    final store = SubscriptionStore.instance;
-    return AppCard(
-      color: p.surfaceAlt,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.auto_awesome_rounded, color: p.accent),
-              const SizedBox(width: 9),
-              Text('استوديو الذكاء الاصطناعي', style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: 15)),
-            ],
-          ),
-          const SizedBox(height: 7),
-          Text('المفتاح يُحفظ على جهازك ويُستخدم فقط بعد موافقتك.', style: TextStyle(color: p.textMuted, fontSize: 12)),
-          const SizedBox(height: 14),
-          DropdownButtonFormField<String>(
-            value: store.aiProvider,
-            dropdownColor: p.surface,
-            decoration: const InputDecoration(labelText: 'المزود'),
-            items: [
-              for (final provider in kAiProviders)
-                DropdownMenuItem(value: provider.id, child: Text(provider.label)),
-            ],
-            onChanged: (value) {
-              if (value != null) store.setAiProvider(value);
-            },
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: widget.controller,
-            obscureText: !_showKey,
-            textDirection: TextDirection.ltr,
-            decoration: InputDecoration(
-              labelText: 'مفتاح API',
-              hintText: aiProviderById(store.aiProvider).hint,
-              suffixIcon: IconButton(
-                tooltip: _showKey ? 'إخفاء المفتاح' : 'إظهار المفتاح',
-                onPressed: () => setState(() => _showKey = !_showKey),
-                icon: Icon(_showKey ? Icons.visibility_off_rounded : Icons.visibility_rounded),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => launchUrl(
-                    Uri.parse(aiProviderById(store.aiProvider).keyUrl),
-                    mode: LaunchMode.externalApplication,
-                  ),
-                  icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                  label: const Text('إنشاء مفتاح'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              IconButton.filled(
-                tooltip: 'حفظ المفتاح',
-                onPressed: widget.onSave,
-                icon: const Icon(Icons.check_rounded),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(46)),
-            onPressed: store.aiApiKey.trim().isEmpty ? null : widget.onClassify,
-            icon: const Icon(Icons.category_rounded, size: 18),
-            label: const Text('تصنيف الخدمات غير المعروفة'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _AboutCard extends StatelessWidget {
-  final Future<void> Function() onCheckUpdates;
-
-  const _AboutCard({required this.onCheckUpdates});
+  const _AboutCard();
 
   @override
   Widget build(BuildContext context) {
@@ -691,13 +477,6 @@ class _AboutCard extends StatelessWidget {
           _AboutLine(label: 'التطبيق', value: 'اشتراكاتي'),
           Divider(height: 1, color: p.stroke),
           _AboutLine(label: 'الإصدار', value: kAppVersion),
-          Divider(height: 1, color: p.stroke),
-          _SettingsAction(
-            icon: Icons.system_update_alt_rounded,
-            title: 'التحقق من التحديثات',
-            detail: 'ابحث عن أحدث إصدار متاح',
-            onTap: onCheckUpdates,
-          ),
         ],
       ),
     );
@@ -760,47 +539,23 @@ class _ThemeModeCard extends StatelessWidget {
   }
 }
 
-/// النسخ الاحتياطي والاستعادة وحذف البيانات في بطاقة واحدة هادئة.
+/// إدارة البيانات: حذف السجل من الجهاز.
 class _DataCard extends StatelessWidget {
-  final Future<void> Function() onExport;
-  final Future<void> Function() onRestore;
   final Future<void> Function() onDelete;
 
-  const _DataCard({
-    required this.onExport,
-    required this.onRestore,
-    required this.onDelete,
-  });
+  const _DataCard({required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
     return AppCard(
       padding: EdgeInsets.zero,
-      child: Column(
-        children: [
-          _SettingsAction(
-            icon: Icons.file_upload_outlined,
-            title: 'تصدير نسخة احتياطية',
-            detail: 'انسخ بياناتك كاملة لحفظها في مكان آمن',
-            onTap: onExport,
-          ),
-          Divider(height: 1, color: p.stroke),
-          _SettingsAction(
-            icon: Icons.file_download_outlined,
-            title: 'استعادة نسخة احتياطية',
-            detail: 'أرجِع بياناتك من نسخة مصدَّرة سابقًا',
-            onTap: onRestore,
-          ),
-          Divider(height: 1, color: p.stroke),
-          ListTile(
-            onTap: onDelete,
-            leading: Icon(Icons.delete_outline_rounded, color: p.danger),
-            title: Text('حذف جميع الاشتراكات', style: TextStyle(color: p.danger, fontWeight: FontWeight.w900, fontSize: 13.5)),
-            subtitle: Text('يمسح السجل من هذا الجهاز نهائيًا', style: TextStyle(color: p.danger.withOpacity(.7), fontSize: 11.5)),
-            trailing: Icon(Icons.chevron_left_rounded, color: p.danger),
-          ),
-        ],
+      child: ListTile(
+        onTap: onDelete,
+        leading: Icon(Icons.delete_outline_rounded, color: p.danger),
+        title: Text('حذف جميع الاشتراكات', style: TextStyle(color: p.danger, fontWeight: FontWeight.w900, fontSize: 13.5)),
+        subtitle: Text('يمسح السجل من هذا الجهاز نهائيًا', style: TextStyle(color: p.danger.withOpacity(.7), fontSize: 11.5)),
+        trailing: Icon(Icons.chevron_left_rounded, color: p.danger),
       ),
     );
   }

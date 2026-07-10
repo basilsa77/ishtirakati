@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=9.0.0"
-set "COMMIT_MESSAGE=v9.0.0: theme mode setting, fixed calendar page, settings redesign, backup restore, version guard"
+set "RELEASE_VERSION=9.0.1"
+set "COMMIT_MESSAGE=v9.0.1: clearer sign-in errors, AI tools page, settings cleanup, made with love in KSA"
 
 git init
 git config user.name "basilsa77"
