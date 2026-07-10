@@ -148,19 +148,26 @@ String normalizeDigits(String input) {
 }
 
 double? _findAmount(String line) {
-  final matches = RegExp(r'(\d+(?:[.,]\d{1,2})?)').allMatches(line);
+  final matches = RegExp(
+    r'(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:[.,]\d{1,2})?)',
+  ).allMatches(line);
   double? best;
   for (final m in matches) {
-    final raw = m.group(1)!.replaceAll(',', '.');
+    final original = m.group(1)!;
+    final raw = original.contains(',') &&
+            RegExp(r'^\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?$')
+                .hasMatch(original)
+        ? original.replaceAll(',', '')
+        : original.replaceAll(',', '.');
     final v = double.tryParse(raw);
     if (v == null || v <= 0 || v > 100000) continue;
     // تجاهل ما يبدو كسنة أو رقم بطاقة.
     if (v >= 1900 && v <= 2100 && !raw.contains('.')) continue;
-    if (m.group(1)!.length >= 6 && !raw.contains('.')) continue;
+    if (original.length >= 6 && !raw.contains('.')) continue;
     // فضّل المبالغ العشرية (أسعار غالبًا)، ثم الأصغر.
     if (best == null) {
       best = v;
-    } else if (raw.contains('.') && best == best.roundToDouble()) {
+    } else if (original.contains('.') && best == best.roundToDouble()) {
       best = v;
     }
   }
@@ -196,12 +203,20 @@ BillingCycle _findCycle(String lowerLine) {
 }
 
 DateTime? _findDate(String line) {
+  DateTime? validDate(int y, int m, int d) {
+    if (y < 2015 || y > 2100 || m < 1 || m > 12 || d < 1 || d > 31) {
+      return null;
+    }
+    final date = DateTime(y, m, d);
+    return date.year == y && date.month == m && date.day == d ? date : null;
+  }
+
   final iso = RegExp(r'(\d{4})-(\d{1,2})-(\d{1,2})').firstMatch(line);
   if (iso != null) {
     final y = int.parse(iso.group(1)!);
     final m = int.parse(iso.group(2)!);
     final d = int.parse(iso.group(3)!);
-    if (m >= 1 && m <= 12 && d >= 1 && d <= 31) return DateTime(y, m, d);
+    return validDate(y, m, d);
   }
   final dmy = RegExp(r'(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})').firstMatch(line);
   if (dmy != null) {
@@ -209,9 +224,7 @@ DateTime? _findDate(String line) {
     final m = int.parse(dmy.group(2)!);
     var y = int.parse(dmy.group(3)!);
     if (y < 100) y += 2000;
-    if (m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 2015 && y <= 2100) {
-      return DateTime(y, m, d);
-    }
+    return validDate(y, m, d);
   }
   return null;
 }

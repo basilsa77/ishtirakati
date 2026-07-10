@@ -3,6 +3,17 @@ import 'package:ishtirakati/models/subscription.dart';
 import 'package:ishtirakati/services/import_parser.dart';
 
 void main() {
+  test('يقرأ المبلغ ذي فاصل الآلاف دون تحويله إلى مبلغ أصغر', () {
+    final result = parseSubscriptionsText('Netflix 1,299.00 SAR شهري');
+    expect(result.single.price, 1299);
+    expect(result.single.currency, 'SAR');
+  });
+
+  test('يتجاهل التاريخ غير الموجود في التقويم', () {
+    final result = parseSubscriptionsText('Netflix 59 SAR\nالتاريخ: 2026-02-31');
+    expect(result.single.anchor, isNull);
+  });
+
   group('الاستيراد الذكي', () {
     test('رسالة بنك سعودية: نتفلكس بالريال مع التاريخ', () {
       const sms = 'شراء إنترنت\n'

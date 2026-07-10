@@ -84,6 +84,7 @@ class _LockGateState extends State<LockGate>
     with WidgetsBindingObserver {
   late bool _locked;
   bool _authInProgress = false;
+  String? _authError;
 
   @override
   void initState() {
@@ -112,6 +113,7 @@ class _LockGateState extends State<LockGate>
   Future<void> _unlock() async {
     if (_authInProgress) return;
     _authInProgress = true;
+    if (mounted) setState(() => _authError = null);
     try {
       final auth = LocalAuthentication();
       final ok = await auth.authenticate(
@@ -121,10 +123,19 @@ class _LockGateState extends State<LockGate>
           stickyAuth: true,
         ),
       );
-      if (ok && mounted) setState(() => _locked = false);
+      if (ok && mounted) {
+        setState(() {
+          _locked = false;
+          _authError = null;
+        });
+      } else if (mounted) {
+        setState(() => _authError = 'لم تتم المصادقة. حاول مرة أخرى.');
+      }
     } catch (_) {
-      // إن تعذرت المصادقة (جهاز بدون بصمة) نفتح مباشرة حتى لا يُحبس المستخدم.
-      if (mounted) setState(() => _locked = false);
+      // لا نفتح التطبيق عند فشل المصادقة؛ القفل يحمي بيانات المستخدم.
+      if (mounted) {
+        setState(() => _authError = 'تعذرت المصادقة على هذا الجهاز.');
+      }
     } finally {
       _authInProgress = false;
     }
@@ -170,6 +181,17 @@ class _LockGateState extends State<LockGate>
               icon: const Icon(Icons.face_rounded),
               label: const Text('فتح ببصمة الوجه'),
             ),
+            if (_authError != null) ...[
+              const SizedBox(height: 14),
+              Text(
+                _authError!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: AppColors.danger,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ],
         ),
       ),

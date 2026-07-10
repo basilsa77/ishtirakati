@@ -426,7 +426,7 @@ class Subscription {
       priceHistory: [
         if (json['priceHistory'] is List)
           for (final e in json['priceHistory'] as List)
-            if (PriceChange.fromJson(e) != null) PriceChange.fromJson(e)!,
+            if (PriceChange.fromJson(e) case final change?) change,
       ],
       isFamily: (json['isFamily'] as bool?) ?? false,
       familyMembers:
