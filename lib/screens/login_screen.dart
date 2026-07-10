@@ -161,7 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   backgroundColor:
                       configured ? AppColors.primary : AppColors.cardAlt,
                   foregroundColor: configured
-                      ? const Color(0xFF06231A)
+                      ? Colors.white
                       : AppColors.muted,
                   minimumSize: const Size.fromHeight(54),
                 ),
@@ -174,7 +174,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
-                          color: Color(0xFF06231A),
+                          color: Colors.white,
                         ),
                       )
                     : const Icon(Icons.g_mobiledata_rounded, size: 30),

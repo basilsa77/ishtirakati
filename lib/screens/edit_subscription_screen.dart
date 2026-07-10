@@ -443,7 +443,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   backgroundColor: AppColors.card,
                   foregroundColor: AppColors.muted,
                   selectedBackgroundColor: AppColors.primary,
-                  selectedForegroundColor: const Color(0xFF06231A),
+                  selectedForegroundColor: Colors.white,
                   side: const BorderSide(color: AppColors.border),
                   textStyle: const TextStyle(
                     fontWeight: FontWeight.w800,
@@ -580,7 +580,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                       backgroundColor: AppColors.card,
                       labelStyle: TextStyle(
                         color: _cycle == c
-                            ? const Color(0xFF06231A)
+                            ? Colors.white
                             : AppColors.ink,
                         fontWeight: FontWeight.w700,
                       ),

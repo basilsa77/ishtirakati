@@ -477,7 +477,7 @@ class _AdvisorCardState extends State<_AdvisorCard> {
                     height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      color: Color(0xFF06231A),
+                      color: Colors.white,
                     ),
                   )
                 : const Text('حلّل'),

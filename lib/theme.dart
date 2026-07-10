@@ -1,5 +1,4 @@
-/// الهوية البصرية v2 لتطبيق «اشتراكاتي»:
-/// ثيم داكن فاخر — زمردي متوهج على خلفية ليلية عميقة مع لمسات ذهبية.
+/// الهوية البصرية الحديثة لتطبيق «اشتراكاتي».
 library;
 
 import 'package:flutter/material.dart';
@@ -10,31 +9,31 @@ class AppColors {
   AppColors._();
 
   // خلفيات
-  static const Color bg = Color(0xFF0B1512); // ليل غابة عميق
-  static const Color card = Color(0xFF15221C);
-  static const Color cardAlt = Color(0xFF1B2B24);
-  static const Color border = Color(0xFF223329);
+  static const Color bg = Color(0xFFF5F8F6);
+  static const Color card = Color(0xFFFFFFFF);
+  static const Color cardAlt = Color(0xFFEEF4F1);
+  static const Color border = Color(0xFFDCE8E2);
 
   // نصوص
-  static const Color ink = Color(0xFFEDF6F0);
-  static const Color muted = Color(0xFF8FA79B);
+  static const Color ink = Color(0xFF15251F);
+  static const Color muted = Color(0xFF6A7C74);
 
   // الهوية
-  static const Color primary = Color(0xFF2EE6A8); // زمردي متوهج
-  static const Color primaryDeep = Color(0xFF14B886);
-  static const Color primarySoft = Color(0xFF16382C);
+  static const Color primary = Color(0xFF0B8F6A);
+  static const Color primaryDeep = Color(0xFF067052);
+  static const Color primarySoft = Color(0xFFE2F4ED);
 
   static const Color gold = Color(0xFFE9C46A);
   static const Color goldDeep = Color(0xFFCFA13F);
-  static const Color goldSoft = Color(0xFF33301C);
+  static const Color goldSoft = Color(0xFFFFF4D9);
 
   static const Color danger = Color(0xFFFF6B6B);
-  static const Color dangerSoft = Color(0xFF3A2226);
+  static const Color dangerSoft = Color(0xFFFFE8EA);
   static const Color warn = Color(0xFFF5B84F);
 
   /// تدرج البطاقة الرئيسية.
   static const LinearGradient heroGradient = LinearGradient(
-    colors: [Color(0xFF0F3D2E), Color(0xFF14B886), Color(0xFF2EE6A8)],
+    colors: [AppColors.primaryDeep, AppColors.primary],
     begin: Alignment.topRight,
     end: Alignment.bottomLeft,
   );
@@ -60,11 +59,11 @@ Color categoryColor(String category) =>
     kCategoryColors[category] ?? AppColors.gold;
 
 ThemeData buildAppTheme() {
-  const scheme = ColorScheme.dark(
+  const scheme = ColorScheme.light(
     primary: AppColors.primary,
-    onPrimary: Color(0xFF06231A),
+    onPrimary: Colors.white,
     secondary: AppColors.gold,
-    onSecondary: Color(0xFF231A06),
+    onSecondary: AppColors.ink,
     surface: AppColors.card,
     onSurface: AppColors.ink,
     error: AppColors.danger,
@@ -89,7 +88,7 @@ ThemeData buildAppTheme() {
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.primary,
-        foregroundColor: const Color(0xFF06231A),
+        foregroundColor: Colors.white,
         minimumSize: const Size.fromHeight(54),
         textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
         shape: RoundedRectangleBorder(
@@ -131,7 +130,7 @@ ThemeData buildAppTheme() {
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: const Color(0xFF101B16),
+      backgroundColor: AppColors.card,
       indicatorColor: AppColors.primarySoft,
       surfaceTintColor: Colors.transparent,
       height: 68,
@@ -152,18 +151,27 @@ ThemeData buildAppTheme() {
         ),
       ),
     ),
+    cardTheme: CardThemeData(
+      color: AppColors.card,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+    ),
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: AppColors.cardAlt,
-      contentTextStyle: const TextStyle(color: AppColors.ink, fontSize: 15),
+      backgroundColor: AppColors.ink,
+      contentTextStyle: const TextStyle(color: Colors.white, fontSize: 15),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
       backgroundColor: AppColors.primary,
-      foregroundColor: Color(0xFF06231A),
+      foregroundColor: Colors.white,
     ),
     dialogTheme: DialogThemeData(
-      backgroundColor: AppColors.cardAlt,
+      backgroundColor: AppColors.card,
       titleTextStyle: const TextStyle(
         color: AppColors.ink,
         fontSize: 18,
@@ -206,9 +214,9 @@ class AppCard extends StatelessWidget {
         border: Border.all(color: borderColor ?? AppColors.border),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x22000000),
-            blurRadius: 12,
-            offset: Offset(0, 4),
+            color: Color(0x140B3D2E),
+            blurRadius: 18,
+            offset: Offset(0, 6),
           ),
         ],
       ),

@@ -303,7 +303,7 @@ class _ImportScreenState extends State<ImportScreen> {
                             height: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
-                              color: Color(0xFF06231A),
+                              color: Colors.white,
                             ),
                           )
                         : const Icon(Icons.auto_awesome_rounded, size: 20),
@@ -412,7 +412,7 @@ class _CandidateTile extends StatelessWidget {
               value: selected && !alreadyExists,
               onChanged: alreadyExists ? null : (_) => onToggle(),
               activeColor: AppColors.primary,
-              checkColor: const Color(0xFF06231A),
+              checkColor: Colors.white,
             ),
             Container(
               width: 42,

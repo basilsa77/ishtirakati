@@ -29,25 +29,16 @@ class CommandCenterScreen extends StatelessWidget {
         final upcoming = store.upcoming(withinDays: 14);
         final byCategory = store.monthlyByCategory(currency).entries.toList()
           ..sort((a, b) => b.value.compareTo(a.value));
-        final score = _healthScore(
-          monthly: monthly,
-          budget: budget,
-          neverUsed: store.neverUsed.length,
-          unclassified: store.items.where((s) => s.category == 'أخرى').length,
-          trials: store.activeTrials.length,
-        );
-
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
           children: [
-            _TopBar(score: score),
+            const _TopBar(),
             const SizedBox(height: 14),
             _FinancialHero(
               monthly: monthly,
               yearly: yearly,
               budget: budget,
               currency: currency,
-              score: score,
             ),
             const SizedBox(height: 14),
             _ActionGrid(
@@ -116,31 +107,10 @@ class CommandCenterScreen extends StatelessWidget {
     );
   }
 
-  int _healthScore({
-    required double monthly,
-    required double budget,
-    required int neverUsed,
-    required int unclassified,
-    required int trials,
-  }) {
-    var score = 100;
-    if (budget > 0 && monthly > budget) {
-      score -= ((monthly - budget) / budget * 45)
-          .round()
-          .clamp(8, 45)
-          .toInt();
-    }
-    score -= (neverUsed * 7).clamp(0, 21).toInt();
-    score -= (unclassified * 4).clamp(0, 16).toInt();
-    score -= (trials * 3).clamp(0, 9).toInt();
-    return score.clamp(20, 100).toInt();
-  }
 }
 
 class _TopBar extends StatelessWidget {
-  final int score;
-
-  const _TopBar({required this.score});
+  const _TopBar();
 
   @override
   Widget build(BuildContext context) {
@@ -161,20 +131,6 @@ class _TopBar extends StatelessWidget {
             ],
           ),
         ),
-        Container(
-          width: 52,
-          height: 52,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: _scoreColor(score).withOpacity(.16),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: _scoreColor(score).withOpacity(.45)),
-          ),
-          child: Text(
-            '$score',
-            style: TextStyle(color: _scoreColor(score), fontSize: 18, fontWeight: FontWeight.w900),
-          ),
-        ),
       ],
     );
   }
@@ -185,14 +141,12 @@ class _FinancialHero extends StatelessWidget {
   final double yearly;
   final double budget;
   final String currency;
-  final int score;
 
   const _FinancialHero({
     required this.monthly,
     required this.yearly,
     required this.budget,
     required this.currency,
-    required this.score,
   });
 
   @override
@@ -200,17 +154,12 @@ class _FinancialHero extends StatelessWidget {
     final budgetProgress = budget <= 0
         ? 0.0
         : (monthly / budget).clamp(0.0, 1.0).toDouble();
-    final scoreColor = _scoreColor(score);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF173D34), Color(0xFF1D7560)],
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-        ),
+        gradient: AppColors.heroGradient,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0x6658E8BA)),
+        border: Border.all(color: AppColors.primary.withOpacity(.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,26 +177,11 @@ class _FinancialHero extends StatelessWidget {
             style: const TextStyle(color: Color(0xC9E8FFF5), fontSize: 13, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(
-                child: _HeroMetric(
-                  icon: Icons.radar_rounded,
-                  label: 'مؤشر الصحة',
-                  value: '$score / 100',
-                  color: scoreColor,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _HeroMetric(
-                  icon: Icons.account_balance_wallet_rounded,
-                  label: budget <= 0 ? 'ميزانية' : 'من الميزانية',
-                  value: budget <= 0 ? 'غير محددة' : '${(budgetProgress * 100).round()}٪',
-                  color: budget > 0 && monthly > budget ? AppColors.danger : AppColors.gold,
-                ),
-              ),
-            ],
+          _HeroMetric(
+            icon: Icons.account_balance_wallet_rounded,
+            label: budget <= 0 ? 'ميزانية' : 'من الميزانية',
+            value: budget <= 0 ? 'غير محددة' : '${(budgetProgress * 100).round()}٪',
+            color: budget > 0 && monthly > budget ? AppColors.danger : AppColors.gold,
           ),
           if (budget > 0) ...[
             const SizedBox(height: 14),
@@ -320,10 +254,10 @@ class _ActionGrid extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        childAspectRatio: 1.02,
+        crossAxisCount: 2,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        childAspectRatio: 2.35,
       ),
       itemCount: actions.length,
       itemBuilder: (context, index) {
@@ -340,11 +274,11 @@ class _ActionGrid extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: AppColors.border),
               ),
-              child: Column(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(action.$1, color: AppColors.primary, size: 24),
-                  const SizedBox(height: 6),
+                  Icon(action.$1, color: AppColors.primary, size: 22),
+                  const SizedBox(width: 8),
                   Text(action.$2, style: const TextStyle(color: AppColors.ink, fontSize: 12, fontWeight: FontWeight.w800)),
                 ],
               ),
@@ -681,10 +615,4 @@ class _ReviewList extends StatelessWidget {
       },
     );
   }
-}
-
-Color _scoreColor(int score) {
-  if (score >= 80) return AppColors.primary;
-  if (score >= 55) return AppColors.gold;
-  return AppColors.danger;
 }

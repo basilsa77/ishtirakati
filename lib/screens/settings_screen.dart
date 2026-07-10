@@ -1,4 +1,4 @@
-/// الإعدادات: العملة، الميزانية، النسخ الاحتياطي، وإدارة البيانات.
+/// الإعدادات: العملة، الميزانية، الذكاء الاصطناعي، والحساب.
 library;
 
 import 'package:flutter/material.dart';
@@ -28,6 +28,9 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _budget;
   late final TextEditingController _aiKey;
+
+  // Portable backup is intentionally hidden from the product UI.
+  bool get _showPortableBackup => false;
 
   @override
   void initState() {
@@ -537,28 +540,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 14),
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'النسخ الاحتياطي',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                      color: AppColors.ink,
+            if (_showPortableBackup) ...[
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'النسخ الاحتياطي',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                        color: AppColors.ink,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'النسخة الاحتياطية قابلة للنقل بين الأجهزة، لكنها نص قابل '
-                    'للقراءة. لا تحفظها إلا في مكان خاص ومحمٍ.',
-                    style: TextStyle(
-                      color: AppColors.muted,
-                      fontSize: 12.5,
-                      height: 1.6,
+                    const SizedBox(height: 4),
+                    const Text(
+                      'النسخة الاحتياطية قابلة للنقل بين الأجهزة، لكنها نص قابل '
+                      'للقراءة. لا تحفظها إلا في مكان خاص ومحمٍ.',
+                      style: TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 12.5,
+                        height: 1.6,
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
@@ -648,8 +652,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 14),
+              ),
+              const SizedBox(height: 14),
+            ],
             AppCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

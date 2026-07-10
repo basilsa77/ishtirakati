@@ -260,7 +260,7 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        color: Color(0xFF06231A),
+                        color: Colors.white,
                       ),
                     )
                   : const Icon(Icons.mark_email_read_rounded),

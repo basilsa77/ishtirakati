@@ -333,7 +333,7 @@ class _CatChip extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? const Color(0xFF06231A) : AppColors.ink,
+            color: selected ? Colors.white : AppColors.ink,
             fontWeight: FontWeight.w700,
             fontSize: 13,
           ),
