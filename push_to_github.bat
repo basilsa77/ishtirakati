@@ -10,6 +10,9 @@ if errorlevel 1 (
   )
 )
 
+set "RELEASE_VERSION=7.1.0"
+set "COMMIT_MESSAGE=Release 7.1.0: Firebase Google Sign-In and secure cloud sync"
+
 git init
 git config user.name "basilsa77"
 git config user.email "basilsa77@users.noreply.github.com"
@@ -20,7 +23,7 @@ git remote get-url origin >nul 2>&1 || git remote add origin https://github.com/
 git add .
 git diff --cached --quiet
 if errorlevel 1 (
-  git commit -m "Release 7.1: Firebase login and secure cloud sync"
+  git commit -m "%COMMIT_MESSAGE%"
   if errorlevel 1 goto :failed
 ) else (
   echo No new changes to commit.
@@ -32,7 +35,8 @@ git push -u origin main
 if errorlevel 1 goto :failed
 
 echo.
-echo ===== Ishtirakati 7.1 update pushed successfully =====
+echo ===== Ishtirakati %RELEASE_VERSION% pushed successfully =====
+echo Firebase, Google Sign-In, and Firestore rules are included.
 echo Open GitHub Actions to run Build iOS IPA.
 pause
 exit /b 0
