@@ -22,7 +22,11 @@ import 'theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final store = SubscriptionStore.instance;
-  await store.load();
+  try {
+    await store.load();
+  } catch (_) {
+    // لا نسمح لأي خطأ تخزين بمنع التطبيق من الفتح.
+  }
   await NotificationService.instance.init();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarBrightness: Brightness.dark),

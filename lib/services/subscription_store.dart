@@ -23,6 +23,7 @@ class SubscriptionStore extends ChangeNotifier {
 
   static const String _legacySubsKey = 'ishtirakati_subs_v1';
   static const String _encryptedSubsKey = 'ishtirakati_subs_v2_encrypted';
+  static const String _backupSubsKey = 'ishtirakati_subs_v2_backup';
   static const String _currencyKey = 'ishtirakati_default_currency';
   static const String _budgetKey = 'ishtirakati_monthly_budget';
   static const String _notifKey = 'ishtirakati_notifications_enabled';
@@ -38,6 +39,10 @@ class SubscriptionStore extends ChangeNotifier {
   String _aiApiKey = '';
   bool _hasOnboarded = false;
   bool _loaded = false;
+
+  /// false = تعذر فك تشفير البيانات عند الإقلاع؛ نمنع الكتابة فوقها
+  /// حفاظًا عليها حتى تنجح القراءة في تشغيل لاحق.
+  bool _storageHealthy = true;
   final SecureDataCodec _dataCodec = SecureDataCodec();
 
   List<Subscription> get items => List.unmodifiable(_items);
@@ -77,11 +82,22 @@ class SubscriptionStore extends ChangeNotifier {
     final records = <dynamic>[];
     var needsMigration = false;
     if (encrypted != null && encrypted.isNotEmpty) {
-      final decoded = jsonDecode(await _dataCodec.decrypt(encrypted));
-      if (decoded is! List) {
-        throw const SecureDataException('صيغة البيانات المشفرة غير صالحة.');
+      try {
+        final decoded = jsonDecode(await _dataCodec.decrypt(encrypted));
+        if (decoded is! List) {
+          throw const SecureDataException('صيغة البيانات المشفرة غير صالحة.');
+        }
+        records.addAll(decoded);
+        _storageHealthy = true;
+      } catch (_) {
+        // فشل مؤقت (مثل عدم توفر Keychain لحظة الإقلاع) أو تلف:
+        // لا نُسقط التطبيق، ونحتفظ بنسخة أمان، ونمنع الكتابة فوق البيانات.
+        _storageHealthy = false;
+        final backup = prefs.getString(_backupSubsKey);
+        if (backup == null || backup.isEmpty) {
+          await prefs.setString(_backupSubsKey, encrypted);
+        }
       }
-      records.addAll(decoded);
     } else {
       // ترحيل بيانات الإصدارات السابقة إلى صيغة مشفّرة مرة واحدة.
       records.addAll(prefs.getStringList(_legacySubsKey) ?? const <String>[]);
@@ -106,6 +122,9 @@ class SubscriptionStore extends ChangeNotifier {
   }
 
   Future<void> _persist() async {
+    // حماية من فقدان البيانات: إن فشلت قراءة البيانات المشفرة عند الإقلاع
+    // فلا نكتب فوقها أبدًا — ستُقرأ في تشغيل لاحق عندما يتاح Keychain.
+    if (!_storageHealthy) return;
     final prefs = await SharedPreferences.getInstance();
     final plain = jsonEncode(_items.map((s) => s.toJson()).toList());
     final encrypted = await _dataCodec.encrypt(plain);
