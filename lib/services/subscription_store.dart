@@ -14,13 +14,15 @@ import 'category_classifier.dart';
 import 'ai_extractor.dart';
 import 'notification_service.dart';
 import 'remote_catalog.dart';
+import 'secure_data_codec.dart';
 
 class SubscriptionStore extends ChangeNotifier {
   SubscriptionStore._();
 
   static final SubscriptionStore instance = SubscriptionStore._();
 
-  static const String _subsKey = 'ishtirakati_subs_v1';
+  static const String _legacySubsKey = 'ishtirakati_subs_v1';
+  static const String _encryptedSubsKey = 'ishtirakati_subs_v2_encrypted';
   static const String _currencyKey = 'ishtirakati_default_currency';
   static const String _budgetKey = 'ishtirakati_monthly_budget';
   static const String _notifKey = 'ishtirakati_notifications_enabled';
@@ -36,6 +38,7 @@ class SubscriptionStore extends ChangeNotifier {
   String _aiApiKey = '';
   bool _hasOnboarded = false;
   bool _loaded = false;
+  final SecureDataCodec _dataCodec = SecureDataCodec();
 
   List<Subscription> get items => List.unmodifiable(_items);
   String get defaultCurrency => _defaultCurrency;
@@ -53,11 +56,11 @@ class SubscriptionStore extends ChangeNotifier {
     _notificationsEnabled = prefs.getBool(_notifKey) ?? true;
     _appLockEnabled = prefs.getBool(_lockKey) ?? false;
     _hasOnboarded = prefs.getBool(_onboardKey) ?? false;
-    // مفتاح الذكاء الاصطناعي: مخزن مشفّرًا في Keychain النظام.
+    // مفتاح الذكاء الاصطناعي: مخزن في Keychain/Keystore فقط.
     try {
       const secure = FlutterSecureStorage();
       _aiApiKey = await secure.read(key: _aiKeyKey) ?? '';
-      // ترحيل من التخزين القديم غير المشفر إن وُجد.
+      // ترحيل آمن لمفتاح قديم ثم حذفه من التخزين غير المشفر.
       final legacy = prefs.getString(_aiKeyKey) ?? '';
       if (_aiApiKey.isEmpty && legacy.isNotEmpty) {
         _aiApiKey = legacy;
@@ -65,12 +68,29 @@ class SubscriptionStore extends ChangeNotifier {
       }
       if (legacy.isNotEmpty) await prefs.remove(_aiKeyKey);
     } catch (_) {
-      _aiApiKey = prefs.getString(_aiKeyKey) ?? '';
+      // لا نقرأ أو نكتب الأسرار خارج التخزين الآمن.
+      _aiApiKey = '';
+      await prefs.remove(_aiKeyKey);
+    }
+
+    final encrypted = prefs.getString(_encryptedSubsKey);
+    final records = <dynamic>[];
+    var needsMigration = false;
+    if (encrypted != null && encrypted.isNotEmpty) {
+      final decoded = jsonDecode(await _dataCodec.decrypt(encrypted));
+      if (decoded is! List) {
+        throw const SecureDataException('صيغة البيانات المشفرة غير صالحة.');
+      }
+      records.addAll(decoded);
+    } else {
+      // ترحيل بيانات الإصدارات السابقة إلى صيغة مشفّرة مرة واحدة.
+      records.addAll(prefs.getStringList(_legacySubsKey) ?? const <String>[]);
+      needsMigration = records.isNotEmpty;
     }
     _items.clear();
-    for (final raw in prefs.getStringList(_subsKey) ?? const <String>[]) {
+    for (final raw in records) {
       try {
-        final map = jsonDecode(raw);
+        final map = raw is String ? jsonDecode(raw) : raw;
         if (map is Map<String, dynamic>) {
           final sub = Subscription.fromJson(map);
           _applyLocalCategory(sub);
@@ -80,16 +100,17 @@ class SubscriptionStore extends ChangeNotifier {
         // تجاهل السجلات التالفة بدل تعطيل التطبيق.
       }
     }
+    if (needsMigration) await _persist();
     _loaded = true;
     notifyListeners();
   }
 
   Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(
-      _subsKey,
-      _items.map((s) => jsonEncode(s.toJson())).toList(),
-    );
+    final plain = jsonEncode(_items.map((s) => s.toJson()).toList());
+    final encrypted = await _dataCodec.encrypt(plain);
+    await prefs.setString(_encryptedSubsKey, encrypted);
+    await prefs.remove(_legacySubsKey);
     // إعادة جدولة الإشعارات مع كل تغيير (لا ننتظرها).
     // ignore: unawaited_futures
     NotificationService.instance
@@ -111,10 +132,13 @@ class SubscriptionStore extends ChangeNotifier {
       } else {
         await secure.write(key: _aiKeyKey, value: _aiApiKey);
       }
-    } catch (_) {
-      // احتياط نادر: أجهزة لا تدعم Keychain.
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_aiKeyKey, _aiApiKey);
+      await prefs.remove(_aiKeyKey);
+    } catch (_) {
+      _aiApiKey = '';
+      throw const SecureDataException(
+        'تعذر حفظ مفتاح الذكاء الاصطناعي في التخزين الآمن.',
+      );
     }
     notifyListeners();
   }

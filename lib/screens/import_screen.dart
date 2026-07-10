@@ -45,11 +45,11 @@ class _ImportScreenState extends State<ImportScreen> {
     super.dispose();
   }
 
-  Future<void> _analyze() async {
+  Future<void> _analyze({bool useAi = false}) async {
     final apiKey = SubscriptionStore.instance.aiApiKey;
     final local = parseSubscriptionsText(_text.text);
 
-    if (apiKey.isEmpty || _text.text.trim().length < 4) {
+    if (!useAi || apiKey.isEmpty || _text.text.trim().length < 4) {
       setState(() {
         _candidates = local;
         _selected
@@ -57,9 +57,8 @@ class _ImportScreenState extends State<ImportScreen> {
           ..addAll(local.map((c) => c.name));
         _analyzed = true;
         _aiNote = apiKey.isEmpty
-            ? 'تحليل سريع (محلي). لتحليل أذكى يلتقط كل الخدمات: '
-                'أضف مفتاح الذكاء الاصطناعي المجاني من الإعدادات.'
-            : null;
+            ? 'تحليل محلي. أضف مفتاح Gemini من الإعدادات لتفعيل التحليل الاختياري.'
+            : 'تحليل محلي: لا يُرسل النص إلى أي خدمة خارجية.';
       });
       return;
     }
@@ -109,6 +108,35 @@ class _ImportScreenState extends State<ImportScreen> {
         _aiNote = 'تعذر الاتصال بالذكاء الاصطناعي — عرضنا التحليل المحلي.';
       });
     }
+  }
+
+  Future<void> _analyzeWithAi() async {
+    if (_text.text.trim().length < 4) {
+      await _analyze();
+      return;
+    }
+    final approved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('إرسال للتحليل بالذكاء الاصطناعي؟'),
+        content: const Text(
+          'سيُرسل النص الذي ألصقته فقط إلى Gemini لتحليله. لا تُرسل كلمة مرور البريد، '
+          'لكن قد يحتوي النص على أسماء خدمات ومبالغ وتواريخ. يمكنك استخدام التحليل المحلي بدلًا من ذلك.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('تحليل محلي'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('أوافق وأحلل'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    await _analyze(useAi: approved == true);
   }
 
   Future<void> _pasteFromClipboard() async {
@@ -174,7 +202,9 @@ class _ImportScreenState extends State<ImportScreen> {
                     'أسعارها وتواريخ خصمها:\n'
                     '• رسائل البنك النصية (انسخ عدة رسائل دفعة واحدة)\n'
                     '• إيصالات Apple من بريدك «إيصالك من Apple»\n'
-                    '• أو اكتب أسماء الخدمات ببساطة',
+                    '• أو اكتب أسماء الخدمات ببساطة\n\n'
+                    'التحليل المحلي لا يرسل النص خارج جهازك. تحليل Gemini اختياري '
+                    'ويتطلب موافقتك قبل الإرسال.',
                     style: TextStyle(
                       color: AppColors.muted,
                       fontSize: 13,
@@ -262,7 +292,7 @@ class _ImportScreenState extends State<ImportScreen> {
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
                     ),
-                    onPressed: _aiBusy ? null : _analyze,
+                    onPressed: _aiBusy ? null : _analyzeWithAi,
                     icon: _aiBusy
                         ? const SizedBox(
                             width: 18,
@@ -273,7 +303,7 @@ class _ImportScreenState extends State<ImportScreen> {
                             ),
                           )
                         : const Icon(Icons.auto_awesome_rounded, size: 20),
-                    label: Text(_aiBusy ? 'يحلل...' : 'تحليل النص'),
+                    label: Text(_aiBusy ? 'يحلل...' : 'تحليل AI'),
                   ),
                 ),
               ],

@@ -9,6 +9,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../data/presets.dart';
+
 class RemoteService {
   final String name;
   final String emoji;
@@ -39,12 +41,18 @@ List<RemoteService> parseCatalog(String raw) {
       if (e is! Map<String, dynamic>) continue;
       final name = (e['name'] as String?) ?? '';
       if (name.isEmpty) continue;
+      final category = (e['category'] as String?) ?? 'أخرى';
+      final domain = (e['domain'] as String?) ?? '';
+      final manageUrl = _validatedManageUrl(
+        (e['manageUrl'] as String?) ?? '',
+        domain,
+      );
       out.add(RemoteService(
         name: name,
         emoji: (e['emoji'] as String?) ?? '🔖',
-        category: (e['category'] as String?) ?? 'أخرى',
-        domain: (e['domain'] as String?) ?? '',
-        manageUrl: (e['manageUrl'] as String?) ?? '',
+        category: kCategories.contains(category) ? category : 'أخرى',
+        domain: domain,
+        manageUrl: manageUrl,
         priceHint: (e['priceHint'] as num?)?.toDouble(),
       ));
     }
@@ -52,6 +60,17 @@ List<RemoteService> parseCatalog(String raw) {
   } catch (_) {
     return const [];
   }
+}
+
+String _validatedManageUrl(String raw, String domain) {
+  final uri = Uri.tryParse(raw);
+  if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) return '';
+  final allowed = domain.toLowerCase().trim();
+  final host = uri.host.toLowerCase();
+  if (allowed.isEmpty || host == allowed || host.endsWith('.$allowed')) {
+    return uri.toString();
+  }
+  return '';
 }
 
 class RemoteCatalog extends ChangeNotifier {

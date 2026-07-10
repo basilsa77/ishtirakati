@@ -43,6 +43,21 @@ class AiExtractionException implements Exception {
   String toString() => message;
 }
 
+/// يقرأ النص من استجابة Gemini دون افتراض بنية ديناميكية غير آمنة.
+String extractGeminiResponseText(dynamic body) {
+  if (body is! Map) return '';
+  final candidates = body['candidates'];
+  if (candidates is! List || candidates.isEmpty) return '';
+  final first = candidates.first;
+  if (first is! Map) return '';
+  final content = first['content'];
+  if (content is! Map) return '';
+  final parts = content['parts'];
+  if (parts is! List || parts.isEmpty) return '';
+  final part = parts.first;
+  return part is Map ? (part['text'] as String? ?? '') : '';
+}
+
 /// يحوّل ردّ الذكاء الاصطناعي (JSON) إلى مرشحين — دالة نقية قابلة للاختبار.
 List<ImportCandidate> parseAiCandidates(String raw) {
   var s = raw.trim();
@@ -127,13 +142,16 @@ class AiExtractor {
     Object? lastError;
     for (final model in kGeminiModels) {
       final uri = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey',
+        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent',
       );
       try {
         final res = await http
             .post(
               uri,
-              headers: {'Content-Type': 'application/json'},
+              headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': apiKey,
+              },
               body: jsonEncode({
                 'contents': [
                   {
@@ -171,11 +189,8 @@ class AiExtractor {
         }
 
         final body = jsonDecode(utf8.decode(res.bodyBytes));
-        final candidates = body['candidates'];
-        if (candidates is! List || candidates.isEmpty) return const [];
-        final parts = candidates[0]?['content']?['parts'];
-        if (parts is! List || parts.isEmpty) return const [];
-        final answer = (parts[0]?['text'] as String?) ?? '';
+        final answer = extractGeminiResponseText(body);
+        if (answer.isEmpty) return const [];
         return parseAiCandidates(answer);
       } on AiExtractionException {
         rethrow;
@@ -205,12 +220,15 @@ ${names.join('\n')}
     for (final model in kGeminiModels) {
       try {
         final uri = Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey',
+          'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent',
         );
         final res = await http
             .post(
               uri,
-              headers: {'Content-Type': 'application/json'},
+              headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': apiKey,
+              },
               body: jsonEncode({
                 'contents': [
                   {'parts': [{'text': prompt}]},
@@ -234,13 +252,7 @@ ${names.join('\n')}
           continue;
         }
         final body = jsonDecode(utf8.decode(res.bodyBytes));
-        final candidates = body['candidates'];
-        final parts = candidates is List && candidates.isNotEmpty
-            ? candidates[0]?['content']?['parts']
-            : null;
-        final answer = parts is List && parts.isNotEmpty
-            ? (parts[0]?['text'] as String? ?? '')
-            : '';
+        final answer = extractGeminiResponseText(body);
         return parseAiCategories(answer);
       } on AiExtractionException {
         rethrow;

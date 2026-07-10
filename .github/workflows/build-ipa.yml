@@ -13,7 +13,7 @@ jobs:
 
     steps:
       - name: سحب الكود
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: تجهيز Flutter (قناة stable)
         uses: subosito/flutter-action@v2
@@ -33,6 +33,14 @@ jobs:
       - name: صلاحية Face ID
         run: |
           /usr/libexec/PlistBuddy -c 'Add :NSFaceIDUsageDescription string نستخدم بصمة الوجه لحماية بيانات اشتراكاتك' ios/Runner/Info.plist || true
+
+      - name: تفعيل Keychain للتخزين الآمن
+        run: |
+          for file in ios/Runner/DebugProfile.entitlements ios/Runner/Release.entitlements; do
+            if [ -f "$file" ]; then
+              /usr/libexec/PlistBuddy -c 'Add :keychain-access-groups array' "$file" 2>/dev/null || true
+            fi
+          done
 
       - name: توليد أيقونة التطبيق
         run: |
@@ -59,7 +67,7 @@ jobs:
           ls -lh Ishtirakati-unsigned.ipa
 
       - name: رفع الملف الناتج
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: Ishtirakati-unsigned-ipa
           path: Ishtirakati-unsigned.ipa

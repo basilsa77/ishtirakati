@@ -3,6 +3,25 @@ import 'package:ishtirakati/models/subscription.dart';
 import 'package:ishtirakati/services/ai_extractor.dart';
 
 void main() {
+  test('يقرأ نص Gemini بأمان من استجابة صالحة أو تالفة', () {
+    expect(
+      extractGeminiResponseText({
+        'candidates': [
+          {
+            'content': {
+              'parts': [
+                {'text': '[]'},
+              ],
+            },
+          },
+        ],
+      }),
+      '[]',
+    );
+    expect(extractGeminiResponseText({'candidates': []}), isEmpty);
+    expect(extractGeminiResponseText('غير صالح'), isEmpty);
+  });
+
   test('يقبل تصنيفات AI الجديدة ويرفض التصنيف غير المعروف', () {
     final result = parseAiCategories(
       '{"NordVPN":"اتصالات وإنترنت","X Premium":"أخبار ومجلات",'

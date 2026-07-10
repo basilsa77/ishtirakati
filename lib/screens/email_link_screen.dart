@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -24,7 +25,8 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
   bool _remember = true;
   String? _error;
 
-  static const String _emailKey = 'ishtirakati_linked_email';
+  static const String _emailKey = 'ishtirakati_linked_email_v2';
+  static const String _legacyEmailKey = 'ishtirakati_linked_email';
   static const String _hostKey = 'ishtirakati_linked_host';
 
   @override
@@ -35,7 +37,14 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
 
   Future<void> _restore() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedEmail = prefs.getString(_emailKey) ?? '';
+    const secure = FlutterSecureStorage();
+    var savedEmail = await secure.read(key: _emailKey) ?? '';
+    final legacyEmail = prefs.getString(_legacyEmailKey) ?? '';
+    if (savedEmail.isEmpty && legacyEmail.isNotEmpty) {
+      await secure.write(key: _emailKey, value: legacyEmail);
+      await prefs.remove(_legacyEmailKey);
+      savedEmail = legacyEmail;
+    }
     final savedHost = prefs.getString(_hostKey) ?? '';
     if (savedEmail.isNotEmpty && mounted) {
       setState(() {
@@ -74,8 +83,14 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
       );
       if (_remember) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(_emailKey, email);
+        const secure = FlutterSecureStorage();
+        await secure.write(key: _emailKey, value: email);
         await prefs.setString(_hostKey, _provider.host);
+      } else {
+        const secure = FlutterSecureStorage();
+        await secure.delete(key: _emailKey);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_hostKey);
       }
       if (!mounted) return;
       if (result.matched == 0) {
@@ -99,6 +114,9 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
         _error = 'فشل الاتصال: تأكد من البريد وكلمة مرور التطبيقات '
             '(وليست كلمة مرورك العادية).';
       });
+    } finally {
+      // لا تبقِ كلمة مرور التطبيقات في ذاكرة واجهة المستخدم.
+      _password.clear();
     }
   }
 
@@ -130,7 +148,7 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
                     'نتصل ببريدك مباشرة من جهازك، نفحص أحدث الرسائل بحثًا عن '
                     'إيصالات الاشتراكات (Apple، نتفلكس وغيرها)، ثم نستخرج '
                     'الاشتراكات تلقائيًا. كلمة المرور تبقى على جهازك '
-                    'ولا تُرسل لأي طرف ثالث.',
+                    'ولا تُخزّن أو تُرسل إلى الذكاء الاصطناعي.',
                     style: TextStyle(
                       color: AppColors.muted,
                       fontSize: 13,

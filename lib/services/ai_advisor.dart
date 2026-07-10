@@ -7,7 +7,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/subscription.dart';
-import 'ai_extractor.dart' show kGeminiModels, AiExtractionException;
+import 'ai_extractor.dart'
+    show kGeminiModels, AiExtractionException, extractGeminiResponseText;
 
 /// يبني ملخص الاشتراكات المُرسل للنموذج — دالة نقية قابلة للاختبار.
 String buildAdvisorSummary(List<Subscription> subs) {
@@ -46,13 +47,16 @@ class AiAdvisor {
     Object? lastError;
     for (final model in kGeminiModels) {
       final uri = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey',
+        'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent',
       );
       try {
         final res = await http
             .post(
               uri,
-              headers: {'Content-Type': 'application/json'},
+              headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': apiKey,
+              },
               body: jsonEncode({
                 'contents': [
                   {
@@ -85,15 +89,7 @@ class AiAdvisor {
           continue;
         }
         final body = jsonDecode(utf8.decode(res.bodyBytes));
-        final candidates = body['candidates'];
-        if (candidates is! List || candidates.isEmpty) {
-          return 'لم يصلنا تحليل — أعد المحاولة.';
-        }
-        final parts = candidates[0]?['content']?['parts'];
-        if (parts is! List || parts.isEmpty) {
-          return 'لم يصلنا تحليل — أعد المحاولة.';
-        }
-        final answer = ((parts[0]?['text'] as String?) ?? '').trim();
+        final answer = extractGeminiResponseText(body).trim();
         return answer.isEmpty ? 'لم يصلنا تحليل — أعد المحاولة.' : answer;
       } on AiExtractionException {
         rethrow;

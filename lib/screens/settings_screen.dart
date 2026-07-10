@@ -335,7 +335,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           minimumSize: const Size(90, 46),
                         ),
                         onPressed: () async {
-                          await store.setAiApiKey(_aiKey.text);
+                          try {
+                            await store.setAiApiKey(_aiKey.text);
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('$e')),
+                              );
+                            }
+                            return;
+                          }
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -360,6 +369,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onPressed: store.aiApiKey.trim().isEmpty
                         ? null
                         : () async {
+                            final approved = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('تصنيف بالخدمة السحابية؟'),
+                                content: const Text(
+                                  'سيُرسل اسم كل خدمة غير مصنفة فقط إلى Gemini. '
+                                  'لن تُرسل الأسعار أو الملاحظات أو بيانات البريد.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('إلغاء'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: const Text('أوافق'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (approved != true) return;
                             try {
                               final count =
                                   await store.reclassifyUnknownsWithAi();
@@ -403,8 +433,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'انسخ بياناتك واحفظها في الملاحظات أو الملفات، '
-                    'واستعدها متى شئت — حتى بعد إعادة تثبيت التطبيق.',
+                    'النسخة الاحتياطية قابلة للنقل بين الأجهزة، لكنها نص قابل '
+                    'للقراءة. لا تحفظها إلا في مكان خاص ومحمٍ.',
                     style: TextStyle(
                       color: AppColors.muted,
                       fontSize: 12.5,
@@ -420,6 +450,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             minimumSize: const Size.fromHeight(48),
                           ),
                           onPressed: () async {
+                            final approved = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('تصدير نسخة قابلة للقراءة؟'),
+                                content: const Text(
+                                  'سيُنَسخ ملف JSON غير مشفّر إلى الحافظة لتتمكن '
+                                  'من نقله إلى جهاز آخر. لا تلصقه في تطبيقات عامة '
+                                  'ولا تشاركه مع أي شخص.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('إلغاء'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: const Text('أفهم، صدّر'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (approved != true) return;
                             await Clipboard.setData(
                               ClipboardData(text: store.exportJson()),
                             );
@@ -498,7 +550,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const _AboutRow(label: 'المطوّر', value: 'باسل'),
                   const _AboutRow(
                     label: 'الخصوصية',
-                    value: 'بياناتك محفوظة على جهازك فقط،\nولا تُرسل لأي خادم.',
+                    value: 'بيانات الاشتراكات مشفّرة على جهازك.\n'
+                        'التحليل بالذكاء الاصطناعي وربط البريد اختياريان\n'
+                        'ولا يرسلان بيانات إلا بعد موافقتك.',
                   ),
                   const SizedBox(height: 6),
                   const Text(
