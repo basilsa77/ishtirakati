@@ -11,7 +11,7 @@ if errorlevel 1 (
 )
 
 set "RELEASE_VERSION=10.0.0"
-set "COMMIT_MESSAGE=v10.0.0: build unsigned iOS app via direct xcodebuild"
+set "COMMIT_MESSAGE=v10.0.0: disable signing during Flutter iOS configuration"
 
 git init
 git config user.name "basilsa77"

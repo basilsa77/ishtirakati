@@ -103,11 +103,18 @@ jobs:
 
       - name: بناء iOS بدون توقيع (xcodebuild مباشرة)
         run: |
-          # flutter build --no-codesign معطوب في Flutter 3.44: يبني ثم يرفض
-          # الحزمة غير الموقعة. الحل: توليد إعدادات فلاتر فقط ثم استدعاء
-          # xcodebuild مباشرة مع تعطيل التوقيع بالكامل.
-          flutter build ios --release --config-only --obfuscate --split-debug-info=build/ios-symbols
-          xcodebuild -workspace ios/Runner.xcworkspace \
+          # flutter build --no-codesign معطوب في Flutter الحديث. نولد الإعدادات
+          # فقط ثم نبني عبر xcodebuild مع تعطيل التوقيع.
+          flutter build ios --release --config-only --no-codesign --obfuscate --split-debug-info=build/ios-symbols
+          # ضمان تثبيت الحزم الأصلية حتى لو تخطاها config-only.
+          (cd ios && pod install)
+          # سمة com.apple.provenance تُفشل توقيع الأطر الداخلي على أنظمة
+          # macOS الحديثة (flutter/flutter#181103). نمسح السمات الموسعة.
+          xattr -cr ios build 2>/dev/null || true
+          if [ -n "$FLUTTER_ROOT" ]; then
+            xattr -cr "$FLUTTER_ROOT/bin/cache/artifacts" 2>/dev/null || true
+          fi
+          if ! xcodebuild -workspace ios/Runner.xcworkspace \
             -scheme Runner \
             -configuration Release \
             -destination 'generic/platform=iOS' \
@@ -115,7 +122,15 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY= \
-            build
+            build > xcodebuild.log 2>&1; then
+            echo "===== آخر 80 سطرًا من سجل xcodebuild ====="
+            tail -80 xcodebuild.log
+            grep -E " error:|detritus|BUILD FAILED|requires a development team|provisioning" xcodebuild.log \
+              | tail -20 \
+              | while IFS= read -r line; do echo "::error::$line"; done
+            exit 1
+          fi
+          tail -3 xcodebuild.log
 
       - name: التحقق من حزمة iOS غير الموقعة
         run: |
