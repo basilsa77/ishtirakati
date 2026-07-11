@@ -1,12 +1,9 @@
-/// تشفير بيانات التطبيق محليًا (AES-256-GCM) قبل حفظها.
+/// تشفير بيانات التطبيق محليًا بـAES-256-GCM قبل حفظها.
 ///
-/// تصميم «لا يفقد البيانات أبدًا»:
-/// - المفتاح يُخزن في Keychain وبنسخة مرآة محلية، ويُقرأ من أي موضع
-///   متاح (يشمل مواضع الإصدارات السابقة بخيارات وصول مختلفة).
-/// - عند فك التشفير نجرب كل المفاتيح المرشحة ونعتمد ما يجتاز تحقق MAC،
-///   ثم «نشفي» بقية المواضع بنسخ المفتاح الصحيح إليها.
-/// - إن تعذر Keychain كليًا (إعادة توقيع جانبي مثلًا) نستمر بالمرآة
-///   المحلية بدل تعطيل التطبيق — والبيانات تبقى فوق تشفير قرص iOS.
+/// Keychain هو المصدر الأساسي دائمًا. مرآة SharedPreferences القديمة لا
+/// تُستخدم إلا كشبكة توافق اختيارية عند تعذر كل مواضع Keychain، وذلك لحماية
+/// مستخدمي النسخ المعاد توقيعها من فقدان بياناتهم. المستخدم الجديد يبدأ
+/// بوضع Keychain-only.
 library;
 
 import 'dart:convert';
@@ -24,13 +21,16 @@ class SecureDataException implements Exception {
   String toString() => message;
 }
 
-class SecureDataCodec {
-  static const _keyName = 'ishtirakati_data_encryption_key_v1';
-  static const _prefsMirrorKey = 'ishtirakati_data_key_mirror_v1';
+/// فصل صغير يجعل سياسة المفاتيح قابلة للاختبار دون Keychain حقيقي.
+abstract class SecureKeyStore {
+  Future<List<String>> readAll(String key);
+  Future<bool> writeAll(String key, String value);
+  Future<void> deleteAll(String key);
+}
 
-  final AesGcm _cipher = AesGcm.with256bits();
+class IosSecureKeyStore implements SecureKeyStore {
+  const IosSecureKeyStore();
 
-  /// مواضع Keychain المحتملة (الافتراضي + خيارات استخدمتها إصدارات سابقة).
   static const List<FlutterSecureStorage> _stores = [
     FlutterSecureStorage(),
     FlutterSecureStorage(
@@ -45,53 +45,171 @@ class SecureDataCodec {
     ),
   ];
 
-  /// كل المفاتيح المرشحة من كل المواضع (بدون تكرار).
-  Future<List<List<int>>> _candidateKeys() async {
-    final seen = <String>{};
-    final keys = <List<int>>[];
+  @override
+  Future<List<String>> readAll(String key) async {
+    final values = <String>{};
     for (final store in _stores) {
       try {
-        final encoded = await store.read(key: _keyName);
-        if (encoded != null && encoded.isNotEmpty && seen.add(encoded)) {
-          keys.add(base64Url.decode(encoded));
-        }
+        final value = await store.read(key: key);
+        if (value != null && value.isNotEmpty) values.add(value);
       } catch (_) {
-        // موضع غير متاح — نكمل للتالي.
+        // نجرب موضع Keychain التالي؛ لا ننتقل للمرآة إلا بعد فشلها كلها.
       }
     }
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final mirror = prefs.getString(_prefsMirrorKey);
-      if (mirror != null && mirror.isNotEmpty && seen.add(mirror)) {
-        keys.add(base64Url.decode(mirror));
+    return values.toList();
+  }
+
+  @override
+  Future<bool> writeAll(String key, String value) async {
+    var wroteAtLeastOne = false;
+    for (final store in _stores) {
+      try {
+        await store.write(key: key, value: value);
+        wroteAtLeastOne = true;
+      } catch (_) {
+        // نجاح موضع آمن واحد يكفي، ونستمر لمحاولة ترميم المواضع القديمة.
       }
-    } catch (_) {}
+    }
+    return wroteAtLeastOne;
+  }
+
+  @override
+  Future<void> deleteAll(String key) async {
+    for (final store in _stores) {
+      try {
+        await store.delete(key: key);
+      } catch (_) {}
+    }
+  }
+}
+
+class SecureDataCodec {
+  static const keyName = 'ishtirakati_data_encryption_key_v1';
+  static const mirrorPreferenceKey = 'ishtirakati_data_key_mirror_v1';
+  static const mirrorOptInPreferenceKey =
+      'ishtirakati_sideload_key_fallback_v1';
+
+  final AesGcm _cipher = AesGcm.with256bits();
+  final SecureKeyStore _keyStore;
+
+  SecureDataCodec({SecureKeyStore? keyStore})
+      : _keyStore = keyStore ?? const IosSecureKeyStore();
+
+  Future<List<List<int>>> _keychainKeys() async {
+    final keys = <List<int>>[];
+    for (final encoded in await _keyStore.readAll(keyName)) {
+      try {
+        final bytes = base64Url.decode(encoded);
+        if (bytes.length == 32) keys.add(bytes);
+      } catch (_) {}
+    }
     return keys;
   }
 
-  /// نسخ المفتاح الصحيح إلى Keychain والمرآة المحلية (شفاء ذاتي).
-  Future<void> _mirrorKey(List<int> bytes) async {
-    final encoded = base64Url.encode(bytes);
-    try {
-      await _stores.first.write(key: _keyName, value: encoded);
-    } catch (_) {}
+  Future<List<int>?> _legacyMirrorKey() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_prefsMirrorKey, encoded);
-    } catch (_) {}
+      final encoded = prefs.getString(mirrorPreferenceKey);
+      if (encoded == null || encoded.isEmpty) return null;
+      final bytes = base64Url.decode(encoded);
+      return bytes.length == 32 ? bytes : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// النسخ القديمة التي تملك مرآة تبقى في وضع التوافق تلقائيًا. المستخدم
+  /// الجديد لا يفعله إلا باختياره من الإعدادات.
+  Future<bool> get mirrorFallbackEnabled async {
+    final prefs = await SharedPreferences.getInstance();
+    final explicit = prefs.getBool(mirrorOptInPreferenceKey);
+    if (explicit != null) return explicit;
+    final migratedUser = prefs.getString(mirrorPreferenceKey)?.isNotEmpty ?? false;
+    if (migratedUser) {
+      await prefs.setBool(mirrorOptInPreferenceKey, true);
+    }
+    return migratedUser;
+  }
+
+  Future<bool> _writeKeychain(List<int> bytes) =>
+      _keyStore.writeAll(keyName, base64Url.encode(bytes));
+
+  Future<void> _writeMirror(List<int> bytes) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(mirrorPreferenceKey, base64Url.encode(bytes));
+  }
+
+  Future<void> _deleteMirror() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(mirrorPreferenceKey);
+  }
+
+  Future<void> _acceptVerifiedKey(List<int> bytes) async {
+    final keychainReady = await _writeKeychain(bytes);
+    if (await mirrorFallbackEnabled) {
+      await _writeMirror(bytes);
+    } else if (keychainReady) {
+      // لا نحذف المرآة إلا بعد إثبات أن المفتاح أصبح في Keychain.
+      await _deleteMirror();
+    }
   }
 
   Future<List<int>> _primaryKey() async {
-    final candidates = await _candidateKeys();
-    if (candidates.isNotEmpty) {
-      await _mirrorKey(candidates.first);
-      return candidates.first;
+    final keychain = await _keychainKeys();
+    if (keychain.isNotEmpty) {
+      if (await mirrorFallbackEnabled) await _writeMirror(keychain.first);
+      return keychain.first;
     }
-    // لا مفتاح في أي موضع: أنشئ واحدًا وانسخه للجميع.
+
+    // fallback متأخر: لا نقرأ المرآة إلا بعد عدم توفر أي مفتاح Keychain.
+    final mirror = await _legacyMirrorKey();
+    if (mirror != null) {
+      await _acceptVerifiedKey(mirror);
+      return mirror;
+    }
+
     final generated = await _cipher.newSecretKey();
     final bytes = await generated.extractBytes();
-    await _mirrorKey(bytes);
+    final keychainReady = await _writeKeychain(bytes);
+    if (!keychainReady && !await mirrorFallbackEnabled) {
+      throw const SecureDataException(
+        'تعذر إنشاء مفتاح آمن في Keychain. لم تُحفظ أي بيانات جديدة.',
+      );
+    }
+    if (await mirrorFallbackEnabled) await _writeMirror(bytes);
     return bytes;
+  }
+
+  /// تفعيل المرآة قرار صريح. تعطيلها لا يتم إلا إن كان Keychain يحمل مفتاحًا.
+  Future<bool> setMirrorFallbackEnabled(
+    bool enabled, {
+    String? verificationPayload,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (enabled) {
+      await prefs.setBool(mirrorOptInPreferenceKey, true);
+      final key = await _primaryKey();
+      await _writeMirror(key);
+      return true;
+    }
+
+    final keychain = await _keychainKeys();
+    if (keychain.isEmpty) return false;
+    if (verificationPayload != null && verificationPayload.isNotEmpty) {
+      final box = _decodeBox(verificationPayload);
+      if (box == null) return false;
+      var verified = false;
+      for (final key in keychain) {
+        if (await _tryDecrypt(box, key) != null) {
+          verified = true;
+          break;
+        }
+      }
+      if (!verified) return false;
+    }
+    await prefs.setBool(mirrorOptInPreferenceKey, false);
+    await _deleteMirror();
+    return true;
   }
 
   Future<String> encrypt(String plainText) async {
@@ -106,40 +224,70 @@ class SecureDataCodec {
         'c': base64Url.encode(box.cipherText),
         'm': base64Url.encode(box.mac.bytes),
       });
+    } on SecureDataException {
+      rethrow;
     } catch (_) {
       throw const SecureDataException('تعذر تشفير البيانات محليًا.');
     }
   }
 
   Future<String> decrypt(String payload) async {
-    final SecretBox box;
+    final box = _decodeBox(payload);
+    if (box == null) {
+      throw const SecureDataException('صيغة البيانات المشفرة غير صالحة.');
+    }
+
+    // المرحلة الأولى: Keychain فقط.
+    for (final keyBytes in await _keychainKeys()) {
+      final clear = await _tryDecrypt(box, keyBytes);
+      if (clear != null) {
+        await _acceptVerifiedKey(keyBytes);
+        return clear;
+      }
+    }
+
+    // المرحلة الثانية: fallback القديم بعد فشل كل مفاتيح Keychain فعليًا.
+    final mirror = await _legacyMirrorKey();
+    if (mirror != null) {
+      final clear = await _tryDecrypt(box, mirror);
+      if (clear != null) {
+        await _acceptVerifiedKey(mirror);
+        return clear;
+      }
+    }
+    throw const SecureDataException('تعذر فك تشفير البيانات المحلية.');
+  }
+
+  SecretBox? _decodeBox(String payload) {
     try {
       final data = jsonDecode(payload);
-      if (data is! Map<String, dynamic> || data['v'] != 1) {
-        throw const FormatException();
-      }
-      box = SecretBox(
+      if (data is! Map<String, dynamic> || data['v'] != 1) return null;
+      return SecretBox(
         base64Url.decode(data['c'] as String),
         nonce: base64Url.decode(data['n'] as String),
         mac: Mac(base64Url.decode(data['m'] as String)),
       );
     } catch (_) {
-      throw const SecureDataException('صيغة البيانات المشفرة غير صالحة.');
+      return null;
     }
+  }
 
-    // جرّب كل المفاتيح المرشحة — أول مفتاح يجتاز تحقق MAC هو الصحيح.
-    for (final keyBytes in await _candidateKeys()) {
-      try {
-        final clear = await _cipher.decrypt(
-          box,
-          secretKey: SecretKey(keyBytes),
-        );
-        await _mirrorKey(keyBytes); // اعتمده في كل المواضع
-        return utf8.decode(clear);
-      } catch (_) {
-        // مفتاح خاطئ — جرّب التالي.
-      }
+  Future<String?> _tryDecrypt(SecretBox box, List<int> keyBytes) async {
+    try {
+      final clear = await _cipher.decrypt(
+        box,
+        secretKey: SecretKey(keyBytes),
+      );
+      return utf8.decode(clear);
+    } catch (_) {
+      return null;
     }
-    throw const SecureDataException('تعذر فك تشفير البيانات المحلية.');
+  }
+
+  Future<void> deleteAllKeys() async {
+    await _keyStore.deleteAll(keyName);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(mirrorPreferenceKey);
+    await prefs.remove(mirrorOptInPreferenceKey);
   }
 }

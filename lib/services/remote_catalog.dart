@@ -78,9 +78,13 @@ class RemoteCatalog extends ChangeNotifier {
 
   static final RemoteCatalog instance = RemoteCatalog._();
 
-  static const String _cacheKey = 'ishtirakati_remote_catalog_v2';
+  static const String _cacheKey = 'ishtirakati_remote_catalog_v3_pinned';
+  static const int _maxCatalogBytes = 512 * 1024;
+  static const String catalogRevision =
+      '37eb0198a6b76e65c32d70d641581b91fe7f591a';
   static const String catalogUrl =
-      'https://raw.githubusercontent.com/basilsa77/ishtirakati/main/catalog/services.json';
+      'https://raw.githubusercontent.com/basilsa77/ishtirakati/'
+      '$catalogRevision/catalog/services.json';
 
   List<RemoteService> _services = [];
 
@@ -109,7 +113,9 @@ class RemoteCatalog extends ChangeNotifier {
       final res = await http
           .get(Uri.parse(catalogUrl))
           .timeout(const Duration(seconds: 8));
-      if (res.statusCode == 200 && res.body.isNotEmpty) {
+      if (res.statusCode == 200 &&
+          res.bodyBytes.isNotEmpty &&
+          res.bodyBytes.length <= _maxCatalogBytes) {
         final parsed = parseCatalog(res.body);
         if (parsed.isNotEmpty) {
           _services = parsed;

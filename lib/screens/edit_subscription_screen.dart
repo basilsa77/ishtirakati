@@ -8,6 +8,7 @@ import '../models/subscription.dart';
 import '../services/itunes_search.dart';
 import '../services/remote_catalog.dart';
 import '../services/subscription_store.dart';
+import '../services/safe_url.dart';
 import '../theme.dart';
 
 class EditSubscriptionScreen extends StatefulWidget {
@@ -344,15 +345,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
 
   String? _normalizedManageUrl(String raw) {
     if (raw.isEmpty) return '';
-    final candidate = raw.startsWith('https://') ? raw : 'https://$raw';
-    final uri = Uri.tryParse(candidate);
-    if (uri == null ||
-        uri.scheme != 'https' ||
-        uri.host.isEmpty ||
-        uri.userInfo.isNotEmpty) {
-      return null;
-    }
-    return uri.toString();
+    return normalizedHttpsUri(raw)?.toString();
   }
 
   Future<void> _save() async {

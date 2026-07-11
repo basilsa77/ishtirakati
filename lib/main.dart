@@ -1,5 +1,5 @@
 /// اشتراكاتي — تتبّع اشتراكاتك الرقمية وتحكّم بمصروفك.
-/// عربي أولًا، خصوصية كاملة: كل البيانات على جهازك فقط.
+/// عربي أولًا: محلي افتراضيًا، مع مزامنة وAI اختياريين بإفصاح واضح.
 library;
 
 import 'package:flutter/material.dart';
@@ -271,6 +271,13 @@ class _RootShellState extends State<RootShell> {
 
   @override
   Widget build(BuildContext context) {
+    final store = SubscriptionStore.instance;
+    if (!store.storageHealthy) {
+      return _StorageRecoveryGate(
+        message: store.storageError ??
+            'تعذر فتح بياناتك المشفرة. لم نكتب فوق السجل الأصلي.',
+      );
+    }
     return Scaffold(
       // Keep the dock in the Scaffold flow. Each page can now scroll to its
       // final item without being hidden under a floating navigation surface.
@@ -285,6 +292,83 @@ class _RootShellState extends State<RootShell> {
       bottomNavigationBar: _ModernBottomBar(
         selectedIndex: _index,
         onSelected: (i) => setState(() => _index = i),
+      ),
+    );
+  }
+}
+
+class _StorageRecoveryGate extends StatefulWidget {
+  final String message;
+
+  const _StorageRecoveryGate({required this.message});
+
+  @override
+  State<_StorageRecoveryGate> createState() => _StorageRecoveryGateState();
+}
+
+class _StorageRecoveryGateState extends State<_StorageRecoveryGate> {
+  bool _retrying = false;
+
+  Future<void> _retry() async {
+    setState(() => _retrying = true);
+    await SubscriptionStore.instance.load();
+    if (mounted) setState(() => _retrying = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (SubscriptionStore.instance.storageHealthy) {
+      return const RootShell();
+    }
+    final p = context.palette;
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.shield_rounded, size: 64, color: p.accent),
+              const SizedBox(height: 20),
+              Text(
+                'حماية بياناتك مفعّلة',
+                style: TextStyle(
+                  color: p.text,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                widget.message,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: p.textMuted, height: 1.7),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'أغلق التطبيق وافتحه بعد إتاحة Keychain، أو أعد المحاولة. '
+                'لن تُحفظ تغييرات جديدة حتى تُستعاد البيانات.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: p.textMuted, fontSize: 12, height: 1.6),
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: _retrying ? null : _retry,
+                icon: _retrying
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.refresh_rounded),
+                label: const Text('إعادة محاولة الاستعادة'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

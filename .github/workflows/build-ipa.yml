@@ -21,20 +21,24 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: تجهيز Flutter (قناة stable)
+      - name: تجهيز Flutter 3.44.6
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.44.6'
           channel: stable
           cache: true
 
       - name: استعادة إعدادات Firebase من GitHub Secrets
+        env:
+          GOOGLE_SERVICE_INFO_PLIST_B64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_B64 }}
+          FIREBASE_OPTIONS_DART_B64: ${{ secrets.FIREBASE_OPTIONS_DART_B64 }}
         run: |
-          if [ -z "${{ secrets.GOOGLE_SERVICE_INFO_PLIST_B64 }}" ] || [ -z "${{ secrets.FIREBASE_OPTIONS_DART_B64 }}" ]; then
+          if [ -z "$GOOGLE_SERVICE_INFO_PLIST_B64" ] || [ -z "$FIREBASE_OPTIONS_DART_B64" ]; then
             echo "::error::Missing Firebase configuration secrets."
             exit 1
           fi
-          printf '%s' '${{ secrets.GOOGLE_SERVICE_INFO_PLIST_B64 }}' | base64 -D > GoogleService-Info.plist
-          printf '%s' '${{ secrets.FIREBASE_OPTIONS_DART_B64 }}' | base64 -D > lib/firebase_options.dart
+          printf '%s' "$GOOGLE_SERVICE_INFO_PLIST_B64" | base64 -D > GoogleService-Info.plist
+          printf '%s' "$FIREBASE_OPTIONS_DART_B64" | base64 -D > lib/firebase_options.dart
           test -s GoogleService-Info.plist
           test -s lib/firebase_options.dart
 
@@ -99,6 +103,13 @@ jobs:
 
       - name: جلب الحزم
         run: flutter pub get
+
+      - name: حفظ ملف قفل الاعتماديات
+        uses: actions/upload-artifact@v6
+        with:
+          name: pubspec-lock-v11
+          path: pubspec.lock
+          retention-days: 1
 
       - name: فحص كود التطبيق كاملًا
         run: flutter analyze lib test --no-fatal-warnings --no-fatal-infos

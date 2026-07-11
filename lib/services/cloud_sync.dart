@@ -39,7 +39,7 @@ class CloudSync {
   /// رفع نسخة كاملة من البيانات إلى حساب المستخدم.
   static Future<bool> push() async {
     final doc = _doc();
-    if (doc == null) {
+    if (doc == null || !SubscriptionStore.instance.storageHealthy) {
       status.value = const CloudSyncStatus(CloudSyncPhase.failure);
       return false;
     }
@@ -102,13 +102,36 @@ class CloudSync {
 
   /// Restores a backup before uploading the latest local state.
   static Future<void> restoreAndPush() async {
-    await pull();
-    await push();
+    final doc = _doc();
+    if (doc == null) return;
+    try {
+      final exists = (await doc.get().timeout(_networkTimeout)).exists;
+      if (!exists) {
+        await push();
+        return;
+      }
+      final restored = await pull();
+      if (restored >= 0) await push();
+    } catch (_) {
+      status.value = const CloudSyncStatus(CloudSyncPhase.failure);
+    }
+  }
+
+  /// حذف النسخة الخاصة بالمستخدم قبل حذف حساب المصادقة.
+  static Future<void> deleteRemoteData() async {
+    final doc = _doc();
+    if (doc == null) throw StateError('No authenticated cloud document.');
+    await doc.delete().timeout(_networkTimeout);
+    status.value = const CloudSyncStatus(CloudSyncPhase.idle);
   }
 
   /// رفع مؤجل بعد كل تعديل (يجمع التعديلات المتتابعة في رفعة واحدة).
   static void schedulePush() {
-    if (!AuthService.isSignedIn || _pushQueued) return;
+    if (!AuthService.isSignedIn ||
+        !SubscriptionStore.instance.storageHealthy ||
+        _pushQueued) {
+      return;
+    }
     _pushQueued = true;
     Future.delayed(const Duration(seconds: 4), () async {
       _pushQueued = false;

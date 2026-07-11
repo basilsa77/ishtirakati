@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/subscription.dart' show currencySymbols;
+import '../services/account_deletion_service.dart';
 import '../services/auth_service.dart';
 import '../services/cloud_sync.dart';
 import '../services/notification_service.dart';
@@ -15,6 +16,7 @@ import 'ai_tools_screen.dart';
 import 'email_link_screen.dart';
 import 'import_screen.dart';
 import 'login_screen.dart';
+import 'onboarding_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -55,8 +57,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         children: [
           const _SettingsIntro(),
+          if (!store.storageHealthy) ...[
+            const SizedBox(height: 14),
+            AppCard(
+              color: context.palette.dangerSoft,
+              borderColor: context.palette.danger,
+              child: Text(
+                store.storageError ?? 'التخزين مقفل لحماية بياناتك.',
+                style: TextStyle(
+                  color: context.palette.danger,
+                  fontWeight: FontWeight.w800,
+                  height: 1.6,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 22),
-          _AccountCard(onChanged: () => setState(() {})),
+          _AccountCard(
+            onChanged: () => setState(() {}),
+            onDeleteAccount: _confirmDeleteAccount,
+          ),
           const SizedBox(height: 26),
           const _SettingsLabel('المظهر'),
           const SizedBox(height: 10),
@@ -92,6 +112,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   detail: 'استخدم Face ID عند الفتح أو العودة',
                   value: store.appLockEnabled,
                   onChanged: store.setAppLockEnabled,
+                ),
+                Divider(height: 1, color: context.palette.stroke),
+                _SettingsSwitch(
+                  icon: Icons.key_rounded,
+                  title: 'توافق إعادة التوقيع الجانبي',
+                  detail: store.sideloadRecoveryEnabled
+                      ? 'مرآة توافق مفعّلة؛ Keychain يبقى المصدر الأول'
+                      : 'Keychain فقط؛ الحماية الأقوى للإصدار الرسمي',
+                  value: store.sideloadRecoveryEnabled,
+                  onChanged: _toggleSideloadRecovery,
                 ),
               ],
             ),
@@ -197,6 +227,111 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
     }
   }
+
+  Future<void> _toggleSideloadRecovery(bool enabled) async {
+    if (enabled) {
+      final approved = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('تفعيل توافق إعادة التوقيع؟'),
+          content: const Text(
+            'يحتفظ هذا الخيار بنسخة محلية من مفتاح البيانات كي لا تضيع '
+            'اشتراكاتك عند إعادة توقيع التطبيق جانبيًا. Keychain يبقى المصدر '
+            'الأول، لكن مستوى العزل أقل من نسخة App Store. فعّله فقط إذا '
+            'كنت تعيد توقيع التطبيق خارج App Store.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('تفعيل التوافق'),
+            ),
+          ],
+        ),
+      );
+      if (approved != true) return;
+    }
+    final ok = await SubscriptionStore.instance
+        .setSideloadRecoveryEnabled(enabled);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? enabled
+                  ? 'فُعّل وضع التوافق. سيُستخدم فقط بعد تعذر Keychain.'
+                  : 'عُطّل وضع التوافق بعد التحقق من Keychain.'
+              : 'تعذر تغيير الوضع دون المخاطرة ببياناتك.',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('حذف الحساب نهائيًا؟'),
+        content: const Text(
+          'سنطلب تأكيد هويتك، ثم نحذف النسخة السحابية وحساب Firebase، '
+          'وبعد نجاحهما نمسح الاشتراكات والمفاتيح من هذا الجهاز. لا يمكن '
+          'التراجع عن هذه العملية. حذف الحساب لا يلغي اشتراكاتك لدى الخدمات الأخرى.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إبقاء حسابي'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: dialogContext.palette.danger,
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('تأكيد الحذف'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Expanded(child: Text('جارٍ حذف الحساب والبيانات بأمان...')),
+            ],
+          ),
+        ),
+      ),
+    );
+    try {
+      await AccountDeletionService.deleteEverything();
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        (_) => false,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      final message = error is AuthException
+          ? error.message
+          : 'تعذر إكمال الحذف. لم نمسح بيانات هذا الجهاز؛ أعد المحاولة.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
 }
 
 class _SettingsIntro extends StatelessWidget {
@@ -218,8 +353,12 @@ class _SettingsIntro extends StatelessWidget {
 
 class _AccountCard extends StatelessWidget {
   final VoidCallback onChanged;
+  final Future<void> Function() onDeleteAccount;
 
-  const _AccountCard({required this.onChanged});
+  const _AccountCard({
+    required this.onChanged,
+    required this.onDeleteAccount,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -361,8 +500,52 @@ class _AccountCard extends StatelessWidget {
                     );
                   },
                 ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(44),
+                    foregroundColor: p.danger,
+                  ),
+                  onPressed: onDeleteAccount,
+                  icon: const Icon(Icons.person_remove_rounded, size: 18),
+                  label: const Text('حذف الحساب والبيانات السحابية'),
+                ),
               ],
             ),
+          const SizedBox(height: 12),
+          Text(
+            'النسخة السحابية محمية بتسجيل الدخول وقواعد Firestore وتشفير '
+            'النقل والتخزين لدى Firebase، لكنها ليست تشفيرًا طرفيًا E2E. '
+            'استخدام المزامنة اختياري.',
+            style: TextStyle(color: p.textMuted, fontSize: 11.5, height: 1.6),
+          ),
+          ValueListenableBuilder<String?>(
+            valueListenable: AuthService.appCheckWarning,
+            builder: (context, warning, _) {
+              if (warning == null) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.gpp_maybe_rounded, color: p.danger, size: 18),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: Text(
+                        warning,
+                        style: TextStyle(
+                          color: p.danger,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -532,6 +715,24 @@ class _AboutCard extends StatelessWidget {
           _AboutLine(label: 'التطبيق', value: 'اشتراكاتي'),
           Divider(height: 1, color: p.stroke),
           _AboutLine(label: 'الإصدار', value: kAppVersion),
+          Divider(height: 1, color: p.stroke),
+          ListTile(
+            onTap: () => launchUrl(
+              Uri.parse(
+                'https://github.com/basilsa77/ishtirakati/blob/main/PRIVACY_POLICY.md',
+              ),
+              mode: LaunchMode.externalApplication,
+            ),
+            title: Text(
+              'سياسة الخصوصية',
+              style: TextStyle(
+                color: p.text,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+              ),
+            ),
+            trailing: Icon(Icons.open_in_new_rounded, color: p.textMuted),
+          ),
         ],
       ),
     );

@@ -9,6 +9,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
@@ -28,6 +29,7 @@ class AuthService {
 
   static bool _initialized = false;
   static bool _googleInitialized = false;
+  static final ValueNotifier<String?> appCheckWarning = ValueNotifier(null);
 
   /// هل المزامنة السحابية متاحة (الإعداد مكتمل والتهيئة نجحت)؟
   static bool get isAvailable =>
@@ -50,10 +52,18 @@ class AuthService {
       _initialized = true;
       try {
         await FirebaseAppCheck.instance.activate(
-          appleProvider: AppleProvider.appAttest,
+          providerApple: const AppleAppAttestProvider(),
         );
-      } catch (_) {
-        // App Check enforcement is enabled from Firebase Console after monitoring.
+        appCheckWarning.value = null;
+      } catch (error) {
+        const message =
+            'تعذر تفعيل App Check. المزامنة محمية بالمصادقة والقواعد، '
+            'لكن يلزم مراجعة App Attest قبل النشر.';
+        appCheckWarning.value = message;
+        debugPrint(
+          'App Check activation failed (${error.runtimeType}). '
+          'Enable enforcement from Firebase Console after monitoring.',
+        );
       }
       try {
         await GoogleSignIn.instance.initialize();
@@ -75,11 +85,7 @@ class AuthService {
     }
     try {
       final account = await GoogleSignIn.instance.authenticate();
-      if (account == null) return null; // ألغى المستخدم
-      final auth = account.authentication;
-      final credential = GoogleAuthProvider.credential(
-        idToken: auth.idToken,
-      );
+      final credential = await _googleCredential(account);
       final result =
           await FirebaseAuth.instance.signInWithCredential(credential);
       return result.user;
@@ -104,22 +110,7 @@ class AuthService {
       throw const AuthException('المزامنة السحابية غير مفعّلة بعد.');
     }
     try {
-      final rawNonce = _newNonce();
-      final hashedNonce = await _sha256(rawNonce);
-      final apple = await SignInWithApple.getAppleIDCredential(
-        scopes: [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ],
-        nonce: hashedNonce,
-      );
-      if (apple.identityToken == null || apple.identityToken!.isEmpty) {
-        throw const AuthException('لم يصل رمز مصادقة صالح من Apple.');
-      }
-      final credential = OAuthProvider('apple.com').credential(
-        idToken: apple.identityToken,
-        rawNonce: rawNonce,
-      );
+      final credential = await _appleCredential();
       final result =
           await FirebaseAuth.instance.signInWithCredential(credential);
       return result.user;
@@ -141,6 +132,81 @@ class AuthService {
     try {
       await FirebaseAuth.instance.signOut();
     } catch (_) {}
+  }
+
+  static Future<void> reauthenticateCurrentUser() async {
+    final user = currentUser;
+    if (user == null) throw const AuthException('لا يوجد حساب مسجل لحذفه.');
+    final providers = user.providerData.map((item) => item.providerId).toSet();
+    try {
+      if (providers.contains('google.com')) {
+        if (!_googleInitialized) {
+          throw const AuthException('تعذر تهيئة إعادة المصادقة بقوقل.');
+        }
+        await GoogleSignIn.instance.signOut();
+        final account = await GoogleSignIn.instance.authenticate();
+        await user.reauthenticateWithCredential(await _googleCredential(account));
+        return;
+      }
+      if (providers.contains('apple.com')) {
+        await user.reauthenticateWithCredential(await _appleCredential());
+        return;
+      }
+      await user.reload();
+    } on AuthException {
+      rethrow;
+    } on FirebaseAuthException catch (error) {
+      throw AuthException('تعذرت إعادة المصادقة: ${error.code}');
+    } catch (_) {
+      throw const AuthException('أُلغيت إعادة المصادقة أو تعذرت.');
+    }
+  }
+
+  static Future<void> deleteCurrentUser() async {
+    final user = currentUser;
+    if (user == null) throw const AuthException('لا يوجد حساب مسجل لحذفه.');
+    try {
+      await user.delete();
+      try {
+        await GoogleSignIn.instance.signOut();
+      } catch (_) {}
+    } on FirebaseAuthException catch (error) {
+      if (error.code == 'requires-recent-login') {
+        throw const AuthException('يلزم تأكيد هويتك مجددًا قبل حذف الحساب.');
+      }
+      throw AuthException('تعذر حذف الحساب: ${error.code}');
+    }
+  }
+
+  static Future<OAuthCredential> _googleCredential(
+    GoogleSignInAccount account,
+  ) async {
+    final auth = account.authentication;
+    final idToken = auth.idToken;
+    if (idToken == null || idToken.isEmpty) {
+      throw const AuthException('لم يصل رمز مصادقة صالح من Google.');
+    }
+    return GoogleAuthProvider.credential(idToken: idToken);
+  }
+
+  static Future<OAuthCredential> _appleCredential() async {
+    final rawNonce = _newNonce();
+    final hashedNonce = await _sha256(rawNonce);
+    final apple = await SignInWithApple.getAppleIDCredential(
+      scopes: [
+        AppleIDAuthorizationScopes.email,
+        AppleIDAuthorizationScopes.fullName,
+      ],
+      nonce: hashedNonce,
+    );
+    final identityToken = apple.identityToken;
+    if (identityToken == null || identityToken.isEmpty) {
+      throw const AuthException('لم يصل رمز مصادقة صالح من Apple.');
+    }
+    return OAuthProvider('apple.com').credential(
+      idToken: identityToken,
+      rawNonce: rawNonce,
+    );
   }
 
   static String _newNonce([int length = 32]) {

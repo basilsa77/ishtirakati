@@ -11,7 +11,7 @@ if errorlevel 1 (
 )
 
 set "RELEASE_VERSION=11.0.0"
-set "COMMIT_MESSAGE=v11.0.0: decision center and production UX"
+set "COMMIT_MESSAGE=v11.0.0+24: security hardening and account deletion"
 
 git init
 git config user.name "basilsa77"

@@ -119,12 +119,14 @@ class _ImportScreenState extends State<ImportScreen> {
       await _analyze();
       return;
     }
+    final provider = aiProviderById(SubscriptionStore.instance.aiProvider);
     final approved = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('إرسال للتحليل بالذكاء الاصطناعي؟'),
-        content: const Text(
-          'سيُرسل النص الذي ألصقته فقط إلى Gemini لتحليله. لا تُرسل كلمة مرور البريد، '
+        content: Text(
+          'سيُرسل النص الذي ألصقته فقط إلى ${provider.label} لتحليله. '
+          'لا تُرسل كلمة مرور البريد، '
           'لكن قد يحتوي النص على أسماء خدمات ومبالغ وتواريخ. يمكنك استخدام التحليل المحلي بدلًا من ذلك.',
         ),
         actions: [

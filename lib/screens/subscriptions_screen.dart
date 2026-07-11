@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../data/presets.dart';
 import '../models/subscription.dart';
 import '../services/subscription_store.dart';
+import '../services/safe_url.dart';
 import '../theme.dart';
 import 'edit_subscription_screen.dart';
 import 'import_screen.dart';
@@ -592,9 +593,21 @@ Future<void> showSubscriptionDetails(BuildContext context, Subscription sub) asy
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
                     onPressed: () async {
-                      var raw = sub.manageUrl.trim();
-                      if (!raw.startsWith('http')) raw = 'https://$raw';
-                      await launchUrl(Uri.parse(raw), mode: LaunchMode.externalApplication);
+                      final uri = normalizedHttpsUri(sub.manageUrl);
+                      if (uri == null) {
+                        if (sheetContext.mounted) {
+                          ScaffoldMessenger.of(sheetContext).showSnackBar(
+                            const SnackBar(
+                              content: Text('الرابط غير آمن ولن يتم فتحه.'),
+                            ),
+                          );
+                        }
+                        return;
+                      }
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
                     },
                     icon: const Icon(Icons.open_in_new_rounded, size: 18),
                     label: const Text('إدارة الاشتراك'),

@@ -5,7 +5,6 @@ library;
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/subscription.dart';
@@ -18,7 +17,17 @@ import 'cloud_sync.dart';
 import 'secure_data_codec.dart';
 
 class SubscriptionStore extends ChangeNotifier {
-  SubscriptionStore._();
+  SubscriptionStore._({
+    SecureDataCodec? dataCodec,
+    SecureKeyStore? secretStore,
+  })  : _dataCodec = dataCodec ?? SecureDataCodec(),
+        _secretStore = secretStore ?? const IosSecureKeyStore();
+
+  @visibleForTesting
+  SubscriptionStore.testing({
+    SecureDataCodec? dataCodec,
+    SecureKeyStore? secretStore,
+  }) : this._(dataCodec: dataCodec, secretStore: secretStore);
 
   static final SubscriptionStore instance = SubscriptionStore._();
 
@@ -46,11 +55,14 @@ class SubscriptionStore extends ChangeNotifier {
   String _themeMode = 'system'; // dark | light | system
   bool _hasOnboarded = false;
   bool _loaded = false;
+  bool _sideloadRecoveryEnabled = false;
+  String? _storageError;
 
   /// false = تعذر فك تشفير البيانات عند الإقلاع؛ نمنع الكتابة فوقها
   /// حفاظًا عليها حتى تنجح القراءة في تشغيل لاحق.
   bool _storageHealthy = true;
-  final SecureDataCodec _dataCodec = SecureDataCodec();
+  final SecureDataCodec _dataCodec;
+  final SecureKeyStore _secretStore;
 
   List<Subscription> get items => List.unmodifiable(_items);
   String get defaultCurrency => _defaultCurrency;
@@ -62,6 +74,9 @@ class SubscriptionStore extends ChangeNotifier {
   String get themeMode => _themeMode;
   bool get hasOnboarded => _hasOnboarded;
   bool get isLoaded => _loaded;
+  bool get sideloadRecoveryEnabled => _sideloadRecoveryEnabled;
+  bool get storageHealthy => _storageHealthy;
+  String? get storageError => _storageError;
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -72,22 +87,11 @@ class SubscriptionStore extends ChangeNotifier {
     _hasOnboarded = prefs.getBool(_onboardKey) ?? false;
     _aiProvider = prefs.getString(_aiProviderKey) ?? 'gemini';
     _themeMode = prefs.getString(_themeModeKey) ?? 'system';
-    // مفتاح الذكاء الاصطناعي: يُقرأ من أي موضع متاح ولا يُمسح أبدًا
-    // بسبب خطأ مؤقت (Keychain الافتراضي، خيار قديم، مرآة محلية، نص قديم).
+    _sideloadRecoveryEnabled = await _dataCodec.mirrorFallbackEnabled;
+    // Keychain أولًا. لا نرجع للمرآة القديمة إلا إذا لم نجد قيمة آمنة.
     _aiApiKey = '';
-    for (final store in const [
-      FlutterSecureStorage(),
-      FlutterSecureStorage(
-        iOptions: IOSOptions(
-          accessibility: KeychainAccessibility.unlocked_this_device,
-        ),
-      ),
-    ]) {
-      if (_aiApiKey.isNotEmpty) break;
-      try {
-        _aiApiKey = await store.read(key: _aiKeyKey) ?? '';
-      } catch (_) {}
-    }
+    final secureAiValues = await _secretStore.readAll(_aiKeyKey);
+    if (secureAiValues.isNotEmpty) _aiApiKey = secureAiValues.first;
     if (_aiApiKey.isEmpty) {
       final mirror = prefs.getString('${_aiKeyKey}_mirror') ?? '';
       if (mirror.isNotEmpty) {
@@ -100,16 +104,16 @@ class SubscriptionStore extends ChangeNotifier {
       _aiApiKey = prefs.getString(_aiKeyKey) ?? '';
     }
     if (_aiApiKey.isNotEmpty) {
-      // شفاء ذاتي: ثبّت المفتاح في Keychain والمرآة معًا.
-      try {
-        await const FlutterSecureStorage()
-            .write(key: _aiKeyKey, value: _aiApiKey);
-      } catch (_) {}
-      await prefs.setString(
-        '${_aiKeyKey}_mirror',
-        base64Url.encode(utf8.encode(_aiApiKey)),
-      );
-      await prefs.remove(_aiKeyKey);
+      final keychainReady = await _secretStore.writeAll(_aiKeyKey, _aiApiKey);
+      if (_sideloadRecoveryEnabled) {
+        await prefs.setString(
+          '${_aiKeyKey}_mirror',
+          base64Url.encode(utf8.encode(_aiApiKey)),
+        );
+      } else if (keychainReady) {
+        await prefs.remove('${_aiKeyKey}_mirror');
+        await prefs.remove(_aiKeyKey);
+      }
     }
 
     final encrypted = prefs.getString(_encryptedSubsKey);
@@ -123,18 +127,21 @@ class SubscriptionStore extends ChangeNotifier {
         }
         records.addAll(decoded);
         _storageHealthy = true;
+        _storageError = null;
       } catch (_) {
-        // تعذر فك التشفير بكل المفاتيح المرشحة: نحفظ البيانات القديمة في
-        // نسخة أمان (قابلة للاسترداد)، ونكمل بحالة قابلة للحفظ حتى لا
-        // يبقى التطبيق عالقًا يفقد كل تعديل عند الإغلاق.
+        // نحفظ السجل كما هو ونمنع أي كتابة أو مزامنة حتى تنجح استعادته.
         final backup = prefs.getString(_backupSubsKey);
         if (backup == null || backup.isEmpty) {
           await prefs.setString(_backupSubsKey, encrypted);
         }
-        _storageHealthy = true;
+        _storageHealthy = false;
+        _storageError =
+            'تعذر فتح البيانات المشفرة. البيانات الأصلية محفوظة ولم تُستبدل.';
       }
     } else {
       // ترحيل بيانات الإصدارات السابقة إلى صيغة مشفّرة مرة واحدة.
+      _storageHealthy = true;
+      _storageError = null;
       records.addAll(prefs.getStringList(_legacySubsKey) ?? const <String>[]);
       needsMigration = records.isNotEmpty;
     }
@@ -157,9 +164,7 @@ class SubscriptionStore extends ChangeNotifier {
   }
 
   Future<void> _persist() async {
-    // حماية من فقدان البيانات: إن فشلت قراءة البيانات المشفرة عند الإقلاع
-    // فلا نكتب فوقها أبدًا — ستُقرأ في تشغيل لاحق عندما يتاح Keychain.
-    if (!_storageHealthy) return;
+    _ensureWritable();
     final prefs = await SharedPreferences.getInstance();
     final plain = jsonEncode(_items.map((s) => s.toJson()).toList());
     final encrypted = await _dataCodec.encrypt(plain);
@@ -171,6 +176,14 @@ class SubscriptionStore extends ChangeNotifier {
         .rescheduleAll(_items, enabled: _notificationsEnabled);
     // مزامنة سحابية مؤجلة إن كان المستخدم مسجلًا.
     CloudSync.schedulePush();
+  }
+
+  void _ensureWritable() {
+    if (!_storageHealthy) {
+      throw SecureDataException(
+        _storageError ?? 'التخزين مقفل لحماية بياناتك من الاستبدال.',
+      );
+    }
   }
 
   Future<void> setOnboarded() async {
@@ -195,27 +208,61 @@ class SubscriptionStore extends ChangeNotifier {
   }
 
   Future<void> setAiApiKey(String value) async {
-    _aiApiKey = value.trim();
-    // Keychain كأفضل جهد + مرآة محلية مضمونة — الحفظ لا يفشل أبدًا.
-    try {
-      const secure = FlutterSecureStorage();
-      if (_aiApiKey.isEmpty) {
-        await secure.delete(key: _aiKeyKey);
-      } else {
-        await secure.write(key: _aiKeyKey, value: _aiApiKey);
-      }
-    } catch (_) {}
+    final next = value.trim();
     final prefs = await SharedPreferences.getInstance();
-    if (_aiApiKey.isEmpty) {
+    if (next.isEmpty) {
+      await _secretStore.deleteAll(_aiKeyKey);
       await prefs.remove('${_aiKeyKey}_mirror');
+      await prefs.remove(_aiKeyKey);
     } else {
-      await prefs.setString(
-        '${_aiKeyKey}_mirror',
-        base64Url.encode(utf8.encode(_aiApiKey)),
-      );
+      final keychainReady = await _secretStore.writeAll(_aiKeyKey, next);
+      if (!keychainReady && !_sideloadRecoveryEnabled) {
+        throw const SecureDataException(
+          'تعذر حفظ مفتاح الذكاء الاصطناعي في Keychain.',
+        );
+      }
+      if (_sideloadRecoveryEnabled) {
+        await prefs.setString(
+          '${_aiKeyKey}_mirror',
+          base64Url.encode(utf8.encode(next)),
+        );
+      } else {
+        await prefs.remove('${_aiKeyKey}_mirror');
+      }
+      await prefs.remove(_aiKeyKey);
     }
-    await prefs.remove(_aiKeyKey);
+    _aiApiKey = next;
     notifyListeners();
+  }
+
+  Future<bool> setSideloadRecoveryEnabled(bool enabled) async {
+    if (enabled) {
+      final dataReady = await _dataCodec.setMirrorFallbackEnabled(true);
+      if (!dataReady) return false;
+      if (_aiApiKey.isNotEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+          '${_aiKeyKey}_mirror',
+          base64Url.encode(utf8.encode(_aiApiKey)),
+        );
+      }
+    } else {
+      if (_aiApiKey.isNotEmpty) {
+        final aiReady = await _secretStore.writeAll(_aiKeyKey, _aiApiKey);
+        if (!aiReady) return false;
+      }
+      final prefs = await SharedPreferences.getInstance();
+      final dataReady = await _dataCodec.setMirrorFallbackEnabled(
+        false,
+        verificationPayload: prefs.getString(_encryptedSubsKey),
+      );
+      if (!dataReady) return false;
+      await prefs.remove('${_aiKeyKey}_mirror');
+      await prefs.remove(_aiKeyKey);
+    }
+    _sideloadRecoveryEnabled = enabled;
+    notifyListeners();
+    return true;
   }
 
   Future<void> setAppLockEnabled(bool value) async {
@@ -235,6 +282,7 @@ class SubscriptionStore extends ChangeNotifier {
   }
 
   Future<void> upsert(Subscription sub) async {
+    _ensureWritable();
     _applyLocalCategory(sub);
     final index = _items.indexWhere((s) => s.id == sub.id);
     if (index >= 0) {
@@ -271,6 +319,7 @@ class SubscriptionStore extends ChangeNotifier {
 
   /// يعيد تصنيف العناصر التي بقيت في «أخرى» بعد وصول الكتالوج الشبكي.
   Future<void> reclassifyUnknowns() async {
+    _ensureWritable();
     var changed = false;
     for (final sub in _items) {
       if (sub.category != 'أخرى') continue;
@@ -290,6 +339,7 @@ class SubscriptionStore extends ChangeNotifier {
   }
 
   Future<int> reclassifyUnknownsWithAi() async {
+    _ensureWritable();
     final names = _items
         .where((s) => s.category == 'أخرى')
         .map((s) => s.name)
@@ -312,12 +362,14 @@ class SubscriptionStore extends ChangeNotifier {
   }
 
   Future<void> remove(String id) async {
+    _ensureWritable();
     _items.removeWhere((s) => s.id == id);
     await _persist();
     notifyListeners();
   }
 
   Future<void> togglePause(String id) async {
+    _ensureWritable();
     final index = _items.indexWhere((s) => s.id == id);
     if (index >= 0) {
       _items[index].isPaused = !_items[index].isPaused;
@@ -328,6 +380,7 @@ class SubscriptionStore extends ChangeNotifier {
 
   /// يسجل استخدامًا واحدًا للاشتراك دون إرسال أي بيانات خارج الجهاز.
   Future<void> recordUsage(String id, {DateTime? at}) async {
+    _ensureWritable();
     final index = _items.indexWhere((s) => s.id == id);
     if (index < 0) return;
     final sub = _items[index];
@@ -345,6 +398,7 @@ class SubscriptionStore extends ChangeNotifier {
       .fold(0, (sum, s) => sum + s.monthlyCost);
 
   Future<void> clearAll() async {
+    _ensureWritable();
     _items.clear();
     await _persist();
     notifyListeners();
@@ -382,6 +436,7 @@ class SubscriptionStore extends ChangeNotifier {
   /// يعيد عدد الاشتراكات المستوردة، أو -1 إذا كان النص غير صالح.
   Future<int> importJson(String raw) async {
     try {
+      _ensureWritable();
       if (utf8.encode(raw).length > _maxImportBytes) return -1;
       final data = jsonDecode(raw);
       if (data is! Map<String, dynamic>) return -1;
@@ -415,6 +470,28 @@ class SubscriptionStore extends ChangeNotifier {
     } catch (_) {
       return -1;
     }
+  }
+
+  /// يمحو بيانات هذا التثبيت بعد نجاح حذف الحساب والسحابة.
+  Future<void> clearLocalForAccountDeletion() async {
+    await NotificationService.instance.cancelAll();
+    await _dataCodec.deleteAllKeys();
+    await _secretStore.deleteAll(_aiKeyKey);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    _items.clear();
+    _defaultCurrency = 'SAR';
+    _monthlyBudget = 0;
+    _notificationsEnabled = true;
+    _appLockEnabled = false;
+    _aiApiKey = '';
+    _aiProvider = 'gemini';
+    _themeMode = 'system';
+    _hasOnboarded = false;
+    _sideloadRecoveryEnabled = false;
+    _storageHealthy = true;
+    _storageError = null;
+    notifyListeners();
   }
 
   // ------------------------- إحصائيات -------------------------

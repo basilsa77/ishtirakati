@@ -7,7 +7,9 @@ import 'package:flutter/material.dart';
 
 import '../models/subscription.dart';
 import '../services/ai_advisor.dart';
-import '../services/ai_extractor.dart' show AiExtractionException;
+import '../services/ai_consent_service.dart';
+import '../services/ai_extractor.dart'
+    show AiExtractionException, aiProviderById;
 import '../services/subscription_store.dart';
 import '../theme.dart';
 
@@ -381,6 +383,56 @@ class _AdvisorPanelState extends State<_AdvisorPanel> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('أضف مفتاح الذكاء الاصطناعي من الإعدادات أولًا.')));
       return;
     }
+    final provider = aiProviderById(store.aiProvider);
+    if (!await AiConsentService.hasAdvisorConsent(provider.id)) {
+      if (!mounted) return;
+      var remember = true;
+      final approved = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: const Text('إرسال للتحليل الذكي؟'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'سيُرسل إلى ${provider.label}:\n'
+                  '${AiConsentService.advisorFieldsAr}.\n\n'
+                  'لن تُرسل مفاتيح API أو كلمة مرور البريد. يخضع المحتوى '
+                  'لسياسة خصوصية المزود، ويمكنك الإلغاء الآن.',
+                  style: const TextStyle(height: 1.6),
+                ),
+                const SizedBox(height: 12),
+                CheckboxListTile(
+                  value: remember,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: const Text('تذكّر موافقتي لهذا المزود'),
+                  onChanged: (value) =>
+                      setDialogState(() => remember = value ?? false),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('إلغاء'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('أوافق وأحلل'),
+              ),
+            ],
+          ),
+        ),
+      );
+      if (approved != true) return;
+      if (remember) {
+        await AiConsentService.rememberAdvisorConsent(provider.id);
+      }
+    }
+    if (!mounted) return;
     setState(() => _loading = true);
     try {
       final answer = await AiAdvisor.advise(store.items, store.aiApiKey, providerId: store.aiProvider);
