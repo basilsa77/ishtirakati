@@ -11,7 +11,7 @@ if errorlevel 1 (
 )
 
 set "RELEASE_VERSION=10.0.0"
-set "COMMIT_MESSAGE=v10.0.0: handle Flutter unsigned post-build check"
+set "COMMIT_MESSAGE=v10.0.0: locate unsigned Xcode app bundle"
 
 git init
 git config user.name "basilsa77"

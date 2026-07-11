@@ -108,10 +108,21 @@ jobs:
           flutter_status=$?
           set -e
 
-          # Flutter 3.44 may reject an otherwise successful unsigned Xcode build
-          # during its post-build signing check. Only continue when the app exists.
-          if [ ! -d build/ios/iphoneos/Runner.app ]; then
+          # Flutter 3.44 can finish Xcode successfully, then reject the unsigned
+          # app during its signing check. Locate the produced bundle before failing.
+          runner_app="$(find build/ios "$HOME/Library/Developer/Xcode/DerivedData" \
+            -type d -path '*/Release-iphoneos/Runner.app' -print -quit 2>/dev/null || true)"
+          if [ -z "$runner_app" ]; then
+            echo "Runner.app was not produced. Available iOS app bundles:"
+            find build/ios "$HOME/Library/Developer/Xcode/DerivedData" \
+              -type d -name '*.app' -print 2>/dev/null || true
             exit "$flutter_status"
+          fi
+
+          mkdir -p build/ios/iphoneos
+          if [ "$runner_app" != "build/ios/iphoneos/Runner.app" ]; then
+            rm -rf build/ios/iphoneos/Runner.app
+            cp -R "$runner_app" build/ios/iphoneos/Runner.app
           fi
 
           test -f build/ios/iphoneos/Runner.app/Info.plist
