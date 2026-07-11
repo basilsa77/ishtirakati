@@ -102,12 +102,13 @@ jobs:
         run: flutter test
 
       - name: بناء iOS بدون توقيع
+        id: flutter-ios-build
+        continue-on-error: true
         run: |
-          set +e
           flutter build ios --release --no-codesign --obfuscate --split-debug-info=build/ios-symbols
-          flutter_status=$?
-          set -e
 
+      - name: التحقق من حزمة iOS غير الموقعة
+        run: |
           # Flutter 3.44 can finish Xcode successfully, then reject the unsigned
           # app during its signing check. Locate the produced bundle before failing.
           runner_app="$(find build/ios "$HOME/Library/Developer/Xcode/DerivedData" \
@@ -116,7 +117,7 @@ jobs:
             echo "Runner.app was not produced. Available iOS app bundles:"
             find build/ios "$HOME/Library/Developer/Xcode/DerivedData" \
               -type d -name '*.app' -print 2>/dev/null || true
-            exit "$flutter_status"
+            exit 1
           fi
 
           mkdir -p build/ios/iphoneos

@@ -11,7 +11,7 @@ if errorlevel 1 (
 )
 
 set "RELEASE_VERSION=10.0.0"
-set "COMMIT_MESSAGE=v10.0.0: locate unsigned Xcode app bundle"
+set "COMMIT_MESSAGE=v10.0.0: verify unsigned build in separate CI step"
 
 git init
 git config user.name "basilsa77"
