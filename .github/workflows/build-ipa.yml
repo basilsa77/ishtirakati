@@ -102,7 +102,21 @@ jobs:
         run: flutter test
 
       - name: بناء iOS بدون توقيع
-        run: flutter build ios --release --no-codesign --obfuscate --split-debug-info=build/ios-symbols
+        run: |
+          set +e
+          flutter build ios --release --no-codesign --obfuscate --split-debug-info=build/ios-symbols
+          flutter_status=$?
+          set -e
+
+          # Flutter 3.44 may reject an otherwise successful unsigned Xcode build
+          # during its post-build signing check. Only continue when the app exists.
+          if [ ! -d build/ios/iphoneos/Runner.app ]; then
+            exit "$flutter_status"
+          fi
+
+          test -f build/ios/iphoneos/Runner.app/Info.plist
+          test -x build/ios/iphoneos/Runner.app/Runner
+          echo "Unsigned Runner.app was built successfully."
 
       - name: تغليف IPA
         run: |
