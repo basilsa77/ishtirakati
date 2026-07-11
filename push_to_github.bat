@@ -11,7 +11,7 @@ if errorlevel 1 (
 )
 
 set "RELEASE_VERSION=10.0.0"
-set "COMMIT_MESSAGE=v10.0.0: fix full-app Dart compilation"
+set "COMMIT_MESSAGE=v10.0.0: scope analysis to application sources"
 
 git init
 git config user.name "basilsa77"

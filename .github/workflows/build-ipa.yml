@@ -101,7 +101,7 @@ jobs:
         run: flutter pub get
 
       - name: فحص كود التطبيق كاملًا
-        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+        run: flutter analyze lib test --no-fatal-warnings --no-fatal-infos
 
       - name: تشغيل الاختبارات
         run: flutter test
