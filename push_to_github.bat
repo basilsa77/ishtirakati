@@ -11,7 +11,7 @@ if errorlevel 1 (
 )
 
 set "RELEASE_VERSION=10.0.0"
-set "COMMIT_MESSAGE=v10.0.0: verify unsigned build in separate CI step"
+set "COMMIT_MESSAGE=v10.0.0: satisfy Flutter Xcode team validation"
 
 git init
 git config user.name "basilsa77"
