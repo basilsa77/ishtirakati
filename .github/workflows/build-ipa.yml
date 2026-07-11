@@ -100,6 +100,9 @@ jobs:
       - name: جلب الحزم
         run: flutter pub get
 
+      - name: فحص كود التطبيق كاملًا
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos
+
       - name: تشغيل الاختبارات
         run: flutter test
 
@@ -130,8 +133,8 @@ jobs:
             build > xcodebuild.log 2>&1; then
             echo "===== آخر 80 سطرًا من سجل xcodebuild ====="
             tail -80 xcodebuild.log
-            grep -E " error:|detritus|BUILD FAILED|requires a development team|provisioning" xcodebuild.log \
-              | tail -20 \
+            grep -Ei "error:|failed|exception|detritus|nonzero exit code|requires a development team|provisioning" xcodebuild.log \
+              | tail -60 \
               | while IFS= read -r line; do echo "::error::$line"; done
             exit 1
           fi

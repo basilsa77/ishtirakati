@@ -472,7 +472,6 @@ class _RenewalCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
     );
   }
 }

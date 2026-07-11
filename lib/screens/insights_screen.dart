@@ -204,22 +204,20 @@ class _DistributionCard extends StatelessWidget {
             ),
           );
           final legend = Column(
-            child: Column(
-              children: [
-                for (final entry in entries.take(5))
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Row(
-                      children: [
-                        Container(width: 8, height: 8, decoration: BoxDecoration(color: categoryColor(entry.key), shape: BoxShape.circle)),
-                        const SizedBox(width: 7),
-                        Expanded(child: Text(entry.key, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: 11.5, fontWeight: FontWeight.w700))),
-                        Text('${total <= 0 ? 0 : (entry.value / total * 100).round()}٪', style: TextStyle(color: p.textMuted, fontSize: 11, fontWeight: FontWeight.w800)),
-                      ],
-                    ),
+            children: [
+              for (final entry in entries.take(5))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    children: [
+                      Container(width: 8, height: 8, decoration: BoxDecoration(color: categoryColor(entry.key), shape: BoxShape.circle)),
+                      const SizedBox(width: 7),
+                      Expanded(child: Text(entry.key, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: 11.5, fontWeight: FontWeight.w700))),
+                      Text('${total <= 0 ? 0 : (entry.value / total * 100).round()}٪', style: TextStyle(color: p.textMuted, fontSize: 11, fontWeight: FontWeight.w800)),
+                    ],
                   ),
-              ],
-            ),
+                ),
+            ],
           );
           return compact
               ? Column(

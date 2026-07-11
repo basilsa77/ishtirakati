@@ -350,7 +350,6 @@ class _ModernBottomBar extends StatelessWidget {
             );
           },
         ),
-        ),
       ),
     );
   }
