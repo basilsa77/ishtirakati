@@ -101,40 +101,36 @@ jobs:
       - name: تشغيل الاختبارات
         run: flutter test
 
-      - name: تجهيز Xcode للبناء غير الموقع
+      - name: بناء iOS بدون توقيع (xcodebuild مباشرة)
         run: |
-          # Flutter 3.44 requires a non-empty team in the Xcode project even when
-          # code signing is disabled. This placeholder never signs the application.
-          sed -i '' '/PRODUCT_BUNDLE_IDENTIFIER = com.basil.ishtirakati;/a\
-          \                DEVELOPMENT_TEAM = 0000000000;' ios/Runner.xcodeproj/project.pbxproj
-
-      - name: بناء iOS بدون توقيع
-        id: flutter-ios-build
-        run: |
-          flutter build ios --release --no-codesign --obfuscate --split-debug-info=build/ios-symbols
+          # flutter build --no-codesign معطوب في Flutter 3.44: يبني ثم يرفض
+          # الحزمة غير الموقعة. الحل: توليد إعدادات فلاتر فقط ثم استدعاء
+          # xcodebuild مباشرة مع تعطيل التوقيع بالكامل.
+          flutter build ios --release --config-only --obfuscate --split-debug-info=build/ios-symbols
+          xcodebuild -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/xcode-dd \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY= \
+            build
 
       - name: التحقق من حزمة iOS غير الموقعة
         run: |
-          # Flutter 3.44 can finish Xcode successfully, then reject the unsigned
-          # app during its signing check. Locate the produced bundle before failing.
-          runner_app="$(find build/ios "$HOME/Library/Developer/Xcode/DerivedData" \
-            -type d -path '*/Release-iphoneos/Runner.app' -print -quit 2>/dev/null || true)"
-          if [ -z "$runner_app" ]; then
-            echo "Runner.app was not produced. Available iOS app bundles:"
-            find build/ios "$HOME/Library/Developer/Xcode/DerivedData" \
-              -type d -name '*.app' -print 2>/dev/null || true
+          APP="build/xcode-dd/Build/Products/Release-iphoneos/Runner.app"
+          if [ ! -d "$APP" ]; then
+            echo "::error::Runner.app was not produced by xcodebuild."
+            find build/xcode-dd/Build/Products -type d -name '*.app' -print 2>/dev/null || true
             exit 1
           fi
-
           mkdir -p build/ios/iphoneos
-          if [ "$runner_app" != "build/ios/iphoneos/Runner.app" ]; then
-            rm -rf build/ios/iphoneos/Runner.app
-            cp -R "$runner_app" build/ios/iphoneos/Runner.app
-          fi
-
+          rm -rf build/ios/iphoneos/Runner.app
+          cp -R "$APP" build/ios/iphoneos/Runner.app
           test -f build/ios/iphoneos/Runner.app/Info.plist
           test -x build/ios/iphoneos/Runner.app/Runner
-          echo "Unsigned Runner.app was built successfully."
+          echo "Unsigned Runner.app built and verified."
 
       - name: تغليف IPA
         run: |
