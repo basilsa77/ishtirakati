@@ -11,7 +11,7 @@ if errorlevel 1 (
 )
 
 set "RELEASE_VERSION=10.0.0"
-set "COMMIT_MESSAGE=v10.0.0: fix unsigned iOS build on GitHub Actions"
+set "COMMIT_MESSAGE=v10.0.0: pin stable macOS runner for iOS build"
 
 git init
 git config user.name "basilsa77"

@@ -11,7 +11,8 @@ permissions:
 jobs:
   build-ios:
     name: بناء IPA غير موقّع (يُوقَّع من ويندوز عبر Sideloadly)
-    runs-on: macos-latest
+    # Pin Xcode/macOS until Flutter's unsigned build is stable on macOS 26.
+    runs-on: macos-15
     timeout-minutes: 45
 
     steps:
@@ -100,26 +101,8 @@ jobs:
       - name: تشغيل الاختبارات
         run: flutter test
 
-      - name: تجهيز بناء iOS بدون توقيع
-        run: flutter build ios --release --no-codesign --config-only --obfuscate --split-debug-info=build/ios-symbols
-
       - name: بناء iOS بدون توقيع
-        run: |
-          xcodebuild \
-            -workspace ios/Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Release \
-            -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            -derivedDataPath build/ios/derived-data \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            DEVELOPMENT_TEAM="" \
-            build
-          rm -rf build/ios/iphoneos
-          mkdir -p build/ios/iphoneos
-          cp -R build/ios/derived-data/Build/Products/Release-iphoneos/Runner.app build/ios/iphoneos/Runner.app
+        run: flutter build ios --release --no-codesign --obfuscate --split-debug-info=build/ios-symbols
 
       - name: تغليف IPA
         run: |
