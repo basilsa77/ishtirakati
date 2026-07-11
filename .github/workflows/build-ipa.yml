@@ -17,12 +17,12 @@ jobs:
 
     steps:
       - name: سحب الكود
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
 
       - name: تجهيز Flutter 3.44.6
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           flutter-version: '3.44.6'
           channel: stable
@@ -95,17 +95,17 @@ jobs:
 
       - name: توليد أيقونة التطبيق
         run: |
-          flutter pub get
+          flutter pub get --enforce-lockfile
           dart run flutter_launcher_icons
 
       - name: حذف اختبار القالب الذي يولّده flutter create
         run: rm -f test/widget_test.dart
 
       - name: جلب الحزم
-        run: flutter pub get
+        run: flutter pub get --enforce-lockfile
 
       - name: حفظ ملف قفل الاعتماديات
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: pubspec-lock-v11
           path: pubspec.lock
@@ -174,14 +174,14 @@ jobs:
           ls -lh Ishtirakati-unsigned.ipa
 
       - name: رفع الملف الناتج
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: Ishtirakati-unsigned-ipa
           path: Ishtirakati-unsigned.ipa
           retention-days: 30
 
       - name: رفع رموز فك التشويش الخاصة بالمطور
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: Ishtirakati-iOS-symbols
           path: build/ios-symbols

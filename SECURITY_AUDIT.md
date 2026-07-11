@@ -42,7 +42,7 @@
 | AUD-06 | Firebase/App Check | متوسطة مشروطة (CVSS 6.5 عند عدم الفرض) | `lib/services/auth_service.dart`; `lib/screens/settings_screen.dart` | كان فشل App Check يُبتلع. | سجل آمن وتحذير للمستخدم؛ الفرض يبقى من Firebase Console. | الكود عولج؛ اللوحة معلقة |
 | AUD-07 | سلسلة التوريد البعيدة | متوسطة (CVSS تقريبي 5.4) | `lib/services/remote_catalog.dart` | كان الكتالوج من `main` المتحرك. | تثبيت commit SHA، كاش جديد، وحد 512 KiB. | عولج في +24 |
 | AUD-08 | الروابط/الشبكة | متوسطة (CVSS تقريبي 4.7) | `lib/services/safe_url.dart`; `lib/screens/subscriptions_screen.dart` | كانت سجلات `http://` القديمة تُفتح. | سياسة مركزية لا تقبل إلا HTTPS دون userinfo أو محارف تحكم. | عولج في +24 |
-| AUD-09 | CI/CD والاعتماديات | متوسطة (CVSS تقريبي 5.3) | `pubspec.yaml:7-31`; `.github/workflows/build-ipa.yml:20-28,100-107` | لا يوجد `pubspec.lock`، Flutter يتبع `stable` المتحرك، وActions مثبتة بوسوم لا SHA؛ البناء غير قابل للتكرار بالكامل. | التزم بـlockfile، ثبّت Flutter، ثبّت Actions بـfull commit SHA، وشغّل تدقيق OSV/Dependabot. | مؤكّد |
+| AUD-09 | CI/CD والاعتماديات | متوسطة (CVSS تقريبي 5.3) | `pubspec.lock`; `.github/workflows/build-ipa.yml` | عولج نقص قابلية التكرار: أُلزم lockfile، وثُبّت Flutter 3.44.6، وثُبّتت جميع Actions على full commit SHA رسمي. يبقى فحص OSV/Dependabot تصلّبًا دوريًا. | أبقِ Dependabot والتنبيهات الأمنية مفعّلة وراجع تحديثات SHA المقصودة دوريًا. | مُعالج في v11.0.0+24 |
 | AUD-10 | سلامة الإصدار | متوسطة | `.github/workflows/build-ipa.yml:109-176` | المسار ينتج IPA غير موقع ويعتمد توقيعًا يدويًا؛ مناسب للاختبار وليس سلسلة إصدار App Store ذات provenance. | workflow إصدار منفصل ببيئة محمية، توقيع Apple، checksums، artifact attestation وSBOM. | مؤكّد |
 | AUD-11 | المدخلات/التوافر | متوسطة (CVSS تقريبي 4.3) | `lib/screens/import_screen.dart:48-50,146-151`; `lib/services/import_parser.dart:233-281` | نص اللصق يمر للمحلل المحلي بلا حد bytes/lines قبل split والمسح المتكرر. | حد 2 MiB و5000 سطر قبل تعيين controller أو التحليل، وحدود لاستجابات الشبكة. | مؤكّد |
 | AUD-12 | الخصوصية/الإشعارات | منخفضة (CVSS تقريبي 3.3) | `lib/services/notification_service.dart:109-139,156-169` | اسم الخدمة والمبلغ قد يظهران على شاشة القفل وفق إعدادات iOS. | خيار "إشعارات خاصة" بنص عام، وتوثيق أن iOS يتحكم بالمعاينات. | مؤكّد |
@@ -202,14 +202,14 @@
 3. نشر سياسة الخصوصية وإضافة موافقة AI للمستشار وتحديث الإفصاحات.
 4. معالجة AUD-05 حتى لا تكتب الحالة الفارغة فوق سجل تعذر فكّه.
 5. إثبات App Check/API restrictions/Firestore Rules من اللوحات.
-6. إنشاء `pubspec.lock` ومسار App Store موقع ومحمي وقابل للتتبع.
+6. ✅ التزم `pubspec.lock` وثبّت Flutter وGitHub Actions؛ يبقى مسار App Store الموقع فحص إطلاق تشغيليًا.
 
 ### ينبغي في أول تحديث أمني
 
 1. توقيع الكتالوج البعيد وفصل allowlist النطاقات عنه.
 2. فرض HTTPS مركزيًا لكل `manageUrl` وقت الاستيراد والفتح.
 3. حدود bytes/records لكل مدخل واستجابة شبكة.
-4. تثبيت Flutter وActions بـSHA، وإضافة SBOM وartifact attestation.
+4. ✅ ثُبّت Flutter وActions بـSHA؛ أضف SBOM وartifact attestation كتصلّب لاحق.
 5. اختبارات Firestore emulator واختبارات codec/Keychain/fail-closed.
 
 ### تحسين دفاعي مستقبلي

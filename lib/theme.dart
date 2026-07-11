@@ -573,9 +573,9 @@ class ServiceAvatar extends StatelessWidget {
       height: size,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: tint.withOpacity(0.15),
+        color: tint.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(size * 0.3),
-        border: Border.all(color: tint.withOpacity(0.35)),
+        border: Border.all(color: tint.withValues(alpha: 0.35)),
       ),
       child: url == null
           ? fallback
