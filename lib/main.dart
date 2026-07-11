@@ -261,21 +261,13 @@ class RootShell extends StatefulWidget {
 
 class _RootShellState extends State<RootShell> {
   int _index = 0;
-
-  Widget _body() {
-    switch (_index) {
-      case 0:
-        return const CommandCenterScreen(key: ValueKey('command-center'));
-      case 1:
-        return const SubscriptionsScreen(key: ValueKey('subs'));
-      case 2:
-        return const InsightsScreen(key: ValueKey('insights'));
-      case 3:
-        return const CalendarScreen(key: ValueKey('calendar'));
-      default:
-        return const SettingsScreen(key: ValueKey('settings'));
-    }
-  }
+  late final List<Widget> _pages = const [
+    CommandCenterScreen(key: PageStorageKey('command-center')),
+    SubscriptionsScreen(key: PageStorageKey('subscriptions')),
+    InsightsScreen(key: PageStorageKey('insights')),
+    CalendarScreen(key: PageStorageKey('calendar')),
+    SettingsScreen(key: PageStorageKey('settings')),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -285,15 +277,9 @@ class _RootShellState extends State<RootShell> {
       extendBody: false,
       body: SafeArea(
         bottom: false,
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 260),
-          switchInCurve: Curves.easeOutCubic,
-          switchOutCurve: Curves.easeInCubic,
-          transitionBuilder: (child, animation) => FadeTransition(
-            opacity: animation,
-            child: child,
-          ),
-          child: _body(),
+        child: IndexedStack(
+          index: _index,
+          children: _pages,
         ),
       ),
       bottomNavigationBar: _ModernBottomBar(

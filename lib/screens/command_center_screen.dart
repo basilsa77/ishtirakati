@@ -1,12 +1,14 @@
-/// لوحة البداية للإصدار 8: متابعة واضحة من دون تكديس بطاقات متشابهة.
+/// لوحة v11: التزام واضح، تدفق قريب، وقرارات قابلة للتنفيذ.
 library;
 
 import 'package:flutter/material.dart';
 
 import '../models/subscription.dart';
+import '../services/renewal_intelligence.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
 import 'calendar_screen.dart';
+import 'decision_center_screen.dart';
 import 'edit_subscription_screen.dart';
 import 'import_screen.dart';
 import 'subscriptions_screen.dart' show showSubscriptionDetails;
@@ -29,6 +31,11 @@ class CommandCenterScreen extends StatelessWidget {
         final upcoming = store.upcoming(withinDays: 21);
         final byCategory = store.monthlyByCategory(currency).entries.toList()
           ..sort((a, b) => b.value.compareTo(a.value));
+        final decisions = RenewalIntelligence.decisions(store.items);
+        final snapshot = RenewalIntelligence.snapshot(
+          store.items,
+          currency: currency,
+        );
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
@@ -41,6 +48,8 @@ class CommandCenterScreen extends StatelessWidget {
               budget: budget,
               currency: currency,
             ),
+            const SizedBox(height: 10),
+            _CashFlowRibbon(snapshot: snapshot),
             const SizedBox(height: 14),
             _QuickLane(
               onAdd: () => Navigator.of(context).push(
@@ -53,6 +62,13 @@ class CommandCenterScreen extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const CalendarPage()),
               ),
             ),
+            if (decisions.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              _DecisionPreview(
+                decisions: decisions.take(3).toList(),
+                total: decisions.length,
+              ),
+            ],
             const SizedBox(height: 28),
             _V8SectionHeader(
               title: 'القادم على حسابك',
@@ -98,6 +114,219 @@ class CommandCenterScreen extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _CashFlowRibbon extends StatelessWidget {
+  final RenewalSnapshot snapshot;
+
+  const _CashFlowRibbon({required this.snapshot});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 360;
+        final tiles = [
+          _CashFlowTile(
+            icon: Icons.bolt_rounded,
+            label: 'خلال 7 أيام',
+            value: snapshot.dueIn7Days == 0
+                ? 'لا خصومات'
+                : fmtMoney(snapshot.amountIn7Days, snapshot.currency),
+          ),
+          _CashFlowTile(
+            icon: Icons.calendar_view_month_rounded,
+            label: 'خلال 30 يومًا',
+            value: '${snapshot.dueIn30Days} دفعات',
+          ),
+          if (snapshot.trialsEndingSoon > 0)
+            _CashFlowTile(
+              icon: Icons.hourglass_bottom_rounded,
+              label: 'تجارب تنتهي',
+              value: '${snapshot.trialsEndingSoon}',
+              warning: true,
+            ),
+        ];
+        if (compact) {
+          return Column(
+            children: [
+              for (var index = 0; index < tiles.length; index++) ...[
+                tiles[index],
+                if (index != tiles.length - 1) const SizedBox(height: 8),
+              ],
+            ],
+          );
+        }
+        return Row(
+          children: [
+            for (var index = 0; index < tiles.length; index++) ...[
+              Expanded(child: tiles[index]),
+              if (index != tiles.length - 1) const SizedBox(width: 8),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _CashFlowTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool warning;
+
+  const _CashFlowTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.warning = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final color = warning ? p.warning : p.accent;
+    return Container(
+      constraints: const BoxConstraints(minHeight: 64),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: p.stroke),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 19),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: p.text,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: p.textMuted, fontSize: 10),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DecisionPreview extends StatelessWidget {
+  final List<DecisionInsight> decisions;
+  final int total;
+
+  const _DecisionPreview({required this.decisions, required this.total});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: p.surfaceAlt,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: p.stroke),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: p.accentSoft,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.rule_rounded, color: p.accent, size: 21),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'مركز القرار',
+                      style: TextStyle(
+                        color: p.text,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      '$total مراجعات مرتبة حسب الأولوية',
+                      style: TextStyle(color: p.textMuted, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'عرض مركز القرار',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const DecisionCenterScreen(),
+                  ),
+                ),
+                icon: const Icon(Icons.arrow_back_rounded),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          for (var index = 0; index < decisions.length; index++) ...[
+            Row(
+              children: [
+                Icon(
+                  decisions[index].priority == DecisionPriority.urgent
+                      ? Icons.priority_high_rounded
+                      : Icons.check_circle_outline_rounded,
+                  color: decisions[index].priority == DecisionPriority.urgent
+                      ? p.danger
+                      : p.accent,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    decisions[index].title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: p.text,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (index != decisions.length - 1)
+              Divider(color: p.stroke, height: 18),
+          ],
+        ],
+      ),
     );
   }
 }

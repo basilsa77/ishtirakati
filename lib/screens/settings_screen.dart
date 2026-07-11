@@ -282,42 +282,97 @@ class _AccountCard extends StatelessWidget {
               label: const Text('تسجيل الدخول'),
             )
           else
-            Row(
+            Column(
               children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46)),
-                    onPressed: () async {
-                      final ok = await CloudSync.push();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(ok ? 'اكتملت المزامنة.' : 'تعذرت المزامنة، تحقق من الإنترنت.')),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.sync_rounded, size: 19),
-                    label: const Text('مزامنة'),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46)),
+                        onPressed: () async {
+                          final ok = await CloudSync.push();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(ok ? 'اكتملت المزامنة.' : 'تعذرت المزامنة، تحقق من الإنترنت.')),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.sync_rounded, size: 19),
+                        label: const Text('مزامنة الآن'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    IconButton(
+                      tooltip: 'تسجيل الخروج',
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(46, 46),
+                        foregroundColor: p.danger,
+                        side: BorderSide(color: p.danger.withValues(alpha: .45)),
+                      ),
+                      onPressed: () async {
+                        await AuthService.signOut();
+                        onChanged();
+                      },
+                      icon: const Icon(Icons.logout_rounded),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                IconButton(
-                  tooltip: 'تسجيل الخروج',
-                  style: IconButton.styleFrom(
-                    minimumSize: const Size(46, 46),
-                    foregroundColor: p.danger,
-                    side: BorderSide(color: p.danger.withOpacity(.45)),
-                  ),
-                  onPressed: () async {
-                    await AuthService.signOut();
-                    onChanged();
+                const SizedBox(height: 10),
+                ValueListenableBuilder<CloudSyncStatus>(
+                  valueListenable: CloudSync.status,
+                  builder: (context, status, _) {
+                    final (icon, text, color) = switch (status.phase) {
+                      CloudSyncPhase.syncing => (
+                          Icons.sync_rounded,
+                          'جارٍ تأمين أحدث نسخة...',
+                          p.accent,
+                        ),
+                      CloudSyncPhase.success => (
+                          Icons.cloud_done_rounded,
+                          _syncSuccessText(status.updatedAt),
+                          p.accent,
+                        ),
+                      CloudSyncPhase.failure => (
+                          Icons.cloud_off_rounded,
+                          'تعذرت آخر محاولة مزامنة',
+                          p.danger,
+                        ),
+                      CloudSyncPhase.idle => (
+                          Icons.cloud_queue_rounded,
+                          'جاهز للمزامنة الآمنة',
+                          p.textMuted,
+                        ),
+                    };
+                    return Row(
+                      children: [
+                        Icon(icon, color: color, size: 17),
+                        const SizedBox(width: 7),
+                        Expanded(
+                          child: Text(
+                            text,
+                            style: TextStyle(
+                              color: color,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
                   },
-                  icon: const Icon(Icons.logout_rounded),
                 ),
               ],
             ),
         ],
       ),
     );
+  }
+
+  static String _syncSuccessText(DateTime? at) {
+    if (at == null) return 'اكتملت المزامنة';
+    final hour = at.hour.toString().padLeft(2, '0');
+    final minute = at.minute.toString().padLeft(2, '0');
+    return 'آخر مزامنة ناجحة $hour:$minute';
   }
 }
 

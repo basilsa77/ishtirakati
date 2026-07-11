@@ -1,4 +1,4 @@
-/// تقويم الدفعات للإصدار 8.
+/// تقويم الدفعات في v11.
 library;
 
 import 'package:flutter/material.dart';

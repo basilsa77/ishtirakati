@@ -43,7 +43,7 @@ class SubscriptionStore extends ChangeNotifier {
   bool _appLockEnabled = false;
   String _aiApiKey = '';
   String _aiProvider = 'gemini';
-  String _themeMode = 'dark'; // dark | light | system
+  String _themeMode = 'system'; // dark | light | system
   bool _hasOnboarded = false;
   bool _loaded = false;
 
@@ -71,7 +71,7 @@ class SubscriptionStore extends ChangeNotifier {
     _appLockEnabled = prefs.getBool(_lockKey) ?? false;
     _hasOnboarded = prefs.getBool(_onboardKey) ?? false;
     _aiProvider = prefs.getString(_aiProviderKey) ?? 'gemini';
-    _themeMode = prefs.getString(_themeModeKey) ?? 'dark';
+    _themeMode = prefs.getString(_themeModeKey) ?? 'system';
     // مفتاح الذكاء الاصطناعي: يُقرأ من أي موضع متاح ولا يُمسح أبدًا
     // بسبب خطأ مؤقت (Keychain الافتراضي، خيار قديم، مرآة محلية، نص قديم).
     _aiApiKey = '';

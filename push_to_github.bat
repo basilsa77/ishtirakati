@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=10.0.0"
-set "COMMIT_MESSAGE=v10.0.0: scope analysis to application sources"
+set "RELEASE_VERSION=11.0.0"
+set "COMMIT_MESSAGE=v11.0.0: decision center and production UX"
 
 git init
 git config user.name "basilsa77"

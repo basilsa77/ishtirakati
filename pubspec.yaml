@@ -1,7 +1,7 @@
 name: ishtirakati
 description: "اشتراكاتي - تتبّع اشتراكاتك الرقمية وتحكّم بمصروفك | تطبيق عربي أولًا للسوق السعودي والخليجي"
 publish_to: 'none'
-version: 10.0.0+22
+version: 11.0.0+23
 
 environment:
   sdk: '>=3.7.0 <4.0.0'
