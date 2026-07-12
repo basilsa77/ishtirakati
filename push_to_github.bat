@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=11.0.0"
-set "COMMIT_MESSAGE=v11.0.0+24: security hardening and account deletion"
+set "RELEASE_VERSION=12.0.0"
+set "COMMIT_MESSAGE=v12.0.0+25: renewal orbit, command shell, and verified security"
 
 git init
 git config user.name "basilsa77"
