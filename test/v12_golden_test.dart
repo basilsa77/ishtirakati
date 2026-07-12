@@ -1,10 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishtirakati/models/subscription.dart';
 import 'package:ishtirakati/theme.dart';
 import 'package:ishtirakati/widgets/renewal_orbit.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() async {
+    final display = FontLoader('Tajawal')
+      ..addFont(rootBundle.load('assets/fonts/tajawal/Tajawal-Regular.ttf'))
+      ..addFont(rootBundle.load('assets/fonts/tajawal/Tajawal-Bold.ttf'));
+    final body = FontLoader('IBM Plex Sans Arabic')
+      ..addFont(rootBundle.load(
+        'assets/fonts/ibm_plex_sans_arabic/IBMPlexSansArabic-Regular.ttf',
+      ))
+      ..addFont(rootBundle.load(
+        'assets/fonts/ibm_plex_sans_arabic/IBMPlexSansArabic-SemiBold.ttf',
+      ));
+    await Future.wait([display.load(), body.load()]);
+  });
+
   final items = [
     Subscription(
       id: 'netflix',
