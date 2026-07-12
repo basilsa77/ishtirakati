@@ -70,7 +70,7 @@ class CommandCenterScreen extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 28),
-            const _V8SectionHeader(
+            _V8SectionHeader(
               title: 'القادم على حسابك',
               detail: upcoming.isEmpty
                   ? 'الأيام الثلاثة القادمة هادئة'
@@ -105,7 +105,7 @@ class CommandCenterScreen extends StatelessWidget {
               currency: currency,
             ),
             const SizedBox(height: 28),
-            _V8SectionHeader(
+            const _V8SectionHeader(
               title: 'متابعة الاستخدام',
               detail: 'سجّل استخدام الخدمة لتتضح قيمتها',
             ),
