@@ -22,14 +22,16 @@
 
 ## Verification
 
-- [ ] `flutter analyze lib test`
-- [ ] `flutter test`
-- [ ] v11 migration tests
-- [ ] RTL/LTR light/dark golden tests
-- [ ] Firestore Emulator rules tests
-- [ ] `flutter build apk --release`
-- [ ] unsigned iOS archive and IPA workflow
-- [ ] secret-pattern scan
+- [x] `flutter analyze lib test`
+- [x] `flutter test` (71 test cases)
+- [x] v11 migration tests
+- [x] RTL/LTR light/dark golden tests
+- [x] Firestore Emulator rules tests
+- [x] `flutter build apk --release`
+- [x] unsigned iOS archive and IPA workflow
+- [x] secret-pattern scan
+
+Evidence: [GitHub Actions run #52](https://github.com/basilsa77/ishtirakati/actions/runs/29194989604) completed successfully in 17m 25s for commit `0daf2c0`.
 
 ## Manual QA
 
@@ -37,4 +39,3 @@
 - [ ] Verify Google and Apple sign-in on a physical iPhone.
 - [ ] Verify account deletion removes Auth, Firestore, and local data.
 - [ ] Verify App Check metrics in TestFlight before enabling enforcement.
-
