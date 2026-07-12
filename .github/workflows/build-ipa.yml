@@ -128,16 +128,6 @@ jobs:
       - name: فحص كود التطبيق كاملًا
         run: flutter analyze lib test
 
-      - name: توليد مراجع الواجهات البصرية v12
-        run: flutter test --update-goldens test/v12_golden_test.dart
-
-      - name: رفع مراجع الواجهات البصرية المؤقتة
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
-        with:
-          name: v12-goldens
-          path: test/goldens
-          retention-days: 1
-
       - name: تشغيل الاختبارات
         run: flutter test
 
