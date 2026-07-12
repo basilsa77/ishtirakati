@@ -8,9 +8,10 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:local_auth/local_auth.dart';
 
 import 'screens/calendar_screen.dart';
-import 'screens/command_center_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/insights_screen.dart';
+import 'screens/command_palette.dart';
+import 'screens/pulse_home_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/subscriptions_screen.dart';
 import 'services/auth_service.dart';
@@ -19,6 +20,7 @@ import 'services/remote_catalog.dart';
 import 'services/subscription_store.dart';
 import 'services/update_checker.dart';
 import 'theme.dart';
+import 'widgets/adaptive_cycle_shell.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -260,14 +262,28 @@ class RootShell extends StatefulWidget {
 }
 
 class _RootShellState extends State<RootShell> {
-  int _index = 0;
-  late final List<Widget> _pages = const [
-    CommandCenterScreen(key: PageStorageKey('command-center')),
-    SubscriptionsScreen(key: PageStorageKey('subscriptions')),
-    InsightsScreen(key: PageStorageKey('insights')),
-    CalendarScreen(key: PageStorageKey('calendar')),
-    SettingsScreen(key: PageStorageKey('settings')),
+  V12Destination _destination = V12Destination.home;
+  late final List<Widget> _pages = [
+    PulseHomeScreen(
+      key: const PageStorageKey('pulse-home'),
+      onOpenCommands: _openCommands,
+      onOpenLibrary: () => _select(V12Destination.subscriptions),
+    ),
+    const SubscriptionsScreen(key: PageStorageKey('subscriptions')),
+    const InsightsScreen(key: PageStorageKey('insights')),
+    const CalendarScreen(key: PageStorageKey('calendar')),
+    const SettingsScreen(key: PageStorageKey('settings')),
   ];
+
+  void _select(V12Destination destination) {
+    if (_destination == destination) return;
+    setState(() => _destination = destination);
+  }
+
+  Future<void> _openCommands() => showV12CommandPalette(
+        context,
+        onDestination: _select,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -279,19 +295,13 @@ class _RootShellState extends State<RootShell> {
       );
     }
     return Scaffold(
-      // Keep the dock in the Scaffold flow. Each page can now scroll to its
-      // final item without being hidden under a floating navigation surface.
-      extendBody: false,
       body: SafeArea(
         bottom: false,
-        child: IndexedStack(
-          index: _index,
-          children: _pages,
+        child: AdaptiveCycleShell(
+          destination: _destination,
+          onDestination: _select,
+          pages: _pages,
         ),
-      ),
-      bottomNavigationBar: _ModernBottomBar(
-        selectedIndex: _index,
-        onSelected: (i) => setState(() => _index = i),
       ),
     );
   }
@@ -366,116 +376,6 @@ class _StorageRecoveryGateState extends State<_StorageRecoveryGate> {
                     : const Icon(Icons.refresh_rounded),
                 label: const Text('إعادة محاولة الاستعادة'),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ModernBottomBar extends StatelessWidget {
-  final int selectedIndex;
-  final ValueChanged<int> onSelected;
-
-  const _ModernBottomBar({
-    required this.selectedIndex,
-    required this.onSelected,
-  });
-
-  static const _items = [
-    (Icons.home_outlined, Icons.home_rounded, 'الرئيسية'),
-    (Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'اشتراكاتي'),
-    (Icons.insights_outlined, Icons.insights_rounded, 'تحليلات'),
-    (Icons.calendar_month_outlined, Icons.calendar_month_rounded, 'التقويم'),
-    (Icons.settings_outlined, Icons.settings_rounded, 'الإعدادات'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      minimum: EdgeInsets.zero,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(8, 7, 8, 6),
-        decoration: BoxDecoration(
-          color: context.palette.surface,
-          border: Border(top: BorderSide(color: context.palette.stroke)),
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final showLabels = constraints.maxWidth >= 390;
-            return Row(
-              children: [
-                for (var i = 0; i < _items.length; i++)
-                  Expanded(
-                    child: _BottomBarItem(
-                      item: _items[i],
-                      selected: selectedIndex == i,
-                      showLabel: showLabels,
-                      onTap: () => onSelected(i),
-                    ),
-                  ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _BottomBarItem extends StatelessWidget {
-  final (IconData, IconData, String) item;
-  final bool selected;
-  final bool showLabel;
-  final VoidCallback onTap;
-
-  const _BottomBarItem({
-    required this.item,
-    required this.selected,
-    required this.showLabel,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: item.$3,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-          padding: EdgeInsets.symmetric(vertical: showLabel ? 7 : 11),
-          decoration: BoxDecoration(
-            color: selected ? context.palette.accentSoft : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                selected ? item.$2 : item.$1,
-                size: 21,
-                color: selected ? context.palette.accent : context.palette.textMuted,
-              ),
-              if (showLabel) ...[
-                const SizedBox(height: 3),
-                Text(
-                  item.$3,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: selected ? context.palette.accent : context.palette.textMuted,
-                    fontSize: 10.5,
-                    fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
-                  ),
-                ),
-              ],
             ],
           ),
         ),
