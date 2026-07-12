@@ -208,7 +208,7 @@ class _LockGateState extends State<LockGate>
               width: 92,
               height: 92,
               alignment: Alignment.center,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: AppColors.heroGradient,
                 shape: BoxShape.circle,
               ),

@@ -70,7 +70,7 @@ class CommandCenterScreen extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 28),
-            _V8SectionHeader(
+            const _V8SectionHeader(
               title: 'القادم على حسابك',
               detail: upcoming.isEmpty
                   ? 'الأيام الثلاثة القادمة هادئة'
@@ -82,7 +82,7 @@ class CommandCenterScreen extends StatelessWidget {
             else
               _RenewalStrip(subscriptions: upcoming.take(5).toList()),
             const SizedBox(height: 28),
-            _V8SectionHeader(
+            const _V8SectionHeader(
               title: 'نبض مصروفك',
               detail: 'لقطة سريعة تساعدك على المتابعة',
             ),
@@ -94,7 +94,7 @@ class CommandCenterScreen extends StatelessWidget {
               currency: currency,
             ),
             const SizedBox(height: 28),
-            _V8SectionHeader(
+            const _V8SectionHeader(
               title: 'وجهة الإنفاق',
               detail: 'أكبر التصنيفات هذا الشهر',
             ),

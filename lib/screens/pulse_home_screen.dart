@@ -423,8 +423,10 @@ class _RenewalLine extends StatelessWidget {
             children: [
               ServiceAvatar(
                 name: subscription.name,
+                emoji: subscription.emoji,
                 iconUrl: subscription.iconUrl,
                 manageUrl: subscription.manageUrl,
+                tint: categoryColor(subscription.category),
                 size: 44,
               ),
               const SizedBox(width: V12Space.sm),
@@ -525,4 +527,3 @@ class _EmptyPulse extends StatelessWidget {
         ),
       );
 }
-

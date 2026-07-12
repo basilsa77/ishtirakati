@@ -27,19 +27,10 @@ jobs:
           node-version: '24'
 
       - name: تثبيت أدوات Firebase المقفلة
-        run: |
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-          npm ci --ignore-scripts --no-audit --no-fund
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: اختبار عزل مستخدمي Firestore على المحاكي
         run: npm run test:rules
-
-      - name: حفظ ملف قفل اختبارات Firebase
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
-        with:
-          name: package-lock-v12
-          path: package-lock.json
-          retention-days: 1
 
       - name: تجهيز Flutter 3.44.6
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2

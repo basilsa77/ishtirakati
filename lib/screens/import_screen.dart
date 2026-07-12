@@ -203,7 +203,7 @@ class _ImportScreenState extends State<ImportScreen> {
                       color: p.text,
                     ),
                   ),
-                  SizedBox(height: 6),
+                  const SizedBox(height: 6),
                   Text(
                     'الصق أي نص فيه اشتراكاتك وسنتعرف عليها تلقائيًا مع '
                     'أسعارها وتواريخ خصمها:\n'
@@ -252,7 +252,7 @@ class _ImportScreenState extends State<ImportScreen> {
                   ),
                   children: [
                     Padding(
-                      padding: EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.only(bottom: 12),
                       child: Text(
                         '١. افتح الإعدادات ← اسمك ← الاشتراكات، وشاهد القائمة '
                         'ثم اكتب أسماءها هنا (أو صوّرها وانسخ النص من الصور).\n'
@@ -332,7 +332,7 @@ class _ImportScreenState extends State<ImportScreen> {
                 child: Row(
                   children: [
                     Icon(Icons.search_off_rounded, color: p.textMuted, size: 26),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         'لم نتعرف على اشتراكات في هذا النص. '

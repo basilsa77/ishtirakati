@@ -164,7 +164,7 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
                       color: p.text,
                     ),
                   ),
-                  SizedBox(height: 6),
+                  const SizedBox(height: 6),
                   Text(
                     'نتصل ببريدك مباشرة من جهازك، نفحص أحدث الرسائل بحثًا عن '
                     'إيصالات الاشتراكات (Apple، نتفلكس وغيرها)، ثم نستخرج '

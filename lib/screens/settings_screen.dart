@@ -716,9 +716,9 @@ class _AboutCard extends StatelessWidget {
       padding: EdgeInsets.zero,
       child: Column(
         children: [
-          _AboutLine(label: 'التطبيق', value: 'اشتراكاتي'),
+          const _AboutLine(label: 'التطبيق', value: 'اشتراكاتي'),
           Divider(height: 1, color: p.stroke),
-          _AboutLine(label: 'الإصدار', value: kAppVersion),
+          const _AboutLine(label: 'الإصدار', value: kAppVersion),
           Divider(height: 1, color: p.stroke),
           ListTile(
             onTap: () => launchUrl(

@@ -55,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       setState(() => _busy = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text(
             imported > 0
                 ? 'تم تسجيل الدخول واستعادة $imported عنصرًا من حسابك'
@@ -214,7 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const Spacer(),
               Padding(
-                padding: EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.only(bottom: 16),
                 child: Text(
                   'بياناتك تُحفظ في مساحة خاصة بحسابك فقط، '
                   'ولا نستخدمها لأي غرض آخر.',
