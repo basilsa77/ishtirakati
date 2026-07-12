@@ -423,7 +423,7 @@ class _CandidateTile extends StatelessWidget {
               height: 42,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: catColor.withOpacity(0.15),
+                color: catColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(13),
               ),
               child: Text(c.emoji, style: const TextStyle(fontSize: 22)),

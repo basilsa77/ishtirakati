@@ -4,7 +4,6 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../main.dart';
 import '../services/subscription_store.dart';
 import 'login_screen.dart';
 import '../theme.dart';

@@ -181,7 +181,7 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
             ),
             const SizedBox(height: 14),
             DropdownButtonFormField<EmailProvider>(
-              value: _provider,
+              initialValue: _provider,
                 dropdownColor: p.surfaceAlt,
               decoration: const InputDecoration(labelText: 'مزوّد البريد'),
               items: [
@@ -233,7 +233,7 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
                   fontSize: 14,
                 ),
               ),
-              activeColor: p.accent,
+              activeThumbColor: p.accent,
               contentPadding: EdgeInsets.zero,
             ),
             if (_error != null) ...[

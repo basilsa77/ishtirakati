@@ -246,29 +246,6 @@ class _SearchLine extends StatelessWidget {
   }
 }
 
-class _RoundTool extends StatelessWidget {
-  final IconData icon;
-  final bool active;
-
-  const _RoundTool({required this.icon, this.active = false});
-
-  @override
-  Widget build(BuildContext context) {
-    final p = context.palette;
-    return Container(
-      width: 52,
-      height: 52,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: active ? p.accentSoft : p.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: active ? p.accent.withOpacity(.35) : p.stroke),
-      ),
-      child: Icon(icon, color: p.accent, size: 21),
-    );
-  }
-}
-
 class _FilterRail extends StatelessWidget {
   final PaymentKind? selectedKind;
   final String? selectedCategory;

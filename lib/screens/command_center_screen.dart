@@ -419,7 +419,7 @@ class _CommitmentHero extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: p.accentStrong.withOpacity(.30),
+            color: p.accentStrong.withValues(alpha: .30),
             blurRadius: 28,
             offset: const Offset(0, 12),
           ),

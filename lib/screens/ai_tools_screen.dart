@@ -125,7 +125,7 @@ class _AiToolsScreenState extends State<AiToolsScreen> {
                   Text('المفتاح يُحفظ على جهازك ويُستخدم فقط بعد موافقتك.', style: TextStyle(color: p.textMuted, fontSize: 12)),
                   const SizedBox(height: 14),
                   DropdownButtonFormField<String>(
-                    value: store.aiProvider,
+                    initialValue: store.aiProvider,
                     dropdownColor: p.surface,
                     decoration: const InputDecoration(labelText: 'المزود'),
                     items: [

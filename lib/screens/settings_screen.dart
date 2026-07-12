@@ -369,7 +369,7 @@ class _AccountCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: p.accentSoft,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: p.accent.withOpacity(.24)),
+        border: Border.all(color: p.accent.withValues(alpha: .24)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -605,7 +605,11 @@ class _SettingsSwitch extends StatelessWidget {
               ],
             ),
           ),
-          Switch.adaptive(value: value, activeColor: p.accent, onChanged: onChanged),
+          Switch.adaptive(
+            value: value,
+            activeThumbColor: p.accent,
+            onChanged: onChanged,
+          ),
         ],
       ),
     );
@@ -789,7 +793,9 @@ class _ThemeModeCard extends StatelessWidget {
               onSelectionChanged: (selection) => store.setThemeMode(selection.first),
               style: const ButtonStyle(
                 visualDensity: VisualDensity.compact,
-                padding: MaterialStatePropertyAll(EdgeInsets.symmetric(horizontal: 5)),
+                padding: WidgetStatePropertyAll(
+                  EdgeInsets.symmetric(horizontal: 5),
+                ),
               ),
             ),
           ),
@@ -814,7 +820,13 @@ class _DataCard extends StatelessWidget {
         onTap: onDelete,
         leading: Icon(Icons.delete_outline_rounded, color: p.danger),
         title: Text('حذف جميع الاشتراكات', style: TextStyle(color: p.danger, fontWeight: FontWeight.w900, fontSize: 13.5)),
-        subtitle: Text('يمسح السجل من هذا الجهاز نهائيًا', style: TextStyle(color: p.danger.withOpacity(.7), fontSize: 11.5)),
+        subtitle: Text(
+          'يمسح السجل من هذا الجهاز نهائيًا',
+          style: TextStyle(
+            color: p.danger.withValues(alpha: .7),
+            fontSize: 11.5,
+          ),
+        ),
         trailing: Icon(Icons.chevron_left_rounded, color: p.danger),
       ),
     );

@@ -755,7 +755,7 @@ class _GroupedTimeline extends StatelessWidget {
               color: color,
               shape: BoxShape.circle,
               boxShadow: [
-                BoxShadow(color: color.withOpacity(0.5), blurRadius: 7),
+                BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 7),
               ],
             ),
           ),

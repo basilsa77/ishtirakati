@@ -547,7 +547,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   Expanded(
                     flex: 2,
                     child: DropdownButtonFormField<String>(
-                      value: _currency,
+                      initialValue: _currency,
                       dropdownColor: p.surfaceAlt,
                       decoration:
                           const InputDecoration(labelText: 'العملة'),
@@ -632,7 +632,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               ),
               const SizedBox(height: 14),
               DropdownButtonFormField<String>(
-                value: _category,
+                initialValue: _category,
                 dropdownColor: p.surfaceAlt,
                 decoration: const InputDecoration(labelText: 'التصنيف'),
                 items: [
@@ -646,7 +646,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               ),
               const SizedBox(height: 14),
               DropdownButtonFormField<String>(
-                value: _payMethod,
+                initialValue: _payMethod,
                 dropdownColor: p.surfaceAlt,
                 decoration:
                     const InputDecoration(labelText: 'طريقة الدفع'),
@@ -659,7 +659,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               ),
               const SizedBox(height: 14),
               DropdownButtonFormField<int>(
-                value: _reminderDays,
+                initialValue: _reminderDays,
                 dropdownColor: p.surfaceAlt,
                 decoration: const InputDecoration(
                   labelText: 'إشعار التذكير قبل التجديد',
@@ -687,7 +687,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   'سنحذرك قبل تحولها لاشتراك مدفوع بيومين',
                   style: TextStyle(color: p.textMuted, fontSize: 12.5),
                 ),
-                activeColor: p.accent,
+                activeThumbColor: p.accent,
                 contentPadding: EdgeInsets.zero,
               ),
               if (_trialOn) ...[
@@ -738,7 +738,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   'يقسم التكلفة على المشاركين ويعرض نصيبك',
                   style: TextStyle(color: p.textMuted, fontSize: 12.5),
                 ),
-                activeColor: p.accent,
+                activeThumbColor: p.accent,
                 contentPadding: EdgeInsets.zero,
               ),
               if (_isFamily)
@@ -816,7 +816,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     'لن يُحتسب في المصروف ولا في التجديدات',
                     style: TextStyle(color: p.textMuted, fontSize: 12.5),
                   ),
-                  activeColor: p.accent,
+                  activeThumbColor: p.accent,
                   contentPadding: EdgeInsets.zero,
                 ),
               ],
