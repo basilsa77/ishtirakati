@@ -56,6 +56,9 @@ jobs:
       - name: توليد مجلدي iOS وAndroid
         run: flutter create . --platforms=ios,android --org com.basil --project-name ishtirakati
 
+      - name: تهيئة Android للإشعارات الحديثة
+        run: node tool/configure_android_build.mjs
+
       - name: ضبط الحد الأدنى لنظام iOS
         run: |
           if [ -f ios/Podfile ]; then
