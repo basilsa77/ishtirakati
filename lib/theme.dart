@@ -4,40 +4,41 @@ library;
 import 'package:flutter/material.dart';
 
 import 'data/service_domains.dart';
+import 'design/design_tokens.dart';
 
 class AppColors {
   AppColors._();
 
   // خلفيات
-  static const Color bg = Color(0xFFF5F8F6);
-  static const Color card = Color(0xFFFFFFFF);
-  static const Color cardAlt = Color(0xFFEEF4F1);
-  static const Color border = Color(0xFFDCE8E2);
+  static const Color bg = V12Colors.lightCanvas;
+  static const Color card = V12Colors.lightSurface;
+  static const Color cardAlt = V12Colors.lightSurfaceMuted;
+  static const Color border = V12Colors.lightStroke;
 
   // نصوص
-  static const Color ink = Color(0xFF15251F);
-  static const Color muted = Color(0xFF6A7C74);
+  static const Color ink = V12Colors.lightInk;
+  static const Color muted = V12Colors.lightMuted;
 
   // الهوية
-  static const Color primary = Color(0xFF0B8F6A);
-  static const Color primaryDeep = Color(0xFF067052);
+  static const Color primary = V12Colors.pulse;
+  static const Color primaryDeep = V12Colors.pulseDeep;
   static const Color primarySoft = Color(0xFFE2F4ED);
 
-  static const Color gold = Color(0xFFE9C46A);
-  static const Color goldDeep = Color(0xFFCFA13F);
+  static const Color gold = V12Colors.amber;
+  static const Color goldDeep = V12Colors.amber;
   static const Color goldSoft = Color(0xFFFFF4D9);
 
-  static const Color danger = Color(0xFFFF6B6B);
+  static const Color danger = V12Colors.coral;
   static const Color dangerSoft = Color(0xFFFFE8EA);
   static const Color warn = Color(0xFFF5B84F);
 
   // ألوان السطح الليلي، مع إبقاء الهوية الخضراء نفسها.
-  static const Color darkBg = Color(0xFF0B1512);
-  static const Color darkCard = Color(0xFF14211B);
-  static const Color darkCardAlt = Color(0xFF1B2B24);
-  static const Color darkBorder = Color(0xFF294036);
-  static const Color darkInk = Color(0xFFEAF5EF);
-  static const Color darkMuted = Color(0xFFA0B7AC);
+  static const Color darkBg = V12Colors.darkCanvas;
+  static const Color darkCard = V12Colors.darkSurface;
+  static const Color darkCardAlt = V12Colors.darkSurfaceMuted;
+  static const Color darkBorder = V12Colors.darkStroke;
+  static const Color darkInk = V12Colors.darkInk;
+  static const Color darkMuted = V12Colors.darkMuted;
 
   /// تدرج البطاقة الرئيسية.
   static const LinearGradient heroGradient = LinearGradient(
@@ -84,35 +85,35 @@ class AppPalette extends ThemeExtension<AppPalette> {
   });
 
   static const light = AppPalette(
-    canvas: Color(0xFFF7F8F5),
-    surface: Color(0xFFFFFFFF),
-    surfaceAlt: Color(0xFFF0F4F1),
-    stroke: Color(0xFFDDE7E1),
-    text: Color(0xFF15251F),
-    textMuted: Color(0xFF6E8177),
-    accent: Color(0xFF007A5A),
-    accentStrong: Color(0xFF00543E),
+    canvas: V12Colors.lightCanvas,
+    surface: V12Colors.lightSurface,
+    surfaceAlt: V12Colors.lightSurfaceMuted,
+    stroke: V12Colors.lightStroke,
+    text: V12Colors.lightInk,
+    textMuted: V12Colors.lightMuted,
+    accent: V12Colors.pulse,
+    accentStrong: V12Colors.pulseDeep,
     accentSoft: Color(0xFFDDF4EA),
-    danger: Color(0xFFD9515D),
+    danger: V12Colors.coral,
     dangerSoft: Color(0xFFFFE9EC),
-    warning: Color(0xFFB7791F),
+    warning: V12Colors.amber,
     warningSoft: Color(0xFFFFF3D7),
     shadow: Color(0x140B2E22),
   );
 
   static const dark = AppPalette(
-    canvas: Color(0xFF0C1210),
-    surface: Color(0xFF141D19),
-    surfaceAlt: Color(0xFF1D2923),
-    stroke: Color(0xFF2A3A32),
-    text: Color(0xFFF0F7F2),
-    textMuted: Color(0xFFA8BBB0),
-    accent: Color(0xFF46D3A2),
-    accentStrong: Color(0xFF28AE80),
+    canvas: V12Colors.darkCanvas,
+    surface: V12Colors.darkSurface,
+    surfaceAlt: V12Colors.darkSurfaceMuted,
+    stroke: V12Colors.darkStroke,
+    text: V12Colors.darkInk,
+    textMuted: V12Colors.darkMuted,
+    accent: V12Colors.pulseNight,
+    accentStrong: V12Colors.pulseNight,
     accentSoft: Color(0xFF173D30),
-    danger: Color(0xFFFF8992),
+    danger: V12Colors.coralNight,
     dangerSoft: Color(0xFF40252A),
-    warning: Color(0xFFF0C36B),
+    warning: V12Colors.amberNight,
     warningSoft: Color(0xFF42361D),
     shadow: Color(0x66000000),
   );
@@ -222,7 +223,6 @@ ThemeData buildAppTheme({bool dark = false}) {
         );
 
   final surface = palette.surface;
-  final surfaceAlt = palette.surfaceAlt;
   final border = palette.stroke;
   final onSurface = palette.text;
   final muted = palette.textMuted;
@@ -230,6 +230,8 @@ ThemeData buildAppTheme({bool dark = false}) {
     useMaterial3: true,
     brightness: dark ? Brightness.dark : Brightness.light,
     colorScheme: scheme,
+    fontFamily: V12Type.bodyFamily,
+    fontFamilyFallback: V12Type.fallbacks,
     extensions: [palette],
   );
 
@@ -256,7 +258,7 @@ ThemeData buildAppTheme({bool dark = false}) {
         minimumSize: const Size.fromHeight(54),
         textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(V12Radius.standard),
         ),
       ),
     ),
@@ -265,7 +267,7 @@ ThemeData buildAppTheme({bool dark = false}) {
         foregroundColor: palette.accent,
         side: BorderSide(color: palette.accent, width: 1.2),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(V12Radius.standard),
         ),
         textStyle: const TextStyle(fontWeight: FontWeight.w700),
       ),
@@ -281,40 +283,16 @@ ThemeData buildAppTheme({bool dark = false}) {
       contentPadding:
           const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(V12Radius.standard),
         borderSide: BorderSide(color: border),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(V12Radius.standard),
         borderSide: BorderSide(color: border),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(V12Radius.standard),
         borderSide: BorderSide(color: palette.accent, width: 1.5),
-      ),
-    ),
-    navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: surface,
-      indicatorColor: palette.accentSoft,
-      surfaceTintColor: Colors.transparent,
-      height: 72,
-      elevation: 0,
-      indicatorShape: StadiumBorder(),
-      labelTextStyle: MaterialStateProperty.resolveWith(
-        (states) => TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w800,
-          color: states.contains(MaterialState.selected)
-              ? palette.accent
-              : muted,
-        ),
-      ),
-      iconTheme: MaterialStateProperty.resolveWith(
-        (states) => IconThemeData(
-          color: states.contains(MaterialState.selected)
-              ? palette.accent
-              : muted,
-        ),
       ),
     ),
     cardTheme: CardThemeData(
@@ -323,14 +301,16 @@ ThemeData buildAppTheme({bool dark = false}) {
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(V12Radius.standard),
       ),
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: dark ? palette.surfaceAlt : palette.text,
       contentTextStyle: const TextStyle(color: Colors.white, fontSize: 15),
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(V12Radius.standard),
+      ),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: palette.accentStrong,
@@ -348,7 +328,9 @@ ThemeData buildAppTheme({bool dark = false}) {
         fontSize: 14.5,
         height: 1.6,
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(V12Radius.signature),
+      ),
     ),
     dividerColor: border,
   );
@@ -376,7 +358,7 @@ class AppCard extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: color ?? context.palette.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(V12Radius.standard),
         border: Border.all(
           color: borderColor ?? context.palette.stroke,
         ),
@@ -499,7 +481,7 @@ class RenewalBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(V12Radius.signature),
       ),
       child: Text(
         text,
@@ -519,10 +501,11 @@ class FadeSlideIn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (reduceMotion(context)) return child;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: 450 + delayMs),
-      curve: Curves.easeOutCubic,
+      duration: V12Motion.entrance + Duration(milliseconds: delayMs),
+      curve: V12Motion.curve,
       builder: (context, t, c) {
         final clamped = t.clamp(0.0, 1.0);
         return Opacity(

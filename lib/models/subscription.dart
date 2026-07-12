@@ -1,6 +1,8 @@
 /// نموذج بيانات الاشتراك وحسابات التجديد والتكاليف.
 library;
 
+import 'subscription_schema.dart';
+
 /// دورة الفوترة.
 enum BillingCycle { weekly, monthly, quarterly, yearly }
 
@@ -388,6 +390,7 @@ class Subscription {
       DateTime(year, month + 1, 0).day;
 
   Map<String, dynamic> toJson() => {
+        'schemaVersion': SubscriptionSchema.currentVersion,
         'id': id,
         'name': name,
         'emoji': emoji,
@@ -413,43 +416,44 @@ class Subscription {
       };
 
   factory Subscription.fromJson(Map<String, dynamic> json) {
-    final cycleIndex = (json['cycle'] as num?)?.toInt() ?? 1;
+    final data = SubscriptionSchema.migrateToV12(json);
+    final cycleIndex = (data['cycle'] as num?)?.toInt() ?? 1;
     return Subscription(
-      id: (json['id'] as String?) ??
+      id: (data['id'] as String?) ??
           DateTime.now().microsecondsSinceEpoch.toString(),
-      name: (json['name'] as String?) ?? 'اشتراك',
-      emoji: (json['emoji'] as String?) ?? '🔖',
-      price: (json['price'] as num?)?.toDouble() ?? 0,
-      currency: (json['currency'] as String?) ?? 'SAR',
+      name: (data['name'] as String?) ?? 'اشتراك',
+      emoji: (data['emoji'] as String?) ?? '🔖',
+      price: (data['price'] as num?)?.toDouble() ?? 0,
+      currency: (data['currency'] as String?) ?? 'SAR',
       cycle: BillingCycle
           .values[cycleIndex.clamp(0, BillingCycle.values.length - 1)],
-      anchorDate: DateTime.tryParse((json['anchor'] as String?) ?? '') ??
+      anchorDate: DateTime.tryParse((data['anchor'] as String?) ?? '') ??
           DateTime.now(),
-      category: (json['category'] as String?) ?? 'أخرى',
-      notes: (json['notes'] as String?) ?? '',
-      isPaused: (json['paused'] as bool?) ?? false,
-      paymentMethod: (json['payMethod'] as String?) ?? 'غير محدد',
-      manageUrl: (json['manageUrl'] as String?) ?? '',
-      reminderDays: (json['reminderDays'] as num?)?.toInt() ?? 3,
+      category: (data['category'] as String?) ?? 'أخرى',
+      notes: (data['notes'] as String?) ?? '',
+      isPaused: (data['paused'] as bool?) ?? false,
+      paymentMethod: (data['payMethod'] as String?) ?? 'غير محدد',
+      manageUrl: (data['manageUrl'] as String?) ?? '',
+      reminderDays: (data['reminderDays'] as num?)?.toInt() ?? 3,
       trialEndDate:
-          DateTime.tryParse((json['trialEnd'] as String?) ?? ''),
+          DateTime.tryParse((data['trialEnd'] as String?) ?? ''),
       priceHistory: [
-        if (json['priceHistory'] is List)
-          for (final e in json['priceHistory'] as List)
+        if (data['priceHistory'] is List)
+          for (final e in data['priceHistory'] as List)
             if (PriceChange.fromJson(e) case final change?) change,
       ],
-      isFamily: (json['isFamily'] as bool?) ?? false,
+      isFamily: (data['isFamily'] as bool?) ?? false,
       familyMembers:
-          (((json['familyMembers'] as num?)?.toInt() ?? 2).clamp(1, 20))
+          (((data['familyMembers'] as num?)?.toInt() ?? 2).clamp(1, 20))
               .toInt(),
       usageCount:
-          (((json['usageCount'] as num?)?.toInt() ?? 0).clamp(0, 100000))
+          (((data['usageCount'] as num?)?.toInt() ?? 0).clamp(0, 100000))
               .toInt(),
-      lastUsedAt: DateTime.tryParse((json['lastUsedAt'] as String?) ?? ''),
-      iconUrl: (json['iconUrl'] as String?) ?? '',
-      kind: PaymentKind.values[((json['kind'] as num?)?.toInt() ?? 0)
+      lastUsedAt: DateTime.tryParse((data['lastUsedAt'] as String?) ?? ''),
+      iconUrl: (data['iconUrl'] as String?) ?? '',
+      kind: PaymentKind.values[((data['kind'] as num?)?.toInt() ?? 0)
           .clamp(0, PaymentKind.values.length - 1)],
-      totalInstallments: (json['totalInstallments'] as num?)?.toInt(),
+      totalInstallments: (data['totalInstallments'] as num?)?.toInt(),
     );
   }
 }
