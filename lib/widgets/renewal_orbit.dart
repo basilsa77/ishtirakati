@@ -10,12 +10,14 @@ class RenewalOrbit extends StatelessWidget {
   final List<Subscription> subscriptions;
   final double annualCost;
   final String currency;
+  final DateTime? now;
 
   const RenewalOrbit({
     super.key,
     required this.subscriptions,
     required this.annualCost,
     required this.currency,
+    this.now,
   });
 
   @override
@@ -38,6 +40,7 @@ class RenewalOrbit extends StatelessWidget {
                 pulse: context.palette.accent,
                 warning: context.palette.warning,
                 danger: context.palette.danger,
+                now: now ?? DateTime.now(),
               ),
             ),
           ),
@@ -116,6 +119,7 @@ class _RenewalOrbitPainter extends CustomPainter {
   final Color pulse;
   final Color warning;
   final Color danger;
+  final DateTime now;
 
   const _RenewalOrbitPainter({
     required this.subscriptions,
@@ -123,6 +127,7 @@ class _RenewalOrbitPainter extends CustomPainter {
     required this.pulse,
     required this.warning,
     required this.danger,
+    required this.now,
   });
 
   @override
@@ -138,7 +143,6 @@ class _RenewalOrbitPainter extends CustomPainter {
     canvas.drawCircle(center, outer * 0.72, ringPaint);
     canvas.drawCircle(center, outer * 0.44, ringPaint);
 
-    final now = DateTime.now();
     final yearStart = DateTime(now.year);
     final yearDays = DateTime(now.year + 1).difference(yearStart).inDays;
     final nowProgress = now.difference(yearStart).inDays / yearDays;
@@ -194,6 +198,6 @@ class _RenewalOrbitPainter extends CustomPainter {
       oldDelegate.stroke != stroke ||
       oldDelegate.pulse != pulse ||
       oldDelegate.warning != warning ||
-      oldDelegate.danger != danger;
+      oldDelegate.danger != danger ||
+      oldDelegate.now != now;
 }
-

@@ -56,6 +56,7 @@ void main() {
                       subscriptions: items,
                       annualCost: 1571.88,
                       currency: 'SAR',
+                      now: DateTime(2026, 7, 12),
                     ),
                   ),
                 ),
@@ -73,4 +74,3 @@ void main() {
     }
   }
 }
-
