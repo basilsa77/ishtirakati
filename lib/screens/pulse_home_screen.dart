@@ -5,18 +5,19 @@ import '../models/subscription.dart';
 import '../services/financial_leakage.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
-import '../widgets/renewal_orbit.dart';
 import 'edit_subscription_screen.dart';
 import 'subscriptions_screen.dart' show showSubscriptionDetails;
 
 class PulseHomeScreen extends StatelessWidget {
   final VoidCallback onOpenCommands;
   final VoidCallback onOpenLibrary;
+  final VoidCallback onOpenRenewals;
 
   const PulseHomeScreen({
     super.key,
     required this.onOpenCommands,
     required this.onOpenLibrary,
+    required this.onOpenRenewals,
   });
 
   @override
@@ -70,9 +71,10 @@ class PulseHomeScreen extends StatelessWidget {
                             children: [
                               Expanded(
                                 flex: 6,
-                                child: _OrbitSection(
+                                child: _RenewalSummary(
                                   leakage: leakage,
                                   upcoming: upcoming,
+                                  onOpen: onOpenRenewals,
                                 ),
                               ),
                               const SizedBox(width: V12Space.xl),
@@ -89,9 +91,10 @@ class PulseHomeScreen extends StatelessWidget {
                         }
                         return Column(
                           children: [
-                            _OrbitSection(
+                            _RenewalSummary(
                               leakage: leakage,
                               upcoming: upcoming,
+                              onOpen: onOpenRenewals,
                             ),
                             const SizedBox(height: V12Space.xl),
                             _DecisionColumn(
@@ -144,7 +147,7 @@ class _PulseHeader extends StatelessWidget {
               ),
               const SizedBox(height: V12Space.xxs),
               Text(
-                'نبض اشتراكاتك',
+                'ملخص الاشتراكات',
                 style: TextStyle(
                   color: context.palette.text,
                   fontFamily: V12Type.displayFamily,
@@ -213,25 +216,114 @@ class _HeaderAction extends StatelessWidget {
       );
 }
 
-class _OrbitSection extends StatelessWidget {
+class _RenewalSummary extends StatelessWidget {
   final FinancialLeakageSnapshot leakage;
   final List<Subscription> upcoming;
+  final VoidCallback onOpen;
 
-  const _OrbitSection({required this.leakage, required this.upcoming});
+  const _RenewalSummary({
+    required this.leakage,
+    required this.upcoming,
+    required this.onOpen,
+  });
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        label: upcoming.isEmpty
+            ? 'لا توجد تجديدات خلال 30 يومًا'
+            : '${upcoming.length} تجديدات خلال 30 يومًا',
+        child: InkWell(
+          onTap: onOpen,
+          borderRadius: BorderRadius.circular(V12Radius.signature),
+          child: DecoratedBox(
         decoration: BoxDecoration(
           color: context.palette.surface,
           border: Border.all(color: context.palette.stroke),
           borderRadius: BorderRadius.circular(V12Radius.signature),
         ),
-        child: Padding(
+            child: Padding(
           padding: const EdgeInsets.all(V12Space.md),
-          child: RenewalOrbit(
-            subscriptions: upcoming,
-            annualCost: leakage.annualCommitment,
-            currency: leakage.currency,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: context.palette.accentSoft,
+                          borderRadius: BorderRadius.circular(V12Radius.standard),
+                        ),
+                        child: Icon(Icons.event_repeat_rounded,
+                            color: context.palette.accent),
+                      ),
+                      const SizedBox(width: V12Space.sm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('التجديدات القادمة',
+                                style: TextStyle(
+                                  color: context.palette.text,
+                                  fontSize: V12Type.title,
+                                  fontWeight: FontWeight.w800,
+                                )),
+                            Text(
+                              upcoming.isEmpty
+                                  ? 'لا توجد خصومات خلال 30 يومًا'
+                                  : '${upcoming.length} خصومات خلال 30 يومًا',
+                              style: TextStyle(
+                                color: context.palette.textMuted,
+                                fontSize: V12Type.caption,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_back_rounded),
+                    ],
+                  ),
+                  const SizedBox(height: V12Space.lg),
+                  Text('التزامك السنوي',
+                      style: TextStyle(color: context.palette.textMuted)),
+                  Text(
+                    fmtMoney(leakage.annualCommitment, leakage.currency),
+                    style: TextStyle(
+                      color: context.palette.text,
+                      fontSize: V12Type.headline,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (upcoming.isNotEmpty) ...[
+                    const SizedBox(height: V12Space.md),
+                    Divider(color: context.palette.stroke, height: 1),
+                    const SizedBox(height: V12Space.sm),
+                    for (final item in upcoming.take(3))
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: V12Space.xs),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(item.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis),
+                            ),
+                            Text(
+                              item.daysUntilRenewal() == 0
+                                  ? 'اليوم'
+                                  : 'بعد ${item.daysUntilRenewal()} يوم',
+                              style: TextStyle(color: context.palette.textMuted),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
       );
@@ -503,7 +595,7 @@ class _EmptyPulse extends StatelessWidget {
             Icon(Icons.radar_rounded, size: 72, color: context.palette.accent),
             const SizedBox(height: V12Space.lg),
             Text(
-              'مدارك جاهز لأول اشتراك',
+              'ابدأ بإضافة أول اشتراك',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: context.palette.text,

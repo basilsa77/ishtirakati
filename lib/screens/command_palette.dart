@@ -9,19 +9,27 @@ enum V12Destination { home, subscriptions, insights, calendar, settings }
 
 extension V12DestinationX on V12Destination {
   String get label => switch (this) {
-        V12Destination.home => 'نبضك',
+        V12Destination.home => 'الرئيسية',
         V12Destination.subscriptions => 'مكتبة الاشتراكات',
         V12Destination.insights => 'التحليلات',
-        V12Destination.calendar => 'مدار التقويم',
-        V12Destination.settings => 'الإعدادات والخصوصية',
+        V12Destination.calendar => 'جدول التجديدات',
+        V12Destination.settings => 'الإعدادات',
+      };
+
+  String get shortLabel => switch (this) {
+        V12Destination.home => 'الرئيسية',
+        V12Destination.subscriptions => 'اشتراكاتي',
+        V12Destination.insights => 'التحليلات',
+        V12Destination.calendar => 'التجديدات',
+        V12Destination.settings => 'الإعدادات',
       };
 
   IconData get icon => switch (this) {
-        V12Destination.home => Icons.radar_rounded,
+        V12Destination.home => Icons.home_outlined,
         V12Destination.subscriptions => Icons.view_agenda_outlined,
         V12Destination.insights => Icons.query_stats_rounded,
         V12Destination.calendar => Icons.calendar_today_outlined,
-        V12Destination.settings => Icons.tune_rounded,
+        V12Destination.settings => Icons.settings_outlined,
       };
 }
 
@@ -202,4 +210,3 @@ class _Command {
     required this.onTap,
   });
 }
-

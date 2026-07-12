@@ -23,7 +23,7 @@ class CalendarPage extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          'تقويم الدفعات',
+          'جدول التجديدات',
           style: TextStyle(color: p.text, fontSize: 17, fontWeight: FontWeight.w900),
         ),
         iconTheme: IconThemeData(color: p.text),
@@ -48,6 +48,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   static const _weekdays = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'];
 
   late DateTime _month;
+  bool _calendarView = false;
 
   @override
   void initState() {
@@ -78,7 +79,29 @@ class _CalendarScreenState extends State<CalendarScreen> {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
           children: [
             _CalendarHeader(total: total, currency: currency, itemCount: byDay.values.expand((items) => items).length),
-            const SizedBox(height: 22),
+            const SizedBox(height: 18),
+            Semantics(
+              label: 'اختيار طريقة عرض التجديدات',
+              child: SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment<bool>(
+                    value: false,
+                    icon: Icon(Icons.view_agenda_outlined),
+                    label: Text('القائمة الزمنية'),
+                  ),
+                  ButtonSegment<bool>(
+                    value: true,
+                    icon: Icon(Icons.calendar_month_outlined),
+                    label: Text('التقويم'),
+                  ),
+                ],
+                selected: {_calendarView},
+                showSelectedIcon: false,
+                onSelectionChanged: (value) =>
+                    setState(() => _calendarView = value.first),
+              ),
+            ),
+            const SizedBox(height: 18),
             _MonthControl(
               label: '${_months[_month.month - 1]} ${_month.year}',
               onPrevious: () => setState(() => _month = DateTime(_month.year, _month.month - 1)),
@@ -88,15 +111,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 setState(() => _month = DateTime(today.year, today.month));
               },
             ),
-            const SizedBox(height: 12),
-            _CalendarGrid(
-              month: _month,
-              weekdays: _weekdays,
-              entries: byDay,
-              onOpen: (day, subscriptions) => _openDay(context, day, subscriptions),
-            ),
-            const SizedBox(height: 28),
-            Text('دفعات هذا الشهر', style: TextStyle(color: context.palette.text, fontSize: 18, fontWeight: FontWeight.w900)),
+            if (_calendarView) ...[
+              const SizedBox(height: 12),
+              _CalendarGrid(
+                month: _month,
+                weekdays: _weekdays,
+                entries: byDay,
+                onOpen: (day, subscriptions) =>
+                    _openDay(context, day, subscriptions),
+              ),
+              const SizedBox(height: 24),
+            ] else
+              const SizedBox(height: 24),
+            Text('التجديدات حسب التاريخ', style: TextStyle(color: context.palette.text, fontSize: 18, fontWeight: FontWeight.w900)),
             const SizedBox(height: 5),
             Text(byDay.isEmpty ? 'لا توجد دفعات مسجلة لهذا الشهر.' : 'اختر أي خدمة لعرض تفاصيلها.', style: TextStyle(color: context.palette.textMuted, fontSize: 12.5)),
             const SizedBox(height: 12),
@@ -183,7 +210,7 @@ class _CalendarHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('التقويم', style: TextStyle(color: p.text, fontSize: 27, fontWeight: FontWeight.w900)),
+        Text('جدول التجديدات', style: TextStyle(color: p.text, fontSize: 27, fontWeight: FontWeight.w900)),
         const SizedBox(height: 5),
         Text('موعد كل خصم أمامك، بلا مفاجآت.', style: TextStyle(color: p.textMuted, fontSize: 13)),
         const SizedBox(height: 16),
@@ -346,7 +373,7 @@ class _CalendarEmpty extends StatelessWidget {
         children: [
           Icon(Icons.event_busy_rounded, color: p.textMuted),
           const SizedBox(width: 10),
-          Expanded(child: Text('الشهر هادئ. حرّك التقويم لرؤية الدفعات القادمة.', style: TextStyle(color: p.textMuted, fontSize: 12.5))),
+          Expanded(child: Text('لا توجد تجديدات مسجلة في هذا الشهر.', style: TextStyle(color: p.textMuted, fontSize: 12.5))),
         ],
       ),
     );

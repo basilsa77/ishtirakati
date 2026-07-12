@@ -268,6 +268,7 @@ class _RootShellState extends State<RootShell> {
       key: const PageStorageKey('pulse-home'),
       onOpenCommands: _openCommands,
       onOpenLibrary: () => _select(V12Destination.subscriptions),
+      onOpenRenewals: () => _select(V12Destination.calendar),
     ),
     const SubscriptionsScreen(key: PageStorageKey('subscriptions')),
     const InsightsScreen(key: PageStorageKey('insights')),

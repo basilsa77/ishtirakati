@@ -4,7 +4,7 @@ import 'package:ishtirakati/screens/command_palette.dart';
 import 'package:ishtirakati/widgets/adaptive_cycle_shell.dart';
 
 void main() {
-  testWidgets('صدفة الهاتف تعرض dock أوامر دون شريط تنقل تقليدي',
+  testWidgets('صدفة الهاتف تعرض خمس وجهات والإعدادات متاحة مباشرة',
       (tester) async {
     V12Destination selected = V12Destination.home;
     await tester.pumpWidget(
@@ -27,10 +27,14 @@ void main() {
       ),
     );
 
-    expect(find.byKey(const ValueKey('v12-command-button')), findsOneWidget);
+    expect(find.byKey(const ValueKey('v12-command-button')), findsNothing);
+    expect(find.byKey(const ValueKey('v12-dock-settings')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('v12-dock-subscriptions')));
     await tester.pumpAndSettle();
     expect(find.text('subscriptions'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('v12-dock-settings')));
+    await tester.pumpAndSettle();
+    expect(find.text('settings'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -60,8 +64,7 @@ void main() {
     );
 
     expect(find.text('اشتراكاتي'), findsOneWidget);
-    expect(find.text('الإعدادات والخصوصية'), findsOneWidget);
+    expect(find.text('الإعدادات'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
-

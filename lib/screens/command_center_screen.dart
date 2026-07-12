@@ -83,7 +83,7 @@ class CommandCenterScreen extends StatelessWidget {
               _RenewalStrip(subscriptions: upcoming.take(5).toList()),
             const SizedBox(height: 28),
             const _V8SectionHeader(
-              title: 'نبض مصروفك',
+              title: 'ملخص مصروفك',
               detail: 'لقطة سريعة تساعدك على المتابعة',
             ),
             const SizedBox(height: 12),

@@ -55,10 +55,6 @@ class AdaptiveCycleShell extends StatelessWidget {
               child: _CycleDock(
                 destination: destination,
                 onDestination: _select,
-                onCommands: () => showV12CommandPalette(
-                  context,
-                  onDestination: _select,
-                ),
               ),
             ),
           ],
@@ -68,22 +64,15 @@ class AdaptiveCycleShell extends StatelessWidget {
   }
 }
 
-const _primaryDestinations = [
-  V12Destination.home,
-  V12Destination.subscriptions,
-  V12Destination.insights,
-  V12Destination.calendar,
-];
+const _primaryDestinations = V12Destination.values;
 
 class _CycleDock extends StatelessWidget {
   final V12Destination destination;
   final ValueChanged<V12Destination> onDestination;
-  final VoidCallback onCommands;
 
   const _CycleDock({
     required this.destination,
     required this.onDestination,
-    required this.onCommands,
   });
 
   @override
@@ -97,40 +86,12 @@ class _CycleDock extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _DockButton(
-                destination: _primaryDestinations[0],
-                selected: destination == _primaryDestinations[0],
-                onTap: () => onDestination(_primaryDestinations[0]),
-              ),
-              _DockButton(
-                destination: _primaryDestinations[1],
-                selected: destination == _primaryDestinations[1],
-                onTap: () => onDestination(_primaryDestinations[1]),
-              ),
-              Tooltip(
-                key: const ValueKey('v12-command-button'),
-                message: 'بحث وأوامر',
-                child: IconButton.filled(
-                  onPressed: onCommands,
-                  icon: const Icon(Icons.search_rounded),
-                  style: IconButton.styleFrom(
-                    minimumSize: const Size.square(48),
-                    backgroundColor: context.palette.accentStrong,
-                    foregroundColor: V12Colors.white,
-                    shape: const CircleBorder(),
-                  ),
+              for (final item in _primaryDestinations)
+                _DockButton(
+                  destination: item,
+                  selected: destination == item,
+                  onTap: () => onDestination(item),
                 ),
-              ),
-              _DockButton(
-                destination: _primaryDestinations[2],
-                selected: destination == _primaryDestinations[2],
-                onTap: () => onDestination(_primaryDestinations[2]),
-              ),
-              _DockButton(
-                destination: _primaryDestinations[3],
-                selected: destination == _primaryDestinations[3],
-                onTap: () => onDestination(_primaryDestinations[3]),
-              ),
             ],
           ),
         ),
@@ -159,27 +120,30 @@ class _DockButton extends StatelessWidget {
           child: InkResponse(
             onTap: onTap,
             radius: 28,
-            child: SizedBox.square(
-              dimension: 52,
+              child: SizedBox(
+              width: 56,
+              height: 52,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     destination.icon,
+                    size: 22,
                     color: selected
                         ? context.palette.accent
                         : context.palette.textMuted,
                   ),
                   const SizedBox(height: V12Space.xxs),
-                  AnimatedContainer(
-                    duration: V12Motion.quick,
-                    width: selected ? 18 : 4,
-                    height: 3,
-                    decoration: BoxDecoration(
+                  Text(
+                    destination.shortLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.fade,
+                    style: TextStyle(
                       color: selected
                           ? context.palette.accent
-                          : V12Colors.transparent,
-                      borderRadius: BorderRadius.circular(V12Radius.compact),
+                          : context.palette.textMuted,
+                      fontSize: 9.5,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                     ),
                   ),
                 ],
