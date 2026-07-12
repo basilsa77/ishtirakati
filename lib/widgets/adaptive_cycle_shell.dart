@@ -108,6 +108,7 @@ class _CycleDock extends StatelessWidget {
                 onTap: () => onDestination(_primaryDestinations[1]),
               ),
               Tooltip(
+                key: const ValueKey('v12-command-button'),
                 message: 'بحث وأوامر',
                 child: IconButton.filled(
                   onPressed: onCommands,
@@ -153,6 +154,7 @@ class _DockButton extends StatelessWidget {
         button: true,
         label: destination.label,
         child: Tooltip(
+          key: ValueKey('v12-dock-${destination.name}'),
           message: destination.label,
           child: InkResponse(
             onTap: onTap,
@@ -267,4 +269,3 @@ class _RailButton extends StatelessWidget {
         ),
       );
 }
-
