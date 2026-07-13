@@ -23,14 +23,14 @@
 ## Verification
 
 - [x] `flutter analyze lib test`
-- [x] `flutter test` (71 test cases)
+- [x] `flutter test` (72 test cases)
 - [x] v11 migration tests
 - [x] RTL/LTR light/dark widget coverage
 - [x] Firestore Emulator rules tests
 - [x] unsigned iOS archive and IPA workflow
 - [x] secret-pattern scan
 
-Evidence: [GitHub Actions run #52](https://github.com/basilsa77/ishtirakati/actions/runs/29194989604) completed successfully in 17m 25s for commit `0daf2c0`.
+Evidence: [GitHub Actions run #58](https://github.com/basilsa77/ishtirakati/actions/runs/29286322118) completed successfully for commit `bae252b`, including analysis, 72 tests, `xcodebuild`, app verification, and IPA packaging.
 
 ## Manual QA
 
