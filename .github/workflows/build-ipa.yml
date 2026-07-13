@@ -56,7 +56,12 @@ jobs:
       - name: توليد مشروع iOS
         # لا تسمح لـflutter create بتحديث pubspec.lock ضمنيًا؛ جلب الحزم يتم لاحقًا
         # عبر --enforce-lockfile لضمان بناء قابل للتكرار.
-        run: flutter create . --no-pub --platforms=ios --org com.basil --project-name ishtirakati
+        run: |
+          test -s pubspec.lock
+          cp pubspec.lock "$RUNNER_TEMP/pubspec.lock"
+          flutter create . --no-pub --platforms=ios --org com.basil --project-name ishtirakati
+          cp "$RUNNER_TEMP/pubspec.lock" pubspec.lock
+          test -s pubspec.lock
 
       - name: ضبط الحد الأدنى لنظام iOS
         run: |
