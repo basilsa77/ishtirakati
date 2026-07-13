@@ -1,6 +1,7 @@
 /// الهوية البصرية الحديثة لتطبيق «اشتراكاتي».
 library;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'data/service_domains.dart';
@@ -228,6 +229,7 @@ ThemeData buildAppTheme({bool dark = false}) {
   final muted = palette.textMuted;
   final base = ThemeData(
     useMaterial3: true,
+    platform: TargetPlatform.iOS,
     brightness: dark ? Brightness.dark : Brightness.light,
     colorScheme: scheme,
     fontFamily: V12Type.bodyFamily,
@@ -236,6 +238,19 @@ ThemeData buildAppTheme({bool dark = false}) {
   );
 
   return base.copyWith(
+    cupertinoOverrideTheme: CupertinoThemeData(
+      brightness: dark ? Brightness.dark : Brightness.light,
+      primaryColor: palette.accent,
+      scaffoldBackgroundColor: palette.canvas,
+      barBackgroundColor: palette.surface,
+      textTheme: CupertinoTextThemeData(
+        textStyle: TextStyle(
+          color: palette.text,
+          fontFamily: V12Type.bodyFamily,
+          fontFamilyFallback: V12Type.fallbacks,
+        ),
+      ),
+    ),
     scaffoldBackgroundColor: palette.canvas,
     appBarTheme: AppBarTheme(
       backgroundColor: palette.canvas,

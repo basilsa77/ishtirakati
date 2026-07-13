@@ -47,7 +47,11 @@ Future<void> main() async {
     // ignore: unawaited_futures
     NotificationService.instance.requestPermission().then(
           (_) => NotificationService.instance
-              .rescheduleAll(store.items, enabled: true),
+              .rescheduleAll(
+                store.items,
+                enabled: true,
+                privateContent: store.privateNotifications,
+              ),
         );
   }
   // ignore: unawaited_futures

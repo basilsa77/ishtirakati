@@ -1,6 +1,7 @@
 /// مكتبة الاشتراكات للإصدار 8.
 library;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -11,6 +12,7 @@ import '../services/safe_url.dart';
 import '../theme.dart';
 import 'edit_subscription_screen.dart';
 import 'import_screen.dart';
+import 'quick_add_sheet.dart';
 
 enum _SortOrder { renewal, cost, name }
 
@@ -48,11 +50,9 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                   child: _LibraryHeader(
                     total: store.active.length,
-                    onAdd: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const EditSubscriptionScreen()),
-                    ),
+                    onAdd: () => showQuickAddSheet(context),
                     onImport: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ImportScreen()),
+                      CupertinoPageRoute(builder: (_) => const ImportScreen()),
                     ),
                   ),
                 ),
@@ -617,7 +617,7 @@ List<Widget> _actionButtons(
       OutlinedButton.icon(
         onPressed: () {
           Navigator.pop(sheetContext);
-          Navigator.of(context).push(MaterialPageRoute(builder: (_) => EditSubscriptionScreen(existing: sub)));
+          Navigator.of(context).push(CupertinoPageRoute(builder: (_) => EditSubscriptionScreen(existing: sub)));
         },
         icon: const Icon(Icons.edit_outlined, size: 18),
         label: const Text('تعديل'),

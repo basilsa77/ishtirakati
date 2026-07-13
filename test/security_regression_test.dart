@@ -83,7 +83,17 @@ void main() {
 
       expect(await restoredCodec.decrypt(encrypted), 'سجل قديم');
       expect(restoredStore.values, contains(encodedKey));
-      expect(await restoredCodec.mirrorFallbackEnabled, isTrue);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString(SecureDataCodec.mirrorPreferenceKey), isNull);
+      expect(await restoredCodec.mirrorFallbackEnabled, isFalse);
+    });
+
+    test('v13 لا يسمح بإنشاء مرآة مفاتيح جديدة', () async {
+      final codec = SecureDataCodec(keyStore: _FakeKeyStore());
+
+      expect(await codec.setMirrorFallbackEnabled(true), isFalse);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString(SecureDataCodec.mirrorPreferenceKey), isNull);
     });
 
     test('لا ينشئ مرآة لمستخدم جديد عند فشل Keychain', () async {
@@ -115,6 +125,46 @@ void main() {
 
       expect(disabled, isFalse);
       expect(prefs.getString(SecureDataCodec.mirrorPreferenceKey), correctKey);
+    });
+  });
+
+  group('ترحيل مفتاح AI إلى Keychain في v13', () {
+    test('يحذف المرآة بعد نجاح Keychain فقط', () async {
+      const value = 'legacy-ai-key';
+      SharedPreferences.setMockInitialValues({
+        'ishtirakati_ai_api_key_mirror':
+            base64Url.encode(utf8.encode(value)),
+      });
+      final keyStore = _FakeKeyStore();
+      final store = SubscriptionStore.testing(
+        dataCodec: SecureDataCodec(keyStore: _FakeKeyStore()),
+        secretStore: keyStore,
+      );
+
+      await store.load();
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(store.aiApiKey, value);
+      expect(keyStore.values, contains(value));
+      expect(prefs.getString('ishtirakati_ai_api_key_mirror'), isNull);
+    });
+
+    test('يبقي المرآة ولا يحمّل المفتاح عند فشل Keychain', () async {
+      const value = 'legacy-ai-key';
+      final encoded = base64Url.encode(utf8.encode(value));
+      SharedPreferences.setMockInitialValues({
+        'ishtirakati_ai_api_key_mirror': encoded,
+      });
+      final store = SubscriptionStore.testing(
+        dataCodec: SecureDataCodec(keyStore: _FakeKeyStore()),
+        secretStore: _FakeKeyStore(allowWrites: false),
+      );
+
+      await store.load();
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(store.aiApiKey, isEmpty);
+      expect(prefs.getString('ishtirakati_ai_api_key_mirror'), encoded);
     });
   });
 

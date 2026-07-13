@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=12.0.0"
-set "COMMIT_MESSAGE=v12.0.0+26: native iOS navigation and direct renewal decisions"
+set "RELEASE_VERSION=13.0.0"
+set "COMMIT_MESSAGE=v13.0.0+27: financial assistant and Keychain-only migration"
 
 git init
 git config user.name "basilsa77"

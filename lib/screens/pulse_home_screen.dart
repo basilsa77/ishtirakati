@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 
 import '../design/design_tokens.dart';
 import '../models/subscription.dart';
+import '../services/financial_assistant.dart';
 import '../services/financial_leakage.dart';
 import '../services/device_greeting.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
-import 'edit_subscription_screen.dart';
+import 'financial_review_screen.dart';
+import 'quick_add_sheet.dart';
 import 'subscriptions_screen.dart' show showSubscriptionDetails;
 
 class PulseHomeScreen extends StatelessWidget {
@@ -33,6 +35,10 @@ class PulseHomeScreen extends StatelessWidget {
           store.items,
           currency: currency,
         );
+        final assistant = FinancialAssistant.analyze(
+          store.items,
+          currency: currency,
+        );
         final upcoming = store.upcoming(withinDays: 30);
         return CustomScrollView(
           key: const PageStorageKey('v12-pulse-home'),
@@ -49,20 +55,12 @@ class PulseHomeScreen extends StatelessWidget {
                   _PulseHeader(
                     activeCount: store.active.length,
                     onSearch: onOpenCommands,
-                    onAdd: () => Navigator.of(context).push(
-                      CupertinoPageRoute(
-                        builder: (_) => const EditSubscriptionScreen(),
-                      ),
-                    ),
+                    onAdd: () => showQuickAddSheet(context),
                   ),
                   const SizedBox(height: V12Space.lg),
                   if (store.items.isEmpty)
                     _EmptyPulse(
-                      onAdd: () => Navigator.of(context).push(
-                        CupertinoPageRoute(
-                          builder: (_) => const EditSubscriptionScreen(),
-                        ),
-                      ),
+                      onAdd: () => showQuickAddSheet(context),
                     )
                   else
                     LayoutBuilder(
@@ -83,9 +81,16 @@ class PulseHomeScreen extends StatelessWidget {
                               Expanded(
                                 flex: 5,
                                 child: _DecisionColumn(
-                                  leakage: leakage,
+                                  assistant: assistant,
                                   upcoming: upcoming,
                                   onOpenLibrary: onOpenLibrary,
+                                  onOpenReviews: () => Navigator.of(context).push(
+                                    CupertinoPageRoute(
+                                      builder: (_) => FinancialReviewScreen(
+                                        currency: currency,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
@@ -100,9 +105,16 @@ class PulseHomeScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: V12Space.xl),
                             _DecisionColumn(
-                              leakage: leakage,
+                              assistant: assistant,
                               upcoming: upcoming,
                               onOpenLibrary: onOpenLibrary,
+                              onOpenReviews: () => Navigator.of(context).push(
+                                CupertinoPageRoute(
+                                  builder: (_) => FinancialReviewScreen(
+                                    currency: currency,
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
                         );
@@ -331,14 +343,16 @@ class _RenewalSummary extends StatelessWidget {
 }
 
 class _DecisionColumn extends StatelessWidget {
-  final FinancialLeakageSnapshot leakage;
+  final FinancialAssistantSnapshot assistant;
   final List<Subscription> upcoming;
   final VoidCallback onOpenLibrary;
+  final VoidCallback onOpenReviews;
 
   const _DecisionColumn({
-    required this.leakage,
+    required this.assistant,
     required this.upcoming,
     required this.onOpenLibrary,
+    required this.onOpenReviews,
   });
 
   @override
@@ -346,8 +360,8 @@ class _DecisionColumn extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _LeakageBand(
-            snapshot: leakage,
-            onReview: onOpenLibrary,
+            snapshot: assistant,
+            onReview: onOpenReviews,
           ),
           const SizedBox(height: V12Space.xl),
           _SectionHeading(
@@ -368,18 +382,18 @@ class _DecisionColumn extends StatelessWidget {
 }
 
 class _LeakageBand extends StatelessWidget {
-  final FinancialLeakageSnapshot snapshot;
+  final FinancialAssistantSnapshot snapshot;
   final VoidCallback onReview;
 
   const _LeakageBand({required this.snapshot, required this.onReview});
 
   @override
   Widget build(BuildContext context) {
-    final ratio = snapshot.leakageRatio;
+    final reviews = snapshot.reviewItems.length;
     return Semantics(
-      label: snapshot.unused.isEmpty
+      label: reviews == 0
           ? 'لا توجد اشتراكات تحتاج مراجعة'
-          : '${snapshot.unused.length} اشتراكات تحتاج مراجعة',
+          : '$reviews اشتراكات تحتاج مراجعة',
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: context.palette.surfaceAlt,
@@ -395,7 +409,7 @@ class _LeakageBand extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(Icons.water_drop_outlined,
+                  Icon(CupertinoIcons.chart_bar_alt_fill,
                       color: context.palette.danger, size: 20),
                   const SizedBox(width: V12Space.xs),
                   Expanded(
@@ -409,7 +423,7 @@ class _LeakageBand extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${(ratio * 100).round()}٪',
+                    '$reviews',
                     style: TextStyle(
                       color: context.palette.danger,
                       fontWeight: FontWeight.w800,
@@ -418,30 +432,20 @@ class _LeakageBand extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: V12Space.sm),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(V12Radius.compact),
-                child: LinearProgressIndicator(
-                  minHeight: 7,
-                  value: ratio,
-                  backgroundColor: context.palette.stroke,
-                  valueColor: AlwaysStoppedAnimation(context.palette.danger),
-                ),
-              ),
-              const SizedBox(height: V12Space.sm),
               Text(
-                snapshot.unused.isEmpty
-                    ? 'كل خدمة نشطة لها استخدام مسجل.'
-                    : '${fmtMoney(snapshot.unusedAnnualExposure, snapshot.currency)} سنويًا في ${snapshot.unused.length} خدمات بلا استخدام مسجل.',
+                reviews == 0
+                    ? 'لا توجد مؤشرات تستدعي قرارًا الآن.'
+                    : 'توفير محتمل ${fmtMoney(snapshot.potentialMonthlySavings, snapshot.currency)} شهريًا بعد المراجعة.',
                 style: TextStyle(
                   color: context.palette.textMuted,
                   fontSize: V12Type.body,
                   height: 1.5,
                 ),
               ),
-              if (snapshot.mostExpensive case final expensive?) ...[
+              if (snapshot.duplicateGroups.isNotEmpty) ...[
                 const SizedBox(height: V12Space.xs),
                 Text(
-                  'الأثقل: ${expensive.name} • ${fmtMoney(expensive.yearlyCost, expensive.currency)} سنويًا',
+                  '${snapshot.duplicateGroups.length} خدمات تبدو مكررة في مكتبتك.',
                   style: TextStyle(
                     color: context.palette.text,
                     fontSize: V12Type.caption,
@@ -449,7 +453,7 @@ class _LeakageBand extends StatelessWidget {
                   ),
                 ),
               ],
-              if (snapshot.unused.isNotEmpty) ...[
+              if (reviews > 0) ...[
                 const SizedBox(height: V12Space.md),
                 CupertinoButton.filled(
                   onPressed: onReview,
@@ -457,7 +461,7 @@ class _LeakageBand extends StatelessWidget {
                     horizontal: V12Space.md,
                     vertical: V12Space.sm,
                   ),
-                  child: Text('مراجعة ${snapshot.unused.length} اشتراكات'),
+                  child: Text('مراجعة $reviews اشتراكات'),
                 ),
               ],
             ],

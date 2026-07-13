@@ -26,7 +26,8 @@ void main() {
     expect(subscription.price, 39.5);
     expect(subscription.notes, 'تبقى كما هي');
     expect(subscription.usageCount, 0);
-    expect(subscription.toJson()['schemaVersion'], 12);
+    // Reading a v12 record through the current model advances it to v13.
+    expect(subscription.toJson()['schemaVersion'], 13);
   });
 
   test('لوحة التسرّب تحسب التعرض السنوي وتقسيم العائلة بدقة', () {

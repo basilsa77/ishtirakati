@@ -106,6 +106,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     await store.setNotificationsEnabled(value);
                   },
                 ),
+                Divider(height: 1, color: context.palette.stroke),
+                _SettingsSwitch(
+                  icon: CupertinoIcons.lock_shield,
+                  title: 'إخفاء تفاصيل التنبيهات',
+                  detail: 'لا يظهر اسم الخدمة أو المبلغ على شاشة القفل',
+                  value: store.privateNotifications,
+                  onChanged: store.setPrivateNotifications,
+                ),
               ],
             ),
           ),
@@ -122,16 +130,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   detail: 'استخدم Face ID عند الفتح أو العودة',
                   value: store.appLockEnabled,
                   onChanged: store.setAppLockEnabled,
-                ),
-                Divider(height: 1, color: context.palette.stroke),
-                _SettingsSwitch(
-                  icon: Icons.key_rounded,
-                  title: 'توافق إعادة التوقيع الجانبي',
-                  detail: store.sideloadRecoveryEnabled
-                      ? 'مرآة توافق مفعّلة؛ Keychain يبقى المصدر الأول'
-                      : 'Keychain فقط؛ الحماية الأقوى للإصدار الرسمي',
-                  value: store.sideloadRecoveryEnabled,
-                  onChanged: _toggleSideloadRecovery,
                 ),
               ],
             ),
@@ -236,48 +234,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SnackBar(content: Text('تم حذف جميع الاشتراكات.')),
       );
     }
-  }
-
-  Future<void> _toggleSideloadRecovery(bool enabled) async {
-    if (enabled) {
-      final approved = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('تفعيل توافق إعادة التوقيع؟'),
-          content: const Text(
-            'يحتفظ هذا الخيار بنسخة محلية من مفتاح البيانات كي لا تضيع '
-            'اشتراكاتك عند إعادة توقيع التطبيق جانبيًا. Keychain يبقى المصدر '
-            'الأول، لكن مستوى العزل أقل من نسخة App Store. فعّله فقط إذا '
-            'كنت تعيد توقيع التطبيق خارج App Store.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('إلغاء'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('تفعيل التوافق'),
-            ),
-          ],
-        ),
-      );
-      if (approved != true) return;
-    }
-    final ok = await SubscriptionStore.instance
-        .setSideloadRecoveryEnabled(enabled);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          ok
-              ? enabled
-                  ? 'فُعّل وضع التوافق. سيُستخدم فقط بعد تعذر Keychain.'
-                  : 'عُطّل وضع التوافق بعد التحقق من Keychain.'
-              : 'تعذر تغيير الوضع دون المخاطرة ببياناتك.',
-        ),
-      ),
-    );
   }
 
   Future<void> _confirmDeleteAccount() async {
@@ -459,8 +415,15 @@ class _AccountCard extends StatelessWidget {
                         side: BorderSide(color: p.danger.withValues(alpha: .45)),
                       ),
                       onPressed: () async {
-                        await AuthService.signOut();
-                        onChanged();
+                        try {
+                          await AuthService.signOut();
+                          onChanged();
+                        } on AuthException catch (error) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(error.message)),
+                          );
+                        }
                       },
                       icon: const Icon(Icons.logout_rounded),
                     ),

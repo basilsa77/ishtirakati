@@ -3,6 +3,7 @@ library;
 
 import 'dart:math' as math;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../models/subscription.dart';
@@ -10,6 +11,7 @@ import '../services/ai_advisor.dart';
 import '../services/ai_consent_service.dart';
 import '../services/ai_extractor.dart'
     show AiExtractionException, aiProviderById;
+import '../services/financial_assistant.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
 
@@ -31,6 +33,10 @@ class InsightsScreen extends StatelessWidget {
           ..sort((a, b) => b.monthlyCost.compareTo(a.monthlyCost));
         final upcoming = store.upcoming(withinDays: 7).length;
         final average = top.isEmpty ? 0.0 : total / top.length;
+        final assistant = FinancialAssistant.analyze(
+          store.items,
+          currency: currency,
+        );
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
@@ -42,11 +48,13 @@ class InsightsScreen extends StatelessWidget {
             else ...[
               _InsightHero(total: total, currency: currency, categories: entries.length),
               const SizedBox(height: 14),
+              _ForecastCard(snapshot: assistant),
+              const SizedBox(height: 14),
               Row(
                 children: [
-                  Expanded(child: _MiniMetric(label: 'متوسط الخدمة', value: fmtMoney(average, currency), icon: Icons.balance_rounded)),
+                  Expanded(child: _MiniMetric(label: 'متوسط الخدمة', value: fmtMoney(average, currency), icon: CupertinoIcons.money_dollar_circle)),
                   const SizedBox(width: 10),
-                  Expanded(child: _MiniMetric(label: 'خلال أسبوع', value: '$upcoming تجديد', icon: Icons.timer_outlined)),
+                  Expanded(child: _MiniMetric(label: 'خلال أسبوع', value: '$upcoming تجديد', icon: CupertinoIcons.timer)),
                 ],
               ),
               const SizedBox(height: 28),
@@ -72,6 +80,95 @@ class InsightsScreen extends StatelessWidget {
       },
     );
   }
+}
+
+class _ForecastCard extends StatelessWidget {
+  final FinancialAssistantSnapshot snapshot;
+
+  const _ForecastCard({required this.snapshot});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final maxValue = snapshot.forecast.fold<double>(
+      0,
+      (value, month) => math.max(value, month.total),
+    );
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: p.stroke),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(CupertinoIcons.calendar_badge_plus, color: p.accent, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('توقع المصروفات', style: TextStyle(color: p.text, fontSize: 16, fontWeight: FontWeight.w800)),
+              ),
+              Text(
+                fmtMoney(snapshot.next12MonthsForecast, snapshot.currency),
+                style: TextStyle(color: p.accent, fontSize: 12, fontWeight: FontWeight.w800),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text('إجمالي التجديدات المتوقعة خلال 12 شهرًا', style: TextStyle(color: p.textMuted, fontSize: 11.5)),
+          const SizedBox(height: 18),
+          SizedBox(
+            height: 106,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: snapshot.forecast.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final item = snapshot.forecast[index];
+                final ratio = maxValue <= 0 ? 0.0 : item.total / maxValue;
+                return SizedBox(
+                  width: 46,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        item.total <= 0 ? '0' : item.total.toStringAsFixed(0),
+                        maxLines: 1,
+                        overflow: TextOverflow.fade,
+                        style: TextStyle(color: p.textMuted, fontSize: 9.5, fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        width: 18,
+                        height: 12 + (48 * ratio),
+                        decoration: BoxDecoration(
+                          color: index == 0 ? p.accent : p.accentSoft,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        _monthName(item.month.month),
+                        style: TextStyle(color: p.textMuted, fontSize: 9.5),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _monthName(int month) => const [
+        'ينا', 'فبر', 'مار', 'أبر', 'ماي', 'يون',
+        'يول', 'أغس', 'سبت', 'أكت', 'نوف', 'ديس',
+      ][month - 1];
 }
 
 class _InsightsHeader extends StatelessWidget {

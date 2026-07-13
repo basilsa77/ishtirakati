@@ -1,9 +1,8 @@
 /// تشفير بيانات التطبيق محليًا بـAES-256-GCM قبل حفظها.
 ///
-/// Keychain هو المصدر الأساسي دائمًا. مرآة SharedPreferences القديمة لا
-/// تُستخدم إلا كشبكة توافق اختيارية عند تعذر كل مواضع Keychain، وذلك لحماية
-/// مستخدمي النسخ المعاد توقيعها من فقدان بياناتهم. المستخدم الجديد يبدأ
-/// بوضع Keychain-only.
+/// Keychain هو المصدر الوحيد للمفاتيح في v13. تُقرأ مرآة SharedPreferences
+/// القديمة مرة واحدة فقط لإنقاذ بيانات الإصدارات السابقة، ثم تُرحّل إلى
+/// Keychain وتُحذف بعد نجاح الكتابة الآمنة. لا يُنشئ هذا الإصدار أي مرآة جديدة.
 library;
 
 import 'dart:convert';
@@ -118,80 +117,60 @@ class SecureDataCodec {
     }
   }
 
-  /// النسخ القديمة التي تملك مرآة تبقى في وضع التوافق تلقائيًا. المستخدم
-  /// الجديد لا يفعله إلا باختياره من الإعدادات.
+  @Deprecated('v13 stores keys in Keychain only')
   Future<bool> get mirrorFallbackEnabled async {
-    final prefs = await SharedPreferences.getInstance();
-    final explicit = prefs.getBool(mirrorOptInPreferenceKey);
-    if (explicit != null) return explicit;
-    final migratedUser = prefs.getString(mirrorPreferenceKey)?.isNotEmpty ?? false;
-    if (migratedUser) {
-      await prefs.setBool(mirrorOptInPreferenceKey, true);
-    }
-    return migratedUser;
+    return false;
   }
 
   Future<bool> _writeKeychain(List<int> bytes) =>
       _keyStore.writeAll(keyName, base64Url.encode(bytes));
 
-  Future<void> _writeMirror(List<int> bytes) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(mirrorPreferenceKey, base64Url.encode(bytes));
-  }
-
   Future<void> _deleteMirror() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(mirrorPreferenceKey);
+    await prefs.remove(mirrorOptInPreferenceKey);
   }
 
-  Future<void> _acceptVerifiedKey(List<int> bytes) async {
+  Future<bool> _acceptVerifiedKey(List<int> bytes) async {
     final keychainReady = await _writeKeychain(bytes);
-    if (await mirrorFallbackEnabled) {
-      await _writeMirror(bytes);
-    } else if (keychainReady) {
-      // لا نحذف المرآة إلا بعد إثبات أن المفتاح أصبح في Keychain.
+    if (keychainReady) {
+      // لا نحذف نسخة v12 إلا بعد إثبات أن المفتاح أصبح في Keychain.
       await _deleteMirror();
     }
+    return keychainReady;
   }
 
   Future<List<int>> _primaryKey() async {
     final keychain = await _keychainKeys();
-    if (keychain.isNotEmpty) {
-      if (await mirrorFallbackEnabled) await _writeMirror(keychain.first);
-      return keychain.first;
-    }
+    if (keychain.isNotEmpty) return keychain.first;
 
-    // fallback متأخر: لا نقرأ المرآة إلا بعد عدم توفر أي مفتاح Keychain.
+    // ترحيل v12 متأخر: لا نقرأ المرآة إلا بعد غياب كل مفاتيح Keychain.
     final mirror = await _legacyMirrorKey();
     if (mirror != null) {
-      await _acceptVerifiedKey(mirror);
-      return mirror;
+      if (await _acceptVerifiedKey(mirror)) return mirror;
+      throw const SecureDataException(
+        'تعذر ترحيل مفتاح البيانات القديم إلى Keychain. لم تُحفظ أي بيانات جديدة.',
+      );
     }
 
     final generated = await _cipher.newSecretKey();
     final bytes = await generated.extractBytes();
     final keychainReady = await _writeKeychain(bytes);
-    if (!keychainReady && !await mirrorFallbackEnabled) {
+    if (!keychainReady) {
       throw const SecureDataException(
         'تعذر إنشاء مفتاح آمن في Keychain. لم تُحفظ أي بيانات جديدة.',
       );
     }
-    if (await mirrorFallbackEnabled) await _writeMirror(bytes);
     return bytes;
   }
 
-  /// تفعيل المرآة قرار صريح. تعطيلها لا يتم إلا إن كان Keychain يحمل مفتاحًا.
+  /// واجهة توافق قديمة: لا يمكن تفعيل المرآة في v13. يسمح التعطيل فقط بعد
+  /// التحقق من أن Keychain يستطيع فك السجل الحالي.
   Future<bool> setMirrorFallbackEnabled(
     bool enabled, {
     String? verificationPayload,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (enabled) {
-      await prefs.setBool(mirrorOptInPreferenceKey, true);
-      final key = await _primaryKey();
-      await _writeMirror(key);
-      return true;
-    }
+    if (enabled) return false;
 
     final keychain = await _keychainKeys();
     if (keychain.isEmpty) return false;
@@ -207,7 +186,6 @@ class SecureDataCodec {
       }
       if (!verified) return false;
     }
-    await prefs.setBool(mirrorOptInPreferenceKey, false);
     await _deleteMirror();
     return true;
   }
@@ -246,11 +224,13 @@ class SecureDataCodec {
       }
     }
 
-    // المرحلة الثانية: fallback القديم بعد فشل كل مفاتيح Keychain فعليًا.
+    // المرحلة الثانية: ترحيل نسخة v12 بعد فشل كل مفاتيح Keychain فعليًا.
     final mirror = await _legacyMirrorKey();
     if (mirror != null) {
       final clear = await _tryDecrypt(box, mirror);
       if (clear != null) {
+        // عند فشل Keychain نعيد البيانات للقراءة فقط ونبقي النسخة القديمة
+        // للمحاولة التالية؛ مسار الكتابة سيفشل مغلقًا كي لا نفقد البيانات.
         await _acceptVerifiedKey(mirror);
         return clear;
       }

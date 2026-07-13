@@ -158,6 +158,18 @@ class Subscription {
   int usageCount;
   DateTime? lastUsedAt;
 
+  /// هل تتجدد الخدمة تلقائيًا دون إجراء يدوي من المستخدم؟
+  bool autoRenews;
+
+  /// خدمة أساسية لا ينبغي اقتراح إلغائها لمجرد انخفاض الاستخدام.
+  bool isEssential;
+
+  /// اسم الخطة الحالية كما يظهر في فاتورة المزود، إن كان معروفًا.
+  String planName;
+
+  /// آخر مرة راجع فيها المستخدم جدوى الاشتراك أو خطته.
+  DateTime? lastReviewedAt;
+
   Subscription({
     required this.id,
     required this.name,
@@ -179,6 +191,10 @@ class Subscription {
     this.familyMembers = 2,
     this.usageCount = 0,
     this.lastUsedAt,
+    this.autoRenews = true,
+    this.isEssential = false,
+    this.planName = '',
+    this.lastReviewedAt,
     this.kind = PaymentKind.subscription,
     this.totalInstallments,
   }) : priceHistory = priceHistory ?? [];
@@ -410,13 +426,17 @@ class Subscription {
         'familyMembers': familyMembers,
         'usageCount': usageCount,
         'lastUsedAt': lastUsedAt?.toIso8601String(),
+        'autoRenews': autoRenews,
+        'isEssential': isEssential,
+        'planName': planName,
+        'lastReviewedAt': lastReviewedAt?.toIso8601String(),
         'iconUrl': iconUrl,
         'kind': kind.index,
         'totalInstallments': totalInstallments,
       };
 
   factory Subscription.fromJson(Map<String, dynamic> json) {
-    final data = SubscriptionSchema.migrateToV12(json);
+    final data = SubscriptionSchema.migrateToV13(json);
     final cycleIndex = (data['cycle'] as num?)?.toInt() ?? 1;
     return Subscription(
       id: (data['id'] as String?) ??
@@ -450,6 +470,11 @@ class Subscription {
           (((data['usageCount'] as num?)?.toInt() ?? 0).clamp(0, 100000))
               .toInt(),
       lastUsedAt: DateTime.tryParse((data['lastUsedAt'] as String?) ?? ''),
+      autoRenews: (data['autoRenews'] as bool?) ?? true,
+      isEssential: (data['isEssential'] as bool?) ?? false,
+      planName: (data['planName'] as String?) ?? '',
+      lastReviewedAt:
+          DateTime.tryParse((data['lastReviewedAt'] as String?) ?? ''),
       iconUrl: (data['iconUrl'] as String?) ?? '',
       kind: PaymentKind.values[((data['kind'] as num?)?.toInt() ?? 0)
           .clamp(0, PaymentKind.values.length - 1)],

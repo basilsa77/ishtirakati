@@ -37,6 +37,7 @@ class SubscriptionStore extends ChangeNotifier {
   static const String _currencyKey = 'ishtirakati_default_currency';
   static const String _budgetKey = 'ishtirakati_monthly_budget';
   static const String _notifKey = 'ishtirakati_notifications_enabled';
+  static const String _privateNotifKey = 'ishtirakati_private_notifications';
   static const String _lockKey = 'ishtirakati_app_lock';
   static const String _aiKeyKey = 'ishtirakati_ai_api_key';
   static const String _aiProviderKey = 'ishtirakati_ai_provider';
@@ -49,13 +50,13 @@ class SubscriptionStore extends ChangeNotifier {
   String _defaultCurrency = 'SAR';
   double _monthlyBudget = 0; // 0 = غير مفعّلة
   bool _notificationsEnabled = true;
+  bool _privateNotifications = true;
   bool _appLockEnabled = false;
   String _aiApiKey = '';
   String _aiProvider = 'gemini';
   String _themeMode = 'system'; // dark | light | system
   bool _hasOnboarded = false;
   bool _loaded = false;
-  bool _sideloadRecoveryEnabled = false;
   String? _storageError;
 
   /// false = تعذر فك تشفير البيانات عند الإقلاع؛ نمنع الكتابة فوقها
@@ -68,13 +69,13 @@ class SubscriptionStore extends ChangeNotifier {
   String get defaultCurrency => _defaultCurrency;
   double get monthlyBudget => _monthlyBudget;
   bool get notificationsEnabled => _notificationsEnabled;
+  bool get privateNotifications => _privateNotifications;
   bool get appLockEnabled => _appLockEnabled;
   String get aiApiKey => _aiApiKey;
   String get aiProvider => _aiProvider;
   String get themeMode => _themeMode;
   bool get hasOnboarded => _hasOnboarded;
   bool get isLoaded => _loaded;
-  bool get sideloadRecoveryEnabled => _sideloadRecoveryEnabled;
   bool get storageHealthy => _storageHealthy;
   String? get storageError => _storageError;
 
@@ -83,12 +84,12 @@ class SubscriptionStore extends ChangeNotifier {
     _defaultCurrency = prefs.getString(_currencyKey) ?? 'SAR';
     _monthlyBudget = prefs.getDouble(_budgetKey) ?? 0;
     _notificationsEnabled = prefs.getBool(_notifKey) ?? true;
+    _privateNotifications = prefs.getBool(_privateNotifKey) ?? true;
     _appLockEnabled = prefs.getBool(_lockKey) ?? false;
     _hasOnboarded = prefs.getBool(_onboardKey) ?? false;
     _aiProvider = prefs.getString(_aiProviderKey) ?? 'gemini';
     _themeMode = prefs.getString(_themeModeKey) ?? 'system';
-    _sideloadRecoveryEnabled = await _dataCodec.mirrorFallbackEnabled;
-    // Keychain أولًا. لا نرجع للمرآة القديمة إلا إذا لم نجد قيمة آمنة.
+    // Keychain أولًا. نسخ v12 غير الآمنة تُقرأ فقط لترحيلها إلى Keychain.
     _aiApiKey = '';
     final secureAiValues = await _secretStore.readAll(_aiKeyKey);
     if (secureAiValues.isNotEmpty) _aiApiKey = secureAiValues.first;
@@ -96,21 +97,30 @@ class SubscriptionStore extends ChangeNotifier {
       final mirror = prefs.getString('${_aiKeyKey}_mirror') ?? '';
       if (mirror.isNotEmpty) {
         try {
-          _aiApiKey = utf8.decode(base64Url.decode(mirror));
+          final legacyValue = utf8.decode(base64Url.decode(mirror));
+          final migrated = await _secretStore.writeAll(_aiKeyKey, legacyValue);
+          if (migrated) {
+            _aiApiKey = legacyValue;
+            await prefs.remove('${_aiKeyKey}_mirror');
+            await prefs.remove(_aiKeyKey);
+          }
         } catch (_) {}
       }
     }
     if (_aiApiKey.isEmpty) {
-      _aiApiKey = prefs.getString(_aiKeyKey) ?? '';
+      final legacyValue = prefs.getString(_aiKeyKey) ?? '';
+      if (legacyValue.isNotEmpty) {
+        final migrated = await _secretStore.writeAll(_aiKeyKey, legacyValue);
+        if (migrated) {
+          _aiApiKey = legacyValue;
+          await prefs.remove(_aiKeyKey);
+          await prefs.remove('${_aiKeyKey}_mirror');
+        }
+      }
     }
     if (_aiApiKey.isNotEmpty) {
       final keychainReady = await _secretStore.writeAll(_aiKeyKey, _aiApiKey);
-      if (_sideloadRecoveryEnabled) {
-        await prefs.setString(
-          '${_aiKeyKey}_mirror',
-          base64Url.encode(utf8.encode(_aiApiKey)),
-        );
-      } else if (keychainReady) {
+      if (keychainReady) {
         await prefs.remove('${_aiKeyKey}_mirror');
         await prefs.remove(_aiKeyKey);
       }
@@ -173,7 +183,11 @@ class SubscriptionStore extends ChangeNotifier {
     // إعادة جدولة الإشعارات مع كل تغيير (لا ننتظرها).
     // ignore: unawaited_futures
     NotificationService.instance
-        .rescheduleAll(_items, enabled: _notificationsEnabled);
+        .rescheduleAll(
+          _items,
+          enabled: _notificationsEnabled,
+          privateContent: _privateNotifications,
+        );
     // مزامنة سحابية مؤجلة إن كان المستخدم مسجلًا.
     CloudSync.schedulePush();
   }
@@ -216,53 +230,16 @@ class SubscriptionStore extends ChangeNotifier {
       await prefs.remove(_aiKeyKey);
     } else {
       final keychainReady = await _secretStore.writeAll(_aiKeyKey, next);
-      if (!keychainReady && !_sideloadRecoveryEnabled) {
+      if (!keychainReady) {
         throw const SecureDataException(
           'تعذر حفظ مفتاح الذكاء الاصطناعي في Keychain.',
         );
       }
-      if (_sideloadRecoveryEnabled) {
-        await prefs.setString(
-          '${_aiKeyKey}_mirror',
-          base64Url.encode(utf8.encode(next)),
-        );
-      } else {
-        await prefs.remove('${_aiKeyKey}_mirror');
-      }
+      await prefs.remove('${_aiKeyKey}_mirror');
       await prefs.remove(_aiKeyKey);
     }
     _aiApiKey = next;
     notifyListeners();
-  }
-
-  Future<bool> setSideloadRecoveryEnabled(bool enabled) async {
-    if (enabled) {
-      final dataReady = await _dataCodec.setMirrorFallbackEnabled(true);
-      if (!dataReady) return false;
-      if (_aiApiKey.isNotEmpty) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(
-          '${_aiKeyKey}_mirror',
-          base64Url.encode(utf8.encode(_aiApiKey)),
-        );
-      }
-    } else {
-      if (_aiApiKey.isNotEmpty) {
-        final aiReady = await _secretStore.writeAll(_aiKeyKey, _aiApiKey);
-        if (!aiReady) return false;
-      }
-      final prefs = await SharedPreferences.getInstance();
-      final dataReady = await _dataCodec.setMirrorFallbackEnabled(
-        false,
-        verificationPayload: prefs.getString(_encryptedSubsKey),
-      );
-      if (!dataReady) return false;
-      await prefs.remove('${_aiKeyKey}_mirror');
-      await prefs.remove(_aiKeyKey);
-    }
-    _sideloadRecoveryEnabled = enabled;
-    notifyListeners();
-    return true;
   }
 
   Future<void> setAppLockEnabled(bool value) async {
@@ -277,7 +254,23 @@ class SubscriptionStore extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_notifKey, value);
     await NotificationService.instance
-        .rescheduleAll(_items, enabled: value);
+        .rescheduleAll(
+          _items,
+          enabled: value,
+          privateContent: _privateNotifications,
+        );
+    notifyListeners();
+  }
+
+  Future<void> setPrivateNotifications(bool value) async {
+    _privateNotifications = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_privateNotifKey, value);
+    await NotificationService.instance.rescheduleAll(
+      _items,
+      enabled: _notificationsEnabled,
+      privateContent: value,
+    );
     notifyListeners();
   }
 
@@ -390,6 +383,17 @@ class SubscriptionStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Records that the user consciously reviewed the subscription terms.
+  /// This is local financial metadata and follows the same encrypted persist path.
+  Future<void> markReviewed(String id, {DateTime? at}) async {
+    _ensureWritable();
+    final index = _items.indexWhere((s) => s.id == id);
+    if (index < 0) return;
+    _items[index].lastReviewedAt = at ?? DateTime.now();
+    await _persist();
+    notifyListeners();
+  }
+
   List<Subscription> get neverUsed =>
       _items.where((s) => !s.isPaused && s.usageCount == 0).toList();
 
@@ -488,7 +492,6 @@ class SubscriptionStore extends ChangeNotifier {
     _aiProvider = 'gemini';
     _themeMode = 'system';
     _hasOnboarded = false;
-    _sideloadRecoveryEnabled = false;
     _storageHealthy = true;
     _storageError = null;
     notifyListeners();

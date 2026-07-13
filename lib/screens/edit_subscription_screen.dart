@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../data/presets.dart';
 import '../models/subscription.dart';
@@ -11,6 +12,7 @@ import '../services/remote_catalog.dart';
 import '../services/subscription_store.dart';
 import '../services/safe_url.dart';
 import '../theme.dart';
+import 'plan_comparison_screen.dart';
 
 class EditSubscriptionScreen extends StatefulWidget {
   final Subscription? existing;
@@ -41,7 +43,10 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   late bool _trialOn;
   late DateTime _trialEnd;
   late bool _isFamily;
+  late bool _autoRenews;
+  late bool _isEssential;
   late int _famCount;
+  late final TextEditingController _planName;
   String _iconUrl = '';
   bool _searching = false;
   PaymentKind _kind = PaymentKind.subscription;
@@ -84,7 +89,10 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     _trialEnd =
         e?.trialEndDate ?? DateTime.now().add(const Duration(days: 7));
     _isFamily = e?.isFamily ?? false;
+    _autoRenews = e?.autoRenews ?? true;
+    _isEssential = e?.isEssential ?? false;
     _famCount = (e?.familyMembers ?? 2).clamp(2, 20);
+    _planName = TextEditingController(text: e?.planName ?? '');
     _iconUrl = e?.iconUrl ?? '';
     _kind = e?.kind ?? PaymentKind.subscription;
     _installments = TextEditingController(
@@ -99,6 +107,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     _notes.dispose();
     _url.dispose();
     _installments.dispose();
+    _planName.dispose();
     super.dispose();
   }
 
@@ -379,6 +388,10 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
           (_kind == PaymentKind.subscription && _trialOn) ? _trialEnd : null,
       isFamily: _isFamily,
       familyMembers: _famCount,
+      autoRenews: _autoRenews,
+      isEssential: _isEssential,
+      planName: _planName.text.trim(),
+      lastReviewedAt: widget.existing?.lastReviewedAt,
       iconUrl: _iconUrl,
       kind: _kind,
       totalInstallments: _kind == PaymentKind.installment
@@ -386,6 +399,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
           : null,
     );
     await SubscriptionStore.instance.upsert(sub);
+    HapticFeedback.mediumImpact();
     if (!mounted) return;
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -423,8 +437,10 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     final d = _anchor;
     final p = context.palette;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(isEditing ? 'تعديل الاشتراك' : 'اشتراك جديد'),
+      appBar: CupertinoNavigationBar(
+        backgroundColor: p.canvas.withValues(alpha: .92),
+        border: Border(bottom: BorderSide(color: p.stroke)),
+        middle: Text(isEditing ? 'تعديل الاشتراك' : 'اشتراك جديد'),
       ),
       body: SafeArea(
         child: Form(
@@ -574,29 +590,22 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  for (final c in BillingCycle.values)
-                    ChoiceChip(
-                      label: Text(c.labelAr),
-                      selected: _cycle == c,
-                      selectedColor: p.accent,
-                      backgroundColor: p.surface,
-                      labelStyle: TextStyle(
-                        color: _cycle == c
-                            ? Colors.white
-                            : p.text,
-                        fontWeight: FontWeight.w700,
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: CupertinoSlidingSegmentedControl<BillingCycle>(
+                  groupValue: _cycle,
+                  thumbColor: p.surface,
+                  children: {
+                    for (final c in BillingCycle.values)
+                      c: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                        child: Text(c.labelAr, style: TextStyle(color: p.text, fontWeight: FontWeight.w700)),
                       ),
-                      side: BorderSide(
-                        color: _cycle == c
-                            ? p.accent
-                            : p.stroke,
-                      ),
-                      onSelected: (_) => setState(() => _cycle = c),
-                    ),
-                ],
+                  },
+                  onValueChanged: (value) {
+                    if (value != null) setState(() => _cycle = value);
+                  },
+                ),
               ),
               if (_kind == PaymentKind.installment) ...[
                 const SizedBox(height: 14),
@@ -674,22 +683,11 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               ),
               const SizedBox(height: 8),
               if (_kind == PaymentKind.subscription)
-              SwitchListTile(
+              _CupertinoSwitchRow(
                 value: _trialOn,
                 onChanged: (v) => setState(() => _trialOn = v),
-                title: Text(
-                  'تجربة مجانية',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: p.text,
-                  ),
-                ),
-                subtitle: Text(
-                  'سنحذرك قبل تحولها لاشتراك مدفوع بيومين',
-                  style: TextStyle(color: p.textMuted, fontSize: 12.5),
-                ),
-                activeThumbColor: p.accent,
-                contentPadding: EdgeInsets.zero,
+                title: 'تجربة مجانية',
+                detail: 'سنحذرك قبل تحولها لاشتراك مدفوع بيومين',
               ),
               if (_trialOn) ...[
                 InkWell(
@@ -725,22 +723,11 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 ),
                 const SizedBox(height: 6),
               ],
-              SwitchListTile(
+              _CupertinoSwitchRow(
                 value: _isFamily,
                 onChanged: (v) => setState(() => _isFamily = v),
-                title: Text(
-                  'اشتراك عائلي / مشترك',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: p.text,
-                  ),
-                ),
-                subtitle: Text(
-                  'يقسم التكلفة على المشاركين ويعرض نصيبك',
-                  style: TextStyle(color: p.textMuted, fontSize: 12.5),
-                ),
-                activeThumbColor: p.accent,
-                contentPadding: EdgeInsets.zero,
+                title: 'اشتراك عائلي / مشترك',
+                detail: 'يقسم التكلفة على المشاركين ويعرض نصيبك',
               ),
               if (_isFamily)
                 Row(
@@ -783,6 +770,52 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   ],
                 ),
               const SizedBox(height: 8),
+              CupertinoFormSection.insetGrouped(
+                backgroundColor: Colors.transparent,
+                header: Text(
+                  'المتابعة المالية',
+                  style: TextStyle(color: p.textMuted),
+                ),
+                children: [
+                  CupertinoFormRow(
+                    prefix: const Text('يتجدد تلقائيًا'),
+                    helper: const Text('يظهر ضمن القرارات والتنبيهات قبل الخصم'),
+                    child: CupertinoSwitch(
+                      value: _autoRenews,
+                      activeTrackColor: p.accent,
+                      onChanged: (value) =>
+                          setState(() => _autoRenews = value),
+                    ),
+                  ),
+                  CupertinoFormRow(
+                    prefix: const Text('خدمة أساسية'),
+                    helper: const Text('لا يقترح التطبيق إلغاءها بسبب انخفاض الاستخدام'),
+                    child: CupertinoSwitch(
+                      value: _isEssential,
+                      activeTrackColor: p.accent,
+                      onChanged: (value) =>
+                          setState(() => _isEssential = value),
+                    ),
+                  ),
+                  CupertinoTextFormFieldRow(
+                    controller: _planName,
+                    placeholder: 'اسم الخطة (اختياري)',
+                    textAlign: TextAlign.end,
+                  ),
+                ],
+              ),
+              if (isEditing)
+                CupertinoButton(
+                  onPressed: () => Navigator.of(context).push(
+                    CupertinoPageRoute(
+                      builder: (_) => PlanComparisonScreen(
+                        subscription: widget.existing!,
+                      ),
+                    ),
+                  ),
+                  child: const Text('مقارنة خطة بديلة'),
+                ),
+              const SizedBox(height: 8),
               TextFormField(
                 controller: _url,
                 keyboardType: TextInputType.url,
@@ -803,44 +836,70 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               ),
               if (isEditing) ...[
                 const SizedBox(height: 8),
-                SwitchListTile(
+                _CupertinoSwitchRow(
                   value: _paused,
                   onChanged: (v) => setState(() => _paused = v),
-                  title: Text(
-                    'إيقاف مؤقت',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: p.text,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'لن يُحتسب في المصروف ولا في التجديدات',
-                    style: TextStyle(color: p.textMuted, fontSize: 12.5),
-                  ),
-                  activeThumbColor: p.accent,
-                  contentPadding: EdgeInsets.zero,
+                  title: 'إيقاف مؤقت',
+                  detail: 'لن يُحتسب في المصروف ولا في التجديدات',
                 ),
               ],
               const SizedBox(height: 18),
-              FilledButton.icon(
+              CupertinoButton.filled(
                 onPressed: _save,
-                icon: const Icon(Icons.check_rounded),
-                label: Text(isEditing ? 'حفظ التعديلات' : 'إضافة الاشتراك'),
+                child: Text(isEditing ? 'حفظ التعديلات' : 'إضافة الاشتراك'),
               ),
               if (isEditing) ...[
                 const SizedBox(height: 8),
-                TextButton.icon(
+                CupertinoButton(
                   onPressed: _delete,
-                  style: TextButton.styleFrom(
-                    foregroundColor: p.danger,
-                  ),
-                  icon: const Icon(Icons.delete_outline_rounded),
-                  label: const Text('حذف هذا الاشتراك'),
+                  child: Text('حذف هذا الاشتراك', style: TextStyle(color: p.danger)),
                 ),
               ],
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _CupertinoSwitchRow extends StatelessWidget {
+  final String title;
+  final String detail;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _CupertinoSwitchRow({
+    required this.title,
+    required this.detail,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(color: p.text, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 3),
+                Text(detail, style: TextStyle(color: p.textMuted, fontSize: 12.5)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          CupertinoSwitch(
+            value: value,
+            activeTrackColor: p.accent,
+            onChanged: onChanged,
+          ),
+        ],
       ),
     );
   }

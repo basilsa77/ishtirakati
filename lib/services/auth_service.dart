@@ -131,7 +131,11 @@ class AuthService {
     if (!isAvailable) return;
     try {
       await FirebaseAuth.instance.signOut();
-    } catch (_) {}
+    } catch (_) {
+      throw const AuthException(
+        'تعذر تسجيل الخروج بأمان. تحقق من الاتصال وأعد المحاولة.',
+      );
+    }
   }
 
   static Future<void> reauthenticateCurrentUser() async {
