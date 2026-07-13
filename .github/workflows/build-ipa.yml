@@ -54,7 +54,9 @@ jobs:
           test -s lib/firebase_options.dart
 
       - name: توليد مشروع iOS
-        run: flutter create . --platforms=ios --org com.basil --project-name ishtirakati
+        # لا تسمح لـflutter create بتحديث pubspec.lock ضمنيًا؛ جلب الحزم يتم لاحقًا
+        # عبر --enforce-lockfile لضمان بناء قابل للتكرار.
+        run: flutter create . --no-pub --platforms=ios --org com.basil --project-name ishtirakati
 
       - name: ضبط الحد الأدنى لنظام iOS
         run: |
