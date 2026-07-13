@@ -85,3 +85,5 @@ flutter build ios --release --no-codesign
 - الحد الأدنى في بناء CI: iOS 15
 
 التغييرات التفصيلية في [CHANGELOG.md](CHANGELOG.md).
+
+آخر بناء إنتاجي متحقق: [GitHub Actions #60](https://github.com/basilsa77/ishtirakati/actions/runs/29290062249) — نجح التحليل والاختبارات وقواعد Firestore وبناء iOS وتغليف IPA.
