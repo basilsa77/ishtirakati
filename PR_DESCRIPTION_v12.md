@@ -1,6 +1,6 @@
 ## Summary
 
-- Reimagines Ishtirakati around a signature renewal orbit and a financial leakage view.
+- Reimagines Ishtirakati around a direct renewal timeline and a financial leakage view.
 - Replaces the five-tab shell with an adaptive command-first CycleDock/rail for iPhone and iPad.
 - Adds an explicit, lossless v11-to-v12 record migration and financial leakage calculations.
 - Adds RTL/LTR light/dark visual coverage plus phone/iPad widget tests.
@@ -25,7 +25,7 @@
 - [x] `flutter analyze lib test`
 - [x] `flutter test` (71 test cases)
 - [x] v11 migration tests
-- [x] RTL/LTR light/dark golden tests
+- [x] RTL/LTR light/dark widget coverage
 - [x] Firestore Emulator rules tests
 - [x] `flutter build apk --release`
 - [x] unsigned iOS archive and IPA workflow

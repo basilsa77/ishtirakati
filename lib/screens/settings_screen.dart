@@ -82,7 +82,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 10),
           const _ThemeModeCard(),
           const SizedBox(height: 26),
-          const _SettingsLabel('الحماية والتنبيهات'),
+          const _SettingsLabel('التنبيهات'),
           const SizedBox(height: 10),
           AppCard(
             padding: EdgeInsets.zero,
@@ -105,7 +105,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     await store.setNotificationsEnabled(value);
                   },
                 ),
-                Divider(height: 1, color: context.palette.stroke),
+              ],
+            ),
+          ),
+          const SizedBox(height: 26),
+          const _SettingsLabel('الأمان والخصوصية'),
+          const SizedBox(height: 10),
+          AppCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
                 _SettingsSwitch(
                   icon: Icons.face_retouching_natural_rounded,
                   title: 'قفل التطبيق',
