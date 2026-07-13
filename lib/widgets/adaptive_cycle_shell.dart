@@ -96,8 +96,10 @@ class _IOSBottomBar extends StatelessWidget {
             items: [
               for (final item in _primaryDestinations)
                 BottomNavigationBarItem(
-                  key: ValueKey('v12-dock-${item.name}'),
-                  icon: Icon(item.icon),
+                  icon: Icon(
+                    item.icon,
+                    key: ValueKey('v12-dock-${item.name}'),
+                  ),
                   activeIcon: Icon(item.selectedIcon),
                   label: item.shortLabel,
                 ),
@@ -120,7 +122,7 @@ class _CycleRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        width: 196,
+        width: 224,
         child: Padding(
           padding: const EdgeInsets.all(V12Space.md),
           child: Column(
@@ -154,7 +156,13 @@ class _CycleRail extends StatelessWidget {
                   children: [
                     Icon(CupertinoIcons.search, size: 20),
                     SizedBox(width: V12Space.sm),
-                    Text('بحث وأوامر'),
+                    Expanded(
+                      child: Text(
+                        'بحث وأوامر',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
               ),
