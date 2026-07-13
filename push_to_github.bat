@@ -11,7 +11,7 @@ if errorlevel 1 (
 )
 
 set "RELEASE_VERSION=12.0.0"
-set "COMMIT_MESSAGE=v12.0.0+25: renewal timeline, direct settings, and verified security"
+set "COMMIT_MESSAGE=v12.0.0+26: native iOS navigation and direct renewal decisions"
 
 git init
 git config user.name "basilsa77"

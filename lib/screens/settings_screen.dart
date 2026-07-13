@@ -1,6 +1,7 @@
 /// إعدادات الإصدار 8: مجموعات قصيرة واضحة من دون صفحات متراكبة.
 library;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -614,9 +615,9 @@ class _SettingsSwitch extends StatelessWidget {
               ],
             ),
           ),
-          Switch.adaptive(
+          CupertinoSwitch(
             value: value,
-            activeThumbColor: p.accent,
+            activeTrackColor: p.accent,
             onChanged: onChanged,
           ),
         ],
@@ -792,20 +793,25 @@ class _ThemeModeCard extends StatelessWidget {
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
-            child: SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'dark', label: Text('داكن'), icon: Icon(Icons.dark_mode_rounded, size: 16)),
-                ButtonSegment(value: 'light', label: Text('فاتح'), icon: Icon(Icons.light_mode_rounded, size: 16)),
-                ButtonSegment(value: 'system', label: Text('تلقائي'), icon: Icon(Icons.phone_iphone_rounded, size: 16)),
-              ],
-              selected: {store.themeMode},
-              onSelectionChanged: (selection) => store.setThemeMode(selection.first),
-              style: const ButtonStyle(
-                visualDensity: VisualDensity.compact,
-                padding: WidgetStatePropertyAll(
-                  EdgeInsets.symmetric(horizontal: 5),
+            child: CupertinoSlidingSegmentedControl<String>(
+              groupValue: store.themeMode,
+              children: const {
+                'dark': Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text('داكن'),
                 ),
-              ),
+                'light': Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text('فاتح'),
+                ),
+                'system': Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text('تلقائي'),
+                ),
+              },
+              onValueChanged: (value) {
+                if (value != null) store.setThemeMode(value);
+              },
             ),
           ),
         ],

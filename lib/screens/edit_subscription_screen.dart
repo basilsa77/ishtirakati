@@ -1,6 +1,7 @@
 /// إضافة أو تعديل اشتراك، مع مُلقِّم سريع من الخدمات الشائعة خليجيًا.
 library;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../data/presets.dart';
@@ -433,27 +434,27 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
             children: [
-              SegmentedButton<PaymentKind>(
-                segments: [
-                  for (final k in PaymentKind.values)
-                    ButtonSegment(value: k, label: Text(k.labelAr)),
-                ],
-                selected: {_kind},
-                onSelectionChanged: (v) =>
-                    setState(() => _kind = v.first),
-                style: SegmentedButton.styleFrom(
-                  backgroundColor: p.surface,
-                  foregroundColor: p.textMuted,
-                  selectedBackgroundColor: p.accent,
-                  selectedForegroundColor: Colors.white,
-                  side: BorderSide(color: p.stroke),
-                  textStyle: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13,
-                  ),
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                ),
+              CupertinoSlidingSegmentedControl<PaymentKind>(
+                groupValue: _kind,
+                backgroundColor: p.surface,
+                thumbColor: p.accent,
+                children: {
+                  for (final kind in PaymentKind.values)
+                    kind: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        kind.labelAr,
+                        style: TextStyle(
+                          color: _kind == kind ? Colors.white : p.textMuted,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                },
+                onValueChanged: (value) {
+                  if (value != null) setState(() => _kind = value);
+                },
               ),
               const SizedBox(height: 14),
               if (!isEditing && _kind == PaymentKind.subscription)

@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishtirakati/screens/command_palette.dart';
@@ -28,6 +29,8 @@ void main() {
     );
 
     expect(find.byKey(const ValueKey('v12-command-button')), findsNothing);
+    expect(find.byType(CupertinoTabBar), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
     expect(find.byKey(const ValueKey('v12-dock-settings')), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('v12-dock-subscriptions')));
     await tester.pumpAndSettle();

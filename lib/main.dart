@@ -66,7 +66,7 @@ class IshtirakatiApp extends StatelessWidget {
       case 'system':
         return ThemeMode.system;
       default:
-        return ThemeMode.dark;
+        return ThemeMode.system;
     }
   }
 

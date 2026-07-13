@@ -1,6 +1,7 @@
 /// تقويم الدفعات في v11.
 library;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../models/subscription.dart';
@@ -18,15 +19,13 @@ class CalendarPage extends StatelessWidget {
     final p = context.palette;
     return Scaffold(
       backgroundColor: p.canvas,
-      appBar: AppBar(
-        backgroundColor: p.canvas,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
+      appBar: CupertinoNavigationBar(
+        backgroundColor: p.canvas.withValues(alpha: .92),
+        border: Border(bottom: BorderSide(color: p.stroke)),
+        middle: Text(
           'جدول التجديدات',
           style: TextStyle(color: p.text, fontSize: 17, fontWeight: FontWeight.w900),
         ),
-        iconTheme: IconThemeData(color: p.text),
       ),
       body: const SafeArea(top: false, child: CalendarScreen()),
     );
@@ -82,23 +81,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
             const SizedBox(height: 18),
             Semantics(
               label: 'اختيار طريقة عرض التجديدات',
-              child: SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment<bool>(
-                    value: false,
-                    icon: Icon(Icons.view_agenda_outlined),
-                    label: Text('القائمة الزمنية'),
+              child: CupertinoSlidingSegmentedControl<bool>(
+                groupValue: _calendarView,
+                children: const {
+                  false: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text('القائمة الزمنية'),
                   ),
-                  ButtonSegment<bool>(
-                    value: true,
-                    icon: Icon(Icons.calendar_month_outlined),
-                    label: Text('التقويم'),
+                  true: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text('التقويم'),
                   ),
-                ],
-                selected: {_calendarView},
-                showSelectedIcon: false,
-                onSelectionChanged: (value) =>
-                    setState(() => _calendarView = value.first),
+                },
+                onValueChanged: (value) {
+                  if (value != null) setState(() => _calendarView = value);
+                },
               ),
             ),
             const SizedBox(height: 18),
@@ -142,18 +139,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   void _openDay(BuildContext context, int day, List<Subscription> subscriptions) {
-    showModalBottomSheet<void>(
+    showCupertinoModalPopup<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (sheetContext) {
         final p = sheetContext.palette;
-        return DraggableScrollableSheet(
-          expand: false,
-          initialChildSize: .52,
-          minChildSize: .32,
-          maxChildSize: .9,
-          builder: (context, controller) => SafeArea(
+        return Material(
+          type: MaterialType.transparency,
+          child: DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: .52,
+            minChildSize: .32,
+            maxChildSize: .9,
+            builder: (context, controller) => SafeArea(
             top: false,
             child: Container(
               decoration: BoxDecoration(color: p.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
@@ -189,6 +186,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   );
                 },
               ),
+            ),
             ),
           ),
         );

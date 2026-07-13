@@ -1,8 +1,10 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../design/design_tokens.dart';
 import '../models/subscription.dart';
 import '../services/financial_leakage.dart';
+import '../services/device_greeting.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
 import 'edit_subscription_screen.dart';
@@ -48,7 +50,7 @@ class PulseHomeScreen extends StatelessWidget {
                     activeCount: store.active.length,
                     onSearch: onOpenCommands,
                     onAdd: () => Navigator.of(context).push(
-                      MaterialPageRoute(
+                      CupertinoPageRoute(
                         builder: (_) => const EditSubscriptionScreen(),
                       ),
                     ),
@@ -57,7 +59,7 @@ class PulseHomeScreen extends StatelessWidget {
                   if (store.items.isEmpty)
                     _EmptyPulse(
                       onAdd: () => Navigator.of(context).push(
-                        MaterialPageRoute(
+                        CupertinoPageRoute(
                           builder: (_) => const EditSubscriptionScreen(),
                         ),
                       ),
@@ -129,8 +131,7 @@ class _PulseHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hour = DateTime.now().hour;
-    final greeting = hour < 12 ? 'صباح هادئ' : 'مساء واضح';
+    final greeting = deviceGreeting();
     return Row(
       children: [
         Expanded(
@@ -344,7 +345,10 @@ class _DecisionColumn extends StatelessWidget {
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _LeakageBand(snapshot: leakage),
+          _LeakageBand(
+            snapshot: leakage,
+            onReview: onOpenLibrary,
+          ),
           const SizedBox(height: V12Space.xl),
           _SectionHeading(
             title: 'الخصومات القادمة',
@@ -365,14 +369,17 @@ class _DecisionColumn extends StatelessWidget {
 
 class _LeakageBand extends StatelessWidget {
   final FinancialLeakageSnapshot snapshot;
+  final VoidCallback onReview;
 
-  const _LeakageBand({required this.snapshot});
+  const _LeakageBand({required this.snapshot, required this.onReview});
 
   @override
   Widget build(BuildContext context) {
     final ratio = snapshot.leakageRatio;
     return Semantics(
-      label: 'التسرّب المحتمل ${fmtMoney(snapshot.unusedAnnualExposure, snapshot.currency)} سنويًا',
+      label: snapshot.unused.isEmpty
+          ? 'لا توجد اشتراكات تحتاج مراجعة'
+          : '${snapshot.unused.length} اشتراكات تحتاج مراجعة',
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: context.palette.surfaceAlt,
@@ -393,7 +400,7 @@ class _LeakageBand extends StatelessWidget {
                   const SizedBox(width: V12Space.xs),
                   Expanded(
                     child: Text(
-                      'التسرّب الصامت',
+                      'اشتراكات تحتاج مراجعة',
                       style: TextStyle(
                         color: context.palette.text,
                         fontSize: V12Type.emphasized,
@@ -440,6 +447,17 @@ class _LeakageBand extends StatelessWidget {
                     fontSize: V12Type.caption,
                     fontWeight: FontWeight.w700,
                   ),
+                ),
+              ],
+              if (snapshot.unused.isNotEmpty) ...[
+                const SizedBox(height: V12Space.md),
+                CupertinoButton.filled(
+                  onPressed: onReview,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: V12Space.md,
+                    vertical: V12Space.sm,
+                  ),
+                  child: Text('مراجعة ${snapshot.unused.length} اشتراكات'),
                 ),
               ],
             ],

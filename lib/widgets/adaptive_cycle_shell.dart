@@ -1,3 +1,6 @@
+import 'dart:ui';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -47,12 +50,15 @@ class AdaptiveCycleShell extends StatelessWidget {
             ],
           );
         }
-        return Column(
+        return Stack(
           children: [
-            Expanded(child: page),
-            SafeArea(
-              top: false,
-              child: _CycleDock(
+            Positioned.fill(
+              bottom: 49 + MediaQuery.paddingOf(context).bottom,
+              child: page,
+            ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: _IOSBottomBar(
                 destination: destination,
                 onDestination: _select,
               ),
@@ -66,89 +72,36 @@ class AdaptiveCycleShell extends StatelessWidget {
 
 const _primaryDestinations = V12Destination.values;
 
-class _CycleDock extends StatelessWidget {
+class _IOSBottomBar extends StatelessWidget {
   final V12Destination destination;
   final ValueChanged<V12Destination> onDestination;
 
-  const _CycleDock({
+  const _IOSBottomBar({
     required this.destination,
     required this.onDestination,
   });
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(
-          color: context.palette.surface,
-          border: Border(top: BorderSide(color: context.palette.stroke)),
-        ),
-        child: SizedBox(
-          height: 68,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
+  Widget build(BuildContext context) => ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: CupertinoTabBar(
+            key: const ValueKey('ios-tab-bar'),
+            currentIndex: destination.index,
+            onTap: (index) => onDestination(_primaryDestinations[index]),
+            activeColor: context.palette.accent,
+            inactiveColor: context.palette.textMuted,
+            backgroundColor: context.palette.surface.withValues(alpha: .88),
+            border: Border(top: BorderSide(color: context.palette.stroke)),
+            items: [
               for (final item in _primaryDestinations)
-                _DockButton(
-                  destination: item,
-                  selected: destination == item,
-                  onTap: () => onDestination(item),
+                BottomNavigationBarItem(
+                  key: ValueKey('v12-dock-${item.name}'),
+                  icon: Icon(item.icon),
+                  activeIcon: Icon(item.selectedIcon),
+                  label: item.shortLabel,
                 ),
             ],
-          ),
-        ),
-      );
-}
-
-class _DockButton extends StatelessWidget {
-  final V12Destination destination;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _DockButton({
-    required this.destination,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-        selected: selected,
-        button: true,
-        label: destination.label,
-        child: Tooltip(
-          key: ValueKey('v12-dock-${destination.name}'),
-          message: destination.label,
-          child: InkResponse(
-            onTap: onTap,
-            radius: 28,
-              child: SizedBox(
-              width: 56,
-              height: 52,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    destination.icon,
-                    size: 22,
-                    color: selected
-                        ? context.palette.accent
-                        : context.palette.textMuted,
-                  ),
-                  const SizedBox(height: V12Space.xxs),
-                  Text(
-                    destination.shortLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.fade,
-                    style: TextStyle(
-                      color: selected
-                          ? context.palette.accent
-                          : context.palette.textMuted,
-                      fontSize: 9.5,
-                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ),
         ),
       );
@@ -188,16 +141,22 @@ class _CycleRail extends StatelessWidget {
               ),
               const SizedBox(height: V12Space.lg),
               for (final item in V12Destination.values)
-                _RailButton(
+                _SidebarButton(
                   destination: item,
                   selected: destination == item,
                   onTap: () => onDestination(item),
                 ),
               const Spacer(),
-              OutlinedButton.icon(
+              CupertinoButton(
                 onPressed: onCommands,
-                icon: const Icon(Icons.search_rounded),
-                label: const Text('بحث وأوامر'),
+                padding: const EdgeInsets.symmetric(vertical: V12Space.sm),
+                child: const Row(
+                  children: [
+                    Icon(CupertinoIcons.search, size: 20),
+                    SizedBox(width: V12Space.sm),
+                    Text('بحث وأوامر'),
+                  ],
+                ),
               ),
             ],
           ),
@@ -205,12 +164,12 @@ class _CycleRail extends StatelessWidget {
       );
 }
 
-class _RailButton extends StatelessWidget {
+class _SidebarButton extends StatelessWidget {
   final V12Destination destination;
   final bool selected;
   final VoidCallback onTap;
 
-  const _RailButton({
+  const _SidebarButton({
     required this.destination,
     required this.selected,
     required this.onTap,
@@ -219,17 +178,36 @@ class _RailButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: V12Space.xs),
-        child: ListTile(
-          minTileHeight: 48,
-          selected: selected,
-          selectedColor: context.palette.accent,
-          selectedTileColor: context.palette.accentSoft,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(V12Radius.standard),
+        child: CupertinoButton(
+          onPressed: onTap,
+          padding: const EdgeInsets.symmetric(
+            horizontal: V12Space.sm,
+            vertical: V12Space.sm,
           ),
-          leading: Icon(destination.icon),
-          title: Text(destination.label),
-          onTap: onTap,
+          color: selected ? context.palette.accentSoft : null,
+          borderRadius: BorderRadius.circular(V12Radius.standard),
+          child: Row(
+            children: [
+              Icon(
+                selected ? destination.selectedIcon : destination.icon,
+                color: selected
+                    ? context.palette.accent
+                    : context.palette.textMuted,
+              ),
+              const SizedBox(width: V12Space.sm),
+              Expanded(
+                child: Text(
+                  destination.label,
+                  style: TextStyle(
+                    color: selected
+                        ? context.palette.accent
+                        : context.palette.text,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       );
 }

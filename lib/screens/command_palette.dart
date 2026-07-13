@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../design/design_tokens.dart';
@@ -25,11 +26,19 @@ extension V12DestinationX on V12Destination {
       };
 
   IconData get icon => switch (this) {
-        V12Destination.home => Icons.home_outlined,
-        V12Destination.subscriptions => Icons.view_agenda_outlined,
-        V12Destination.insights => Icons.query_stats_rounded,
-        V12Destination.calendar => Icons.calendar_today_outlined,
-        V12Destination.settings => Icons.settings_outlined,
+        V12Destination.home => CupertinoIcons.house,
+        V12Destination.subscriptions => CupertinoIcons.rectangle_stack,
+        V12Destination.insights => CupertinoIcons.chart_bar,
+        V12Destination.calendar => CupertinoIcons.calendar,
+        V12Destination.settings => CupertinoIcons.gear,
+      };
+
+  IconData get selectedIcon => switch (this) {
+        V12Destination.home => CupertinoIcons.house_fill,
+        V12Destination.subscriptions => CupertinoIcons.rectangle_stack_fill,
+        V12Destination.insights => CupertinoIcons.chart_bar_fill,
+        V12Destination.calendar => CupertinoIcons.calendar_today,
+        V12Destination.settings => CupertinoIcons.gear_solid,
       };
 }
 
@@ -37,12 +46,15 @@ Future<void> showV12CommandPalette(
   BuildContext context, {
   required ValueChanged<V12Destination> onDestination,
 }) async {
-  await showModalBottomSheet<void>(
+  await showCupertinoModalPopup<void>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: V12Colors.transparent,
-    builder: (context) => _CommandPalette(onDestination: onDestination),
+    builder: (context) => Material(
+      color: V12Colors.transparent,
+      child: SafeArea(
+        top: false,
+        child: _CommandPalette(onDestination: onDestination),
+      ),
+    ),
   );
 }
 
@@ -85,7 +97,7 @@ class _CommandPaletteState extends State<_CommandPalette> {
         onTap: () {
           Navigator.pop(context);
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const EditSubscriptionScreen()),
+            CupertinoPageRoute(builder: (_) => const EditSubscriptionScreen()),
           );
         },
       ),
@@ -96,7 +108,7 @@ class _CommandPaletteState extends State<_CommandPalette> {
         onTap: () {
           Navigator.pop(context);
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const ImportScreen()),
+            CupertinoPageRoute(builder: (_) => const ImportScreen()),
           );
         },
       ),
@@ -147,15 +159,12 @@ class _CommandPaletteState extends State<_CommandPalette> {
                 ),
               ),
               const SizedBox(height: V12Space.sm),
-              TextField(
+              CupertinoSearchTextField(
                 controller: _controller,
                 autofocus: true,
-                textInputAction: TextInputAction.search,
                 onChanged: (value) => setState(() => _query = value),
-                decoration: const InputDecoration(
-                  hintText: 'ابحث عن شاشة أو إجراء…',
-                  prefixIcon: Icon(Icons.search_rounded),
-                ),
+                placeholder: 'ابحث عن شاشة أو إجراء…',
+                backgroundColor: context.palette.surfaceAlt,
               ),
               const SizedBox(height: V12Space.md),
               Expanded(
@@ -174,17 +183,45 @@ class _CommandPaletteState extends State<_CommandPalette> {
                         ),
                         itemBuilder: (context, index) {
                           final item = visible[index];
-                          return ListTile(
-                            minTileHeight: 56,
-                            contentPadding: const EdgeInsets.symmetric(
+                          return CupertinoButton(
+                            onPressed: item.onTap,
+                            padding: const EdgeInsets.symmetric(
                               horizontal: V12Space.xs,
+                              vertical: V12Space.sm,
                             ),
-                            leading: Icon(item.icon,
-                                color: context.palette.accent),
-                            title: Text(item.label),
-                            subtitle: Text(item.detail),
-                            trailing: const Icon(Icons.arrow_back_rounded),
-                            onTap: item.onTap,
+                            child: Row(
+                              children: [
+                                Icon(item.icon, color: context.palette.accent),
+                                const SizedBox(width: V12Space.sm),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.label,
+                                        style: TextStyle(
+                                          color: context.palette.text,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      const SizedBox(height: V12Space.xxs),
+                                      Text(
+                                        item.detail,
+                                        style: TextStyle(
+                                          color: context.palette.textMuted,
+                                          fontSize: V12Type.caption,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(
+                                  CupertinoIcons.chevron_left,
+                                  color: context.palette.textMuted,
+                                  size: 17,
+                                ),
+                              ],
+                            ),
                           );
                         },
                       ),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../models/subscription.dart';
 import '../services/renewal_intelligence.dart';
+import '../services/device_greeting.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
 import 'calendar_screen.dart';
@@ -338,12 +339,7 @@ class _DashboardGreeting extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    final hour = DateTime.now().hour;
-    final salutation = hour < 12
-        ? 'صباحك مرتب'
-        : hour < 18
-            ? 'مساءك هادئ'
-            : 'ليلة مالية هادئة';
+    final salutation = deviceGreeting();
     return Row(
       children: [
         Expanded(
