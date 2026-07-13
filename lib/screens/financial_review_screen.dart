@@ -57,6 +57,7 @@ class FinancialReviewScreen extends StatelessWidget {
     Subscription subscription,
   ) async {
     await HapticFeedback.selectionClick();
+    if (!context.mounted) return;
     await showCupertinoModalPopup<void>(
       context: context,
       builder: (sheetContext) => CupertinoActionSheet(
