@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=15.1.1"
-set "COMMIT_MESSAGE=v15.1.1+33: fix subscription form typography regression"
+set "RELEASE_VERSION=15.1.2"
+set "COMMIT_MESSAGE=v15.1.2+34: restore Material text inheritance across app"
 
 git init
 git config user.name "basilsa77"

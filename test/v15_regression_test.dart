@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishtirakati/design/design_tokens.dart';
@@ -9,9 +10,98 @@ import 'package:ishtirakati/screens/subscriptions_screen.dart';
 import 'package:ishtirakati/main.dart' show resolveAppThemeMode;
 import 'package:ishtirakati/services/cloud_sync.dart';
 import 'package:ishtirakati/theme.dart';
+import 'package:ishtirakati/widgets/app_material_root.dart';
 import 'package:ishtirakati/widgets/app_media_query.dart';
 
 void main() {
+  testWidgets('app root provides Material and themed text to every route',
+      (tester) async {
+    TextStyle? inheritedStyle;
+    TextStyle? routeStyle;
+    TextStyle? overlayStyle;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildAppTheme(),
+        builder: (context, child) => AppMaterialRoot(child: child!),
+        home: Builder(
+          builder: (context) {
+            inheritedStyle = DefaultTextStyle.of(context).style;
+            return Column(
+              children: [
+                const Text('نص موروث من الثيم'),
+                TextButton(
+                  key: const Key('open-cupertino-route'),
+                  onPressed: () => Navigator.of(context).push(
+                    CupertinoPageRoute<void>(
+                      builder: (_) => Builder(
+                        builder: (routeContext) {
+                          routeStyle = DefaultTextStyle.of(routeContext).style;
+                          return const Text('نص داخل مسار Cupertino');
+                        },
+                      ),
+                    ),
+                  ),
+                  child: const Text('فتح مسار'),
+                ),
+                TextButton(
+                  key: const Key('open-overlay'),
+                  onPressed: () => showCupertinoModalPopup<void>(
+                    context: context,
+                    builder: (overlayContext) {
+                      overlayStyle =
+                          DefaultTextStyle.of(overlayContext).style;
+                      return const Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Text('نص داخل Overlay'),
+                      );
+                    },
+                  ),
+                  child: const Text('فتح طبقة'),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+
+    final text = find.text('نص موروث من الثيم');
+    expect(text, findsOneWidget);
+    expect(
+      find.ancestor(of: text, matching: find.byType(Material)),
+      findsWidgets,
+    );
+    expect(inheritedStyle?.fontSize, V12Type.body);
+    expect(inheritedStyle?.decoration, isNot(TextDecoration.underline));
+    expect(inheritedStyle?.decorationStyle, isNot(TextDecorationStyle.double));
+
+    await tester.tap(find.byKey(const Key('open-cupertino-route')));
+    await tester.pumpAndSettle();
+    final routeText = find.text('نص داخل مسار Cupertino');
+    expect(routeText, findsOneWidget);
+    expect(
+      find.ancestor(of: routeText, matching: find.byType(Material)),
+      findsWidgets,
+    );
+    expect(routeStyle?.fontSize, V12Type.body);
+    expect(routeStyle?.decoration, isNot(TextDecoration.underline));
+    expect(routeStyle?.decorationStyle, isNot(TextDecorationStyle.double));
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('open-overlay')));
+    await tester.pumpAndSettle();
+    final overlayText = find.text('نص داخل Overlay');
+    expect(overlayText, findsOneWidget);
+    expect(
+      find.ancestor(of: overlayText, matching: find.byType(Material)),
+      findsWidgets,
+    );
+    expect(overlayStyle?.fontSize, V12Type.body);
+    expect(overlayStyle?.decoration, isNot(TextDecoration.underline));
+    expect(overlayStyle?.decorationStyle, isNot(TextDecorationStyle.double));
+  });
+
   testWidgets('v15 limits extreme iOS text scaling without disabling it',
       (tester) async {
     double? scaled;
@@ -122,6 +212,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: buildAppTheme(),
+        builder: (context, child) => AppMaterialRoot(child: child!),
         home: const MediaQuery(
           data: MediaQueryData(
             size: Size(390, 844),
@@ -132,6 +223,23 @@ void main() {
       ),
     );
     await tester.pump();
+
+    final renewalCycle = find.text('دورة التجديد');
+    expect(renewalCycle, findsOneWidget);
+    final renewalCycleText = tester.widget<Text>(renewalCycle);
+    final renewalCycleContext = tester.element(renewalCycle);
+    final renewalCycleStyle = DefaultTextStyle.of(renewalCycleContext)
+        .style
+        .merge(renewalCycleText.style);
+    expect(renewalCycleStyle.fontSize, V12Type.body);
+    expect(
+      renewalCycleStyle.decoration,
+      isNot(TextDecoration.underline),
+    );
+    expect(
+      renewalCycleStyle.decorationStyle,
+      isNot(TextDecorationStyle.double),
+    );
 
     final scrollable = find.byType(Scrollable).first;
     await tester.scrollUntilVisible(

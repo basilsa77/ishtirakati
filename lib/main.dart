@@ -23,6 +23,7 @@ import 'services/subscription_store.dart';
 import 'services/update_checker.dart';
 import 'theme.dart';
 import 'widgets/adaptive_cycle_shell.dart';
+import 'widgets/app_material_root.dart';
 import 'widgets/app_media_query.dart';
 
 /// Prevents Flutter Inspector paint overlays from leaking into an installed
@@ -138,11 +139,13 @@ class IshtirakatiApp extends StatelessWidget {
                 isDark ? Brightness.light : Brightness.dark,
           ),
         );
-        return AppMediaQuery(
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-            child: child ?? const SizedBox.shrink(),
+        return AppMaterialRoot(
+          child: AppMediaQuery(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
         );
       },
@@ -161,7 +164,7 @@ class _RenderFailure extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    return ColoredBox(
+    return Material(
       color: p.canvas,
       child: Center(
         child: SingleChildScrollView(
