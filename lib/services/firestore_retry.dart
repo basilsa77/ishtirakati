@@ -26,7 +26,6 @@ class FirestoreRetry {
   static const maxAttempts = 5;
   static const operationTimeout = Duration(seconds: 45);
 
-  @visibleForTesting
   static bool isRetryableCode(String code) {
     final normalized = code.replaceFirst('storage/', '');
     return normalized == 'unavailable' ||

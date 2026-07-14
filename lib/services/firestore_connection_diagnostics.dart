@@ -52,9 +52,6 @@ class FirestoreRestDiagnostic {
   final bool dnsSucceeded;
   final bool connectionSucceeded;
   final Duration elapsed;
-  final String? firebasePlugin;
-  final String? exceptionType;
-  final int attemptCount;
   final String? exceptionType;
 
   const FirestoreRestDiagnostic({
@@ -73,6 +70,9 @@ class FirestoreNativeDiagnostic {
   final String? firebaseCode;
   final String? safeMessage;
   final Duration elapsed;
+  final String? firebasePlugin;
+  final String? exceptionType;
+  final int attemptCount;
 
   const FirestoreNativeDiagnostic({
     required this.succeeded,
