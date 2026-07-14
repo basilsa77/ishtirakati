@@ -10,7 +10,10 @@ import 'package:ishtirakati/services/update_checker.dart';
 void main() {
   test('kAppVersion يطابق إصدار pubspec.yaml', () {
     final pubspec = File('pubspec.yaml').readAsStringSync();
-    final match = RegExp(r'^version:\s*(\d+\.\d+\.\d+)\+\d+', multiLine: true)
+    final match = RegExp(
+      r'^version:\s*(\d+\.\d+\.\d+)\+(\d+)',
+      multiLine: true,
+    )
         .firstMatch(pubspec);
     expect(match, isNotNull, reason: 'تعذر قراءة version من pubspec.yaml');
     expect(
@@ -19,5 +22,6 @@ void main() {
       reason:
           'حدث kAppVersion في lib/services/update_checker.dart ليطابق pubspec.yaml وإلا سيظهر بانر التحديث دائمًا.',
     );
+    expect(kAppBuildNumber, match.group(2));
   });
 }

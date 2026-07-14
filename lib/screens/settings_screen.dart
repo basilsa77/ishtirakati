@@ -673,7 +673,9 @@ class _AboutCard extends StatelessWidget {
         children: [
           const _AboutLine(label: 'التطبيق', value: 'اشتراكاتي'),
           Divider(height: 1, color: p.stroke),
-          const _AboutLine(label: 'الإصدار', value: kAppVersion),
+          const _AboutLine(label: 'الإصدار', value: kAppBuildLabel),
+          Divider(height: 1, color: p.stroke),
+          const _AboutLine(label: 'نوع البناء', value: kAppBuildMode),
           Divider(height: 1, color: p.stroke),
           CupertinoButton(
             padding: EdgeInsets.zero,

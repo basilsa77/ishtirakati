@@ -37,9 +37,16 @@ void disableVisualDebugOverlays() {
   debugRepaintRainbowEnabled = false;
 }
 
+void _installVisualDebugOverlayGuard() {
+  disableVisualDebugOverlays();
+  WidgetsBinding.instance.addPersistentFrameCallback((_) {
+    disableVisualDebugOverlays();
+  });
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  disableVisualDebugOverlays();
+  _installVisualDebugOverlayGuard();
   ErrorWidget.builder = (details) {
     debugPrint('UI render failure (${details.exception.runtimeType}).');
     return const _RenderFailure();
