@@ -314,7 +314,13 @@ class _CalendarGrid extends StatelessWidget {
   final Map<int, List<Subscription>> entries;
   final void Function(int day, List<Subscription> subscriptions) onOpen;
 
-  const _CalendarGrid({required this.month, required this.weekdays, required this.entries, required this.onOpen});
+  const _CalendarGrid({
+    super.key,
+    required this.month,
+    required this.weekdays,
+    required this.entries,
+    required this.onOpen,
+  });
 
   @override
   Widget build(BuildContext context) {
