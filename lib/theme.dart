@@ -246,6 +246,8 @@ ThemeData buildAppTheme({bool dark = false}) {
       textTheme: CupertinoTextThemeData(
         textStyle: TextStyle(
           color: palette.text,
+          fontSize: V12Type.body,
+          height: 1.35,
           fontFamily: V12Type.bodyFamily,
           fontFamilyFallback: V12Type.fallbacks,
         ),

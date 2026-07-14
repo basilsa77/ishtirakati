@@ -1,5 +1,8 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ishtirakati/design/design_tokens.dart';
+import 'package:ishtirakati/screens/edit_subscription_screen.dart';
 import 'package:ishtirakati/screens/calendar_screen.dart';
 import 'package:ishtirakati/screens/pulse_home_screen.dart';
 import 'package:ishtirakati/screens/settings_screen.dart';
@@ -108,5 +111,58 @@ void main() {
     await tester.tap(find.byKey(const Key('renewals-timeline-option')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('renewals-calendar-grid')), findsNothing);
+  });
+
+  testWidgets('subscription form keeps switch and plan labels on body scale',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildAppTheme(),
+        home: const MediaQuery(
+          data: MediaQueryData(
+            size: Size(390, 844),
+            textScaler: TextScaler.linear(3.2),
+          ),
+          child: AppMediaQuery(child: EditSubscriptionScreen()),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final scrollable = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('trial-switch-row')),
+      280,
+      scrollable: scrollable,
+    );
+    final trialTitle = tester.widget<Text>(find.text('تجربة مجانية'));
+    expect(trialTitle.style?.fontSize, V12Type.body);
+    expect(trialTitle.maxLines, 2);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('family-switch-row')),
+      180,
+      scrollable: scrollable,
+    );
+    final familyTitle = tester.widget<Text>(find.text('اشتراك عائلي / مشترك'));
+    expect(familyTitle.style?.fontSize, V12Type.body);
+    expect(familyTitle.maxLines, 2);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('plan-name-field')),
+      220,
+      scrollable: scrollable,
+    );
+    final planField = tester.widget<CupertinoTextFormFieldRow>(
+      find.byKey(const Key('plan-name-field')),
+    );
+    expect(planField.style?.fontSize, V12Type.body);
+    expect(planField.placeholderStyle?.fontSize, V12Type.body);
+    expect(tester.takeException(), isNull);
   });
 }

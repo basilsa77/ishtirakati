@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=15.1.0"
-set "COMMIT_MESSAGE=v15.1.0+32: unify forecasts and fix review accuracy"
+set "RELEASE_VERSION=15.1.1"
+set "COMMIT_MESSAGE=v15.1.1+33: fix subscription form typography regression"
 
 git init
 git config user.name "basilsa77"

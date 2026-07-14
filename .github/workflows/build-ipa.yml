@@ -125,7 +125,7 @@ jobs:
       - name: حفظ ملف قفل الاعتماديات
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: pubspec-lock-v15.1.0-build32
+          name: pubspec-lock-v15.1.1-build33
           path: pubspec.lock
           retention-days: 1
 
@@ -193,19 +193,19 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/ios/iphoneos/Runner.app Payload/
-          zip -qr Ishtirakati-15.1.0-build32-unsigned.ipa Payload
-          ls -lh Ishtirakati-15.1.0-build32-unsigned.ipa
+          zip -qr Ishtirakati-15.1.1-build33-unsigned.ipa Payload
+          ls -lh Ishtirakati-15.1.1-build33-unsigned.ipa
 
       - name: رفع الملف الناتج
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: Ishtirakati-15.1.0-build32-unsigned-ipa
-          path: Ishtirakati-15.1.0-build32-unsigned.ipa
+          name: Ishtirakati-15.1.1-build33-unsigned-ipa
+          path: Ishtirakati-15.1.1-build33-unsigned.ipa
           retention-days: 30
 
       - name: رفع رموز فك التشويش الخاصة بالمطور
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: Ishtirakati-15.1.0-build32-iOS-symbols
+          name: Ishtirakati-15.1.1-build33-iOS-symbols
           path: build/ios-symbols
           retention-days: 30

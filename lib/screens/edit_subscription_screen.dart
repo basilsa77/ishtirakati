@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../data/presets.dart';
+import '../design/design_tokens.dart';
 import '../models/subscription.dart';
 import '../services/itunes_search.dart';
 import '../services/remote_catalog.dart';
@@ -663,6 +664,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               const SizedBox(height: 8),
               if (_kind == PaymentKind.subscription)
               _CupertinoSwitchRow(
+                key: const Key('trial-switch-row'),
                 value: _trialOn,
                 onChanged: (v) => setState(() => _trialOn = v),
                 title: 'تجربة مجانية',
@@ -683,6 +685,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 const SizedBox(height: 6),
               ],
               _CupertinoSwitchRow(
+                key: const Key('family-switch-row'),
                 value: _isFamily,
                 onChanged: (v) => setState(() => _isFamily = v),
                 title: 'اشتراك عائلي / مشترك',
@@ -739,8 +742,15 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 ),
                 children: [
                   CupertinoFormRow(
-                    prefix: const Text('يتجدد تلقائيًا'),
-                    helper: const Text('يظهر ضمن القرارات والتنبيهات قبل الخصم'),
+                    prefix: _FinancialFormText(
+                      'يتجدد تلقائيًا',
+                      color: p.text,
+                    ),
+                    helper: _FinancialFormText(
+                      'يظهر ضمن القرارات والتنبيهات قبل الخصم',
+                      color: p.textMuted,
+                      caption: true,
+                    ),
                     child: CupertinoSwitch(
                       value: _autoRenews,
                       activeTrackColor: p.accent,
@@ -749,8 +759,15 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     ),
                   ),
                   CupertinoFormRow(
-                    prefix: const Text('خدمة أساسية'),
-                    helper: const Text('لا يقترح التطبيق إلغاءها بسبب انخفاض الاستخدام'),
+                    prefix: _FinancialFormText(
+                      'خدمة أساسية',
+                      color: p.text,
+                    ),
+                    helper: _FinancialFormText(
+                      'لا يقترح التطبيق إلغاءها بسبب انخفاض الاستخدام',
+                      color: p.textMuted,
+                      caption: true,
+                    ),
                     child: CupertinoSwitch(
                       value: _isEssential,
                       activeTrackColor: p.accent,
@@ -759,8 +776,19 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     ),
                   ),
                   CupertinoTextFormFieldRow(
+                    key: const Key('plan-name-field'),
                     controller: _planName,
                     placeholder: 'اسم الخطة (اختياري)',
+                    style: TextStyle(
+                      color: p.text,
+                      fontSize: V12Type.body,
+                      height: 1.35,
+                    ),
+                    placeholderStyle: TextStyle(
+                      color: p.textMuted,
+                      fontSize: V12Type.body,
+                      height: 1.35,
+                    ),
                     textAlign: TextAlign.end,
                   ),
                 ],
@@ -832,6 +860,7 @@ class _CupertinoSwitchRow extends StatelessWidget {
   final ValueChanged<bool> onChanged;
 
   const _CupertinoSwitchRow({
+    super.key,
     required this.title,
     required this.detail,
     required this.value,
@@ -849,9 +878,28 @@ class _CupertinoSwitchRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(color: p.text, fontWeight: FontWeight.w800)),
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: p.text,
+                    fontSize: V12Type.body,
+                    height: 1.3,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
                 const SizedBox(height: 3),
-                Text(detail, style: TextStyle(color: p.textMuted, fontSize: 12.5)),
+                Text(
+                  detail,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: p.textMuted,
+                    fontSize: V12Type.caption,
+                    height: 1.35,
+                  ),
+                ),
               ],
             ),
           ),
@@ -865,4 +913,29 @@ class _CupertinoSwitchRow extends StatelessWidget {
       ),
     );
   }
+}
+
+class _FinancialFormText extends StatelessWidget {
+  final String text;
+  final Color color;
+  final bool caption;
+
+  const _FinancialFormText(
+    this.text, {
+    required this.color,
+    this.caption = false,
+  });
+
+  @override
+  Widget build(BuildContext context) => Text(
+        text,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: color,
+          fontSize: caption ? V12Type.caption : V12Type.body,
+          height: 1.35,
+          fontWeight: caption ? FontWeight.w500 : FontWeight.w700,
+        ),
+      );
 }
