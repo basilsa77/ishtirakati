@@ -2,6 +2,7 @@
 /// عربي أولًا: محلي افتراضيًا، مع مزامنة وAI اختياريين بإفصاح واضح.
 library;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';

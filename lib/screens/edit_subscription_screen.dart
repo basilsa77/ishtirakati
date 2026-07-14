@@ -510,6 +510,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                       name: _name.text,
                       emoji: _emoji,
                       iconUrl: _iconUrl,
+                      manageUrl: _url.text,
                       tint: categoryColor(_category),
                       size: 52,
                     ),

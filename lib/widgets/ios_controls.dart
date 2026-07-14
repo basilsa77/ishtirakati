@@ -232,7 +232,7 @@ class IosStatusNotice extends StatelessWidget {
           if (onRetry != null)
             CupertinoButton(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              minSize: 32,
+              minimumSize: const Size(32, 32),
               onPressed: onRetry,
               child: const Text('إعادة المحاولة', style: TextStyle(fontSize: 12.5)),
             ),

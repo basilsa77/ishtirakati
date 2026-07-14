@@ -321,7 +321,7 @@ class _FilterChip extends StatelessWidget {
     final p = context.palette;
     return CupertinoButton(
       padding: const EdgeInsetsDirectional.only(end: 8),
-      minSize: 0,
+      minimumSize: Size.zero,
       onPressed: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
