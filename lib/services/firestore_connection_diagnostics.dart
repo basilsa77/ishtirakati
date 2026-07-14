@@ -8,10 +8,25 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'firestore_retry.dart';
+
 const _firestoreHost = 'firestore.googleapis.com';
 const _firebaseProjectId = 'ishtirakati-260f7';
 const _firestoreDatabaseId = '(default)';
 const _diagnosticTimeout = Duration(seconds: 30);
+
+const firebaseCoreVersion = '4.11.0';
+const firebaseAuthVersion = '6.5.4';
+const cloudFirestoreVersion = '6.6.0';
+const firebaseAppCheckVersion = '0.4.5';
+const firebaseIosSdkVersion = String.fromEnvironment(
+  'FIREBASE_IOS_SDK_VERSION',
+  defaultValue: '12.15.0',
+);
+const iosDependencyManager = String.fromEnvironment(
+  'IOS_DEPENDENCY_MANAGER',
+  defaultValue: 'Swift Package Manager',
+);
 
 enum FirestoreRestOutcome {
   success,
@@ -37,6 +52,9 @@ class FirestoreRestDiagnostic {
   final bool dnsSucceeded;
   final bool connectionSucceeded;
   final Duration elapsed;
+  final String? firebasePlugin;
+  final String? exceptionType;
+  final int attemptCount;
   final String? exceptionType;
 
   const FirestoreRestDiagnostic({
@@ -62,6 +80,9 @@ class FirestoreNativeDiagnostic {
     required this.firebaseCode,
     required this.safeMessage,
     required this.elapsed,
+    this.firebasePlugin,
+    this.exceptionType,
+    this.attemptCount = 0,
   });
 }
 
@@ -117,6 +138,7 @@ class FirestoreConnectionDiagnostics {
             firebaseCode: 'unauthenticated',
             safeMessage: null,
             elapsed: Duration.zero,
+            attemptCount: 0,
           ),
           completedAt: DateTime.now(),
         );
@@ -287,12 +309,16 @@ class FirestoreConnectionDiagnostics {
 
   static Future<FirestoreNativeDiagnostic> _runNative(String uid) async {
     final watch = Stopwatch()..start();
+    var attempts = 0;
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .get(const GetOptions(source: Source.server))
-          .timeout(_diagnosticTimeout);
+      final snapshot = await FirestoreRetry.run(
+        operation: 'diagnostic-native-read',
+        action: () => FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .get(const GetOptions(source: Source.server)),
+        onEvent: (event) => attempts = event.attempt,
+      );
       watch.stop();
       return FirestoreNativeDiagnostic(
         succeeded: true,
@@ -300,6 +326,7 @@ class FirestoreConnectionDiagnostics {
         firebaseCode: null,
         safeMessage: null,
         elapsed: watch.elapsed,
+        attemptCount: attempts,
       );
     } on FirebaseException catch (error, stackTrace) {
       watch.stop();
@@ -318,6 +345,9 @@ class FirestoreConnectionDiagnostics {
         firebaseCode: error.code,
         safeMessage: safeMessage.isEmpty ? null : safeMessage,
         elapsed: watch.elapsed,
+        firebasePlugin: error.plugin,
+        exceptionType: error.runtimeType.toString(),
+        attemptCount: attempts,
       );
     } on TimeoutException {
       watch.stop();
@@ -327,6 +357,8 @@ class FirestoreConnectionDiagnostics {
         firebaseCode: 'timeout',
         safeMessage: null,
         elapsed: watch.elapsed,
+        exceptionType: 'TimeoutException',
+        attemptCount: attempts,
       );
     } catch (error, stackTrace) {
       watch.stop();
@@ -343,6 +375,8 @@ class FirestoreConnectionDiagnostics {
         firebaseCode: 'non-firebase-error',
         safeMessage: error.runtimeType.toString(),
         elapsed: watch.elapsed,
+        exceptionType: error.runtimeType.toString(),
+        attemptCount: attempts,
       );
     }
   }

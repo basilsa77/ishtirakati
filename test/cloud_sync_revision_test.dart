@@ -51,67 +51,75 @@ void main() {
     test('only transient Firestore failures are retried', () {
       expect(CloudSync.isRetryableFirebaseCode('unavailable'), isTrue);
       expect(CloudSync.isRetryableFirebaseCode('aborted'), isTrue);
-      expect(CloudSync.isRetryableFirebaseCode('internal'), isTrue);
+      expect(CloudSync.isRetryableFirebaseCode('internal'), isFalse);
       expect(CloudSync.isRetryableFirebaseCode('permission-denied'), isFalse);
       expect(CloudSync.isRetryableFirebaseCode('unauthenticated'), isFalse);
       expect(CloudSync.isRetryableFirebaseCode('not-found'), isFalse);
     });
 
-    test('transaction document not-found falls back to first create', () async {
+    test('revision zero goes directly to first create without a server probe',
+        () async {
       var firstCreateCalls = 0;
-      final outcome = await CloudSync.writeWithFirstCreateFallback(
+      var transactionCalls = 0;
+      final outcome = await CloudSync.writeWithoutPreflightRead(
         localRevision: 0,
-        documentExists: () async => true,
-        transactionUpdate: () async => throw FirebaseException(
-          plugin: 'cloud_firestore',
-          code: 'not-found',
-          message: 'The requested document was not found.',
-        ),
         firstCreate: () async {
           firstCreateCalls++;
+          return const CloudSyncWriteOutcome(
+            operation: CloudSyncWriteOperation.firstCreate,
+            documentExisted: false,
+            revision: 1,
+          );
+        },
+        transactionUpdate: () async {
+          transactionCalls++;
+          throw StateError('transaction must not run');
         },
       );
 
       expect(firstCreateCalls, 1);
+      expect(transactionCalls, 0);
       expect(outcome.operation, CloudSyncWriteOperation.firstCreate);
       expect(outcome.documentExisted, isFalse);
       expect(outcome.revision, 1);
     });
 
-    test('missing database never falls back to document creation', () async {
-      var firstCreateCalls = 0;
-
+    test('first-create failure is not hidden by a transaction fallback',
+        () async {
+      var transactionCalls = 0;
       await expectLater(
-        CloudSync.writeWithFirstCreateFallback(
+        CloudSync.writeWithoutPreflightRead(
           localRevision: 0,
-          documentExists: () async => throw FirebaseException(
+          firstCreate: () async => throw FirebaseException(
             plugin: 'cloud_firestore',
-            code: 'not-found',
-            message: 'The database (default) does not exist.',
+            code: 'unavailable',
           ),
-          transactionUpdate: () async => 1,
-          firstCreate: () async {
-            firstCreateCalls++;
+          transactionUpdate: () async {
+            transactionCalls++;
+            throw StateError('transaction must not run');
           },
         ),
         throwsA(isA<FirebaseException>()),
       );
-
-      expect(firstCreateCalls, 0);
+      expect(transactionCalls, 0);
     });
 
     test('existing cloud document stays on transaction update', () async {
       var firstCreateCalls = 0;
       var transactionCalls = 0;
-      final outcome = await CloudSync.writeWithFirstCreateFallback(
+      final outcome = await CloudSync.writeWithoutPreflightRead(
         localRevision: 4,
-        documentExists: () async => throw StateError('probe not expected'),
         transactionUpdate: () async {
           transactionCalls++;
-          return 5;
+          return const CloudSyncWriteOutcome(
+            operation: CloudSyncWriteOperation.transactionUpdate,
+            documentExisted: true,
+            revision: 5,
+          );
         },
         firstCreate: () async {
           firstCreateCalls++;
+          throw StateError('first create not expected');
         },
       );
 
@@ -120,6 +128,56 @@ void main() {
       expect(outcome.operation, CloudSyncWriteOperation.transactionUpdate);
       expect(outcome.documentExisted, isTrue);
       expect(outcome.revision, 5);
+    });
+
+    test('queued writes never persist as confirmed revisions', () {
+      expect(
+        CloudSync.shouldPersistConfirmedRevision(
+          CloudSyncDelivery.queuedLocally,
+        ),
+        isFalse,
+      );
+      expect(
+        CloudSync.shouldPersistConfirmedRevision(
+          CloudSyncDelivery.serverConfirmed,
+        ),
+        isTrue,
+      );
+    });
+
+    test('REST fallback is restricted to first-create transient failures', () {
+      expect(
+        CloudSync.shouldUseRestFallback(
+          enabled: true,
+          localRevision: 0,
+          firebaseCode: 'unavailable',
+        ),
+        isTrue,
+      );
+      expect(
+        CloudSync.shouldUseRestFallback(
+          enabled: false,
+          localRevision: 0,
+          firebaseCode: 'unavailable',
+        ),
+        isFalse,
+      );
+      expect(
+        CloudSync.shouldUseRestFallback(
+          enabled: true,
+          localRevision: 1,
+          firebaseCode: 'unavailable',
+        ),
+        isFalse,
+      );
+      expect(
+        CloudSync.shouldUseRestFallback(
+          enabled: true,
+          localRevision: 0,
+          firebaseCode: 'permission-denied',
+        ),
+        isFalse,
+      );
     });
   });
 

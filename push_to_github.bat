@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=15.2.6"
-set "COMMIT_MESSAGE=v15.2.6+41: add decisive Firestore transport diagnostics"
+set "RELEASE_VERSION=15.3.0"
+set "COMMIT_MESSAGE=v15.3.0+42: add reversible Firestore native fallback"
 
 git init
 git config user.name "basilsa77"

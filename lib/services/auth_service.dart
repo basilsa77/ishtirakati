@@ -15,6 +15,8 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../firebase_options.dart';
 import '../l10n/app_localizations.dart';
+import 'firebase_build_config.dart';
+import 'firestore_bootstrap.dart';
 
 class AuthException implements Exception {
   final String message;
@@ -31,14 +33,22 @@ class AuthService {
   /// App Attest cannot issue production assertions for the current free-team
   /// sideload build. Enable this only after registering the iOS app in Firebase
   /// App Check with a paid Apple Developer team.
-  static const bool appCheckEnabled = bool.fromEnvironment(
-    'ENABLE_FIREBASE_APP_CHECK',
-    defaultValue: false,
-  );
+  static const bool appCheckEnabled = FirebaseBuildConfig.appCheckEnabled;
+
+  static bool get appCheckDebugEnabled =>
+      FirebaseBuildConfig.appCheckDebugEnabled;
+
+  static String get appCheckProviderName => !appCheckEnabled
+      ? 'disabled'
+      : appCheckDebugEnabled
+          ? 'debug'
+          : 'app-attest/device-check';
 
   static bool _initialized = false;
   static bool _googleInitialized = false;
   static final ValueNotifier<String?> appCheckWarning = ValueNotifier(null);
+  static final ValueNotifier<bool?> appCheckTokenObtained =
+      ValueNotifier(null);
 
   /// هل المزامنة السحابية متاحة (الإعداد مكتمل والتهيئة نجحت)؟
   static bool get isAvailable =>
@@ -58,15 +68,20 @@ class AuthService {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+      FirestoreBootstrap.configure();
       _initialized = true;
       if (appCheckEnabled) {
         try {
           await FirebaseAppCheck.instance.activate(
-            providerApple:
-                const AppleAppAttestWithDeviceCheckFallbackProvider(),
+            providerApple: appCheckDebugEnabled
+                ? const AppleDebugProvider()
+                : const AppleAppAttestWithDeviceCheckFallbackProvider(),
           );
+          final token = await FirebaseAppCheck.instance.getToken(false);
+          appCheckTokenObtained.value = token?.isNotEmpty;
           appCheckWarning.value = null;
         } catch (error) {
+          appCheckTokenObtained.value = false;
           final message = tr('appCheckActivationWarning');
           appCheckWarning.value = message;
           debugPrint(
@@ -75,6 +90,7 @@ class AuthService {
           );
         }
       } else {
+        appCheckTokenObtained.value = null;
         appCheckWarning.value = null;
         debugPrint(
           'App Check is disabled for this sideload build. Firebase Auth and '

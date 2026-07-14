@@ -130,7 +130,7 @@ jobs:
       - name: حفظ ملف قفل الاعتماديات
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: pubspec-lock-v15.2.6-build41
+          name: pubspec-lock-v15.3.0-build42
           path: pubspec.lock
           retention-days: 1
 
@@ -147,12 +147,9 @@ jobs:
         run: |
           # flutter build --no-codesign معطوب في Flutter الحديث. نولد الإعدادات
           # فقط ثم نبني عبر xcodebuild مع تعطيل التوقيع.
-          flutter build ios --release --config-only --no-codesign --obfuscate --split-debug-info=build/ios-symbols --dart-define=ENABLE_FIREBASE_APP_CHECK=false --dart-define=INTERNAL_BUILD=true --dart-define=GIT_COMMIT=$GITHUB_SHA
-          # Flutter الحديث يستخدم Swift Package Manager. ندعم CocoaPods فقط
-          # للمشاريع القديمة التي ما زال لديها Podfile.
-          if [ -f ios/Podfile ]; then
-            (cd ios && pod install)
-          fi
+          flutter build ios --release --config-only --no-codesign --obfuscate --split-debug-info=build/ios-symbols --dart-define=INTERNAL_BUILD=true --dart-define=ENABLE_REST_FALLBACK=true --dart-define=ENABLE_FIRESTORE_OFFLINE_QUEUE=true --dart-define=ENABLE_FIREBASE_APP_CHECK=false --dart-define=ENABLE_FIREBASE_APP_CHECK_DEBUG=false --dart-define=FIREBASE_IOS_SDK_VERSION=12.15.0 --dart-define=IOS_DEPENDENCY_MANAGER=SPM --dart-define=GIT_COMMIT=$GITHUB_SHA
+          # هذا المشروع يُحل اعتماديات Firebase عبر Swift Package Manager.
+          # لا نشغّل CocoaPods بالتوازي حتى لا نخلط مديري الاعتماديات.
           # سمة com.apple.provenance تُفشل توقيع الأطر الداخلي على أنظمة
           # macOS الحديثة (flutter/flutter#181103). نمسح السمات الموسعة.
           xattr -cr ios build 2>/dev/null || true
@@ -201,19 +198,27 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/ios/iphoneos/Runner.app Payload/
-          zip -qr "Ishtirakati-15.2.6-build41-${SHORT_SHA}-unsigned.ipa" Payload
-          ls -lh "Ishtirakati-15.2.6-build41-${SHORT_SHA}-unsigned.ipa"
+          zip -qr "Ishtirakati-15.3.0-build42-${SHORT_SHA}-unsigned.ipa" Payload
+          ls -lh "Ishtirakati-15.3.0-build42-${SHORT_SHA}-unsigned.ipa"
 
       - name: رفع الملف الناتج
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: Ishtirakati-15.2.6-build41-${{ env.SHORT_SHA }}-unsigned-ipa
-          path: Ishtirakati-15.2.6-build41-${{ env.SHORT_SHA }}-unsigned.ipa
+          name: Ishtirakati-15.3.0-build42-${{ env.SHORT_SHA }}-unsigned-ipa
+          path: Ishtirakati-15.3.0-build42-${{ env.SHORT_SHA }}-unsigned.ipa
           retention-days: 30
 
       - name: رفع رموز فك التشويش الخاصة بالمطور
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: Ishtirakati-15.2.6-build41-${{ env.SHORT_SHA }}-iOS-symbols
+          name: Ishtirakati-15.3.0-build42-${{ env.SHORT_SHA }}-iOS-symbols
           path: build/ios-symbols
+          retention-days: 30
+
+      - name: رفع قفل Swift Package Manager
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: Ishtirakati-15.3.0-build42-${{ env.SHORT_SHA }}-Package-resolved
+          path: ios/**/Package.resolved
+          if-no-files-found: warn
           retention-days: 30

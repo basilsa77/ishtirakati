@@ -144,6 +144,35 @@ class AppLocalizations {
           'وصل REST وNative إلى Firestore بنجاح.',
       'firestoreDiagnosticNeedsReviewConclusion':
           'اكتمل الاختبار وتحتاج النتيجة إلى مراجعة الرمز الظاهر أعلاه.',
+      'cloudQueuedLocally':
+          'تم حفظ النسخة محليًا وهي بانتظار المزامنة السحابية',
+      'firestoreDiagnosticEnvironmentTitle': 'بيئة Firebase',
+      'firestoreDiagnosticAppVersion': 'الإصدار والبناء',
+      'firestoreDiagnosticCommit': 'بصمة Git',
+      'firestoreDiagnosticProject': 'المشروع',
+      'firestoreDiagnosticDatabase': 'قاعدة البيانات',
+      'firestoreDiagnosticSdkVersions': 'إصدارات Firebase',
+      'firestoreDiagnosticDependencyManager': 'مدير اعتماديات iOS',
+      'firestoreDiagnosticFeatureFlags': 'خيارات البناء',
+      'firestoreDiagnosticAppCheck': 'App Check: مفعّل | المزوّد | الرمز',
+      'firestoreDiagnosticFeatureFlagsValue':
+          'الانتظار المحلي: {offline} | REST الاحتياطي: {rest} | App Check التشخيصي: {appCheckDebug}',
+      'firestoreDiagnosticAppCheckValue':
+          'مفعّل: {enabled} | المزوّد: {provider} | الرمز: {token}',
+      'firestoreDiagnosticNotRequired': 'غير مطلوب',
+      'firestoreDiagnosticNotUsed': 'لم يُستخدم',
+      'firestoreDiagnosticServerConfirmed': 'نجاح مؤكد من الخادم',
+      'firestoreDiagnosticQueuedLocally':
+          'محفوظ محليًا وبانتظار الخادم',
+      'firestoreDiagnosticFailed': 'فشل',
+      'firestoreDiagnosticSyncRestStatus': 'حالة REST للإنشاء',
+      'firestoreDiagnosticSyncRestResult': 'نتيجة REST للإنشاء',
+      'firestoreDiagnosticPlugin': 'إضافة Firebase',
+      'firestoreDiagnosticRuntimeType': 'نوع الاستثناء',
+      'firestoreDiagnosticNativeOperation': 'عملية Native',
+      'firestoreDiagnosticAttempts': 'عدد المحاولات',
+      'firestoreDiagnosticNativeResult': 'نتيجة Native',
+      'firestoreDiagnosticPendingWrites': 'كتابات محلية معلّقة',
       'cloudStorageResourceNotFound':
           'مساحة التخزين السحابية أو الملف المطلوب غير موجود. تحقق من إعداد Firebase.',
       'cloudFailedPrecondition':

@@ -10,7 +10,9 @@ import '../l10n/app_localizations.dart';
 import '../services/account_deletion_service.dart';
 import '../services/auth_service.dart';
 import '../services/cloud_sync.dart';
+import '../services/firebase_build_config.dart';
 import '../services/firestore_connection_diagnostics.dart';
+import '../services/firestore_rest_fallback.dart';
 import '../services/notification_service.dart';
 import '../services/subscription_store.dart';
 import '../services/update_checker.dart';
@@ -430,6 +432,11 @@ class _AccountCard extends StatelessWidget {
                           status.message ?? _syncSuccessText(status.updatedAt),
                           p.accent,
                         ),
+                      CloudSyncPhase.queued => (
+                          CupertinoIcons.clock,
+                          status.message ?? tr('cloudQueuedLocally'),
+                          p.warning,
+                        ),
                       CloudSyncPhase.failure => (
                            CupertinoIcons.exclamationmark_circle,
                            status.message ??
@@ -603,6 +610,7 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
     final p = context.palette;
     final rest = result.rest;
     final native = result.native;
+    final sync = CloudSync.status.value;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -614,6 +622,64 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            tr('firestoreDiagnosticEnvironmentTitle'),
+            style: TextStyle(
+              color: p.text,
+              fontSize: V15Type.bodySmall,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticAppVersion'),
+            value: '$kAppVersion ($kAppBuildNumber)',
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticCommit'),
+            value: kGitCommitShort,
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticProject'),
+            value: FirestoreRestFallback.projectId,
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticDatabase'),
+            value: FirestoreRestFallback.databaseId,
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticSdkVersions'),
+            value: 'core $firebaseCoreVersion | auth $firebaseAuthVersion | '
+                'firestore $cloudFirestoreVersion | '
+                'app-check $firebaseAppCheckVersion | iOS $firebaseIosSdkVersion',
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticDependencyManager'),
+            value: iosDependencyManager,
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticFeatureFlags'),
+            value: tr('firestoreDiagnosticFeatureFlagsValue', {
+              'offline': _yesNo(FirebaseBuildConfig.offlineQueueEnabled),
+              'rest': _yesNo(FirebaseBuildConfig.restFallbackEnabled),
+              'appCheckDebug':
+                  _yesNo(FirebaseBuildConfig.appCheckDebugEnabled),
+            }),
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticAppCheck'),
+            value: tr('firestoreDiagnosticAppCheckValue', {
+              'enabled': _yesNo(AuthService.appCheckEnabled),
+              'provider': AuthService.appCheckProviderName,
+              'token': AuthService.appCheckTokenObtained.value == null
+                  ? tr('firestoreDiagnosticNotRequired')
+                  : _yesNo(AuthService.appCheckTokenObtained.value!),
+            }),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Divider(height: 1, color: p.stroke),
+          ),
           Text(
             tr('firestoreDiagnosticRestTitle'),
             style: TextStyle(
@@ -676,8 +742,46 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
             value: native.firebaseCode ?? '-',
           ),
           _DiagnosticLine(
+            label: tr('firestoreDiagnosticPlugin'),
+            value: native.firebasePlugin ?? sync.firebasePlugin ?? '-',
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticRuntimeType'),
+            value: native.exceptionType ?? sync.exceptionType ?? '-',
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticNativeOperation'),
+            value: sync.operation ?? 'diagnostic-native-read',
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticAttempts'),
+            value: '${native.attemptCount}',
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticNativeResult'),
+            value: native.succeeded
+                ? tr('firestoreDiagnosticServerConfirmed')
+                : sync.delivery == CloudSyncDelivery.queuedLocally
+                    ? tr('firestoreDiagnosticQueuedLocally')
+                    : tr('firestoreDiagnosticFailed'),
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticPendingWrites'),
+            value: sync.hasPendingWrites == null
+                ? '-'
+                : _yesNo(sync.hasPendingWrites!),
+          ),
+          _DiagnosticLine(
             label: tr('firestoreDiagnosticDuration'),
             value: '${native.elapsed.inMilliseconds} ms',
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticSyncRestStatus'),
+            value: sync.restHttpStatus?.toString() ?? '-',
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticSyncRestResult'),
+            value: sync.restOutcome ?? tr('firestoreDiagnosticNotUsed'),
           ),
           if (native.safeMessage != null) ...[
             const SizedBox(height: 5),
