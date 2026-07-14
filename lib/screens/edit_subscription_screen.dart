@@ -839,7 +839,6 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     );
   }
 }
-
 class _CupertinoSwitchRow extends StatelessWidget {
   final String title;
   final String detail;
