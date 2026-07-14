@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/subscription.dart';
 import '../services/remote_catalog.dart';
 import '../services/subscription_store.dart';
@@ -72,18 +73,18 @@ class DashboardScreen extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.system_update_alt_rounded,
                               color: AppColors.gold,
                               size: 20,
                             ),
-                            const SizedBox(width: 10),
+                            SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                'نسخة أحدث متاحة ($v)',
-                                style: const TextStyle(
+                                tr('ui_a19013d189fa', {'value0': v}),
+                                style: TextStyle(
                                   color: AppColors.ink,
-                                  fontSize: 12.5,
+                                  fontSize: V15Type.labelSmall,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -95,7 +96,7 @@ class DashboardScreen extends StatelessWidget {
                                 ),
                                 mode: LaunchMode.externalApplication,
                               ),
-                              child: const Text('تنزيل'),
+                              child: Text(tr('ui_69357e138dca')),
                             ),
                           ],
                         ),
@@ -111,44 +112,44 @@ class DashboardScreen extends StatelessWidget {
                 currency: currency,
               ),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             FadeSlideIn(
               delayMs: 60,
               child: Row(
                 children: [
                   _QuickAction(
                     icon: Icons.add_rounded,
-                    label: 'إضافة',
+                    label: tr('ui_d52453ac627d'),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const EditSubscriptionScreen(),
+                        builder: (_) => EditSubscriptionScreen(),
                       ),
                     ),
                   ),
                   _QuickAction(
                     icon: Icons.auto_awesome_rounded,
-                    label: 'استيراد',
+                    label: tr('ui_e8c12678c3b4'),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const ImportScreen(),
+                        builder: (_) => ImportScreen(),
                       ),
                     ),
                   ),
                   _QuickAction(
                     icon: Icons.alternate_email_rounded,
-                    label: 'البريد',
+                    label: tr('ui_cb572218fea7'),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const EmailLinkScreen(),
+                        builder: (_) => EmailLinkScreen(),
                       ),
                     ),
                   ),
                   _QuickAction(
                     icon: Icons.calendar_month_rounded,
-                    label: 'التقويم',
+                    label: tr('ui_c6c25b9b516f'),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const CalendarScreen(),
+                        builder: (_) => CalendarScreen(),
                       ),
                     ),
                   ),
@@ -156,41 +157,41 @@ class DashboardScreen extends StatelessWidget {
               ),
             ),
             if (trials.isNotEmpty) ...[
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               FadeSlideIn(
                 delayMs: 80,
                 child: _NoticeCard(
                   icon: Icons.hourglass_bottom_rounded,
                   color: AppColors.danger,
                   bg: AppColors.dangerSoft,
-                  title: 'تجارب مجانية على وشك التحول لمدفوعة',
+                  title: tr('ui_47edefeab4b6'),
                   lines: [
                     for (final t in trials.take(3))
-                      '«${t.name}» تنتهي ${fmtDate(t.trialEndDate!)} '
-                          'ثم يُخصم ${fmtMoney(t.price, t.currency)}',
+                      tr('ui_45336e9e2ab8', {'value0': t.name, 'value1': fmtDate(t.trialEndDate!)}) +
+                          tr('ui_27ce6b033958', {'value0': fmtMoney(t.price, t.currency)}),
                   ],
                 ),
               ),
             ],
             if (priceAlerts.isNotEmpty) ...[
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               FadeSlideIn(
                 delayMs: 100,
                 child: _NoticeCard(
                   icon: Icons.trending_up_rounded,
                   color: AppColors.gold,
                   bg: AppColors.goldSoft,
-                  title: 'تدفع أكثر من السعر المعتاد',
+                  title: tr('ui_ad985475cbb8'),
                   lines: [
                     for (final (sub, hint) in priceAlerts.take(2))
-                      '«${sub.name}»: تدفع ${fmtMoney(sub.price, sub.currency)} '
-                          'والمعتاد ${fmtMoney(hint, 'SAR')}',
+                      tr('ui_b9b0ded20cf0', {'value0': sub.name, 'value1': fmtMoney(sub.price, sub.currency)}) +
+                          tr('ui_d1feaff4c27d', {'value0': fmtMoney(hint, sub.currency)}),
                   ],
                 ),
               ),
             ],
             if (budget > 0) ...[
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               FadeSlideIn(
                 delayMs: 120,
                 child: _BudgetCard(
@@ -201,24 +202,24 @@ class DashboardScreen extends StatelessWidget {
               ),
             ],
             if (neverUsed.isNotEmpty) ...[
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               FadeSlideIn(
                 delayMs: 130,
                 child: _NoticeCard(
                   icon: Icons.visibility_off_rounded,
                   color: AppColors.gold,
                   bg: AppColors.goldSoft,
-                  title: 'راجع قيمة اشتراكاتك',
+                  title: tr('ui_30c2a6dcdae1'),
                   lines: [
-                    'لم تسجل استخدام «${neverUsed.first.name}» بعد.',
+                    tr('ui_933f0f6ac584', {'value0': neverUsed.first.name}),
                     if (neverUsed.length > 1)
-                      'لديك ${neverUsed.length} اشتراكات بلا استخدام مسجل.',
+                      tr('ui_7578fd03e2b1', {'value0': neverUsed.length}),
                   ],
                 ),
               ),
             ],
             if (savings.isNotEmpty || lifetime.isNotEmpty) ...[
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               FadeSlideIn(
                 delayMs: 140,
                 child: Row(
@@ -228,20 +229,20 @@ class DashboardScreen extends StatelessWidget {
                         child: _MiniStat(
                           icon: Icons.receipt_long_rounded,
                           color: AppColors.gold,
-                          label: 'مدفوع منذ البداية',
+                          label: tr('ui_29e64deb8b19'),
                           value: lifetime.entries
                               .map((e) => fmtMoney(e.value, e.key))
                               .join(' + '),
                         ),
                       ),
                     if (savings.isNotEmpty && lifetime.isNotEmpty)
-                      const SizedBox(width: 10),
+                      SizedBox(width: 10),
                     if (savings.isNotEmpty)
                       Expanded(
                         child: _MiniStat(
                           icon: Icons.savings_rounded,
                           color: AppColors.primary,
-                          label: 'توفير الإيقاف شهريًا',
+                          label: tr('ui_98e0cd1b6e7f'),
                           value: savings.entries
                               .map((e) => fmtMoney(e.value, e.key))
                               .join(' + '),
@@ -251,25 +252,25 @@ class DashboardScreen extends StatelessWidget {
                 ),
               ),
             ],
-            const SizedBox(height: 22),
+            SizedBox(height: 22),
             Row(
               children: [
-                const Expanded(
-                  child: SectionTitle('القادم عليك'),
+                Expanded(
+                  child: SectionTitle(tr('ui_0eb554a9cdb9')),
                 ),
                 TextButton.icon(
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => const CalendarScreen(),
+                      builder: (_) => CalendarScreen(),
                     ),
                   ),
-                  icon: const Icon(Icons.calendar_month_rounded, size: 18),
-                  label: const Text('التقويم'),
+                  icon: Icon(Icons.calendar_month_rounded, size: 18),
+                  label: Text(tr('ui_c6c25b9b516f')),
                 ),
               ],
             ),
             if (upcoming.isEmpty)
-              const AppCard(
+              AppCard(
                 child: Row(
                   children: [
                     Icon(
@@ -280,7 +281,7 @@ class DashboardScreen extends StatelessWidget {
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'لا خصومات خلال الشهر القادم. استرخِ!',
+                        tr('ui_9b53e3fd945f'),
                         style: TextStyle(color: AppColors.muted),
                       ),
                     ),
@@ -324,7 +325,7 @@ class _HeroCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: AppColors.heroGradient,
         borderRadius: BorderRadius.circular(28),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
             color: Color(0x4414B886),
             blurRadius: 24,
@@ -335,62 +336,62 @@ class _HeroCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'مصروفك الشهري',
+          Text(
+            tr('ui_6cb053a373e8'),
             style: TextStyle(
               color: Color(0xCC06231A),
-              fontSize: 13.5,
+              fontSize: V15Type.label,
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               AnimatedMoney(
                 value: monthly,
                 currency: currency,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
-                  fontSize: 44,
+                  fontSize: V15Type.display,
                   fontWeight: FontWeight.w900,
                   height: 1.05,
                 ),
               ),
-              const SizedBox(width: 8),
-              const Padding(
+              SizedBox(width: 8),
+              Padding(
                 padding: EdgeInsets.only(bottom: 7),
                 child: Text(
-                  'شهريًا',
+                  tr('ui_b4999a258992'),
                   style: TextStyle(
                     color: Color(0xB306231A),
-                    fontSize: 13,
+                    fontSize: V15Type.labelSmall,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 14,
               vertical: 9,
             ),
             decoration: BoxDecoration(
-              color: const Color(0x2E062318),
+              color: Color(0x2E062318),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               children: [
-                _HeroFact(label: 'سنويًا', value: fmtMoney(yearly, currency)),
+                _HeroFact(label: tr('ui_a1851a504669'), value: fmtMoney(yearly, currency)),
                 _heroDivider(),
-                _HeroFact(label: 'يوميًا', value: fmtMoney(daily, currency)),
+                _HeroFact(label: tr('ui_99646e599b41'), value: fmtMoney(daily, currency)),
                 _heroDivider(),
                 _HeroFact(
-                  label: 'نشط',
+                  label: tr('ui_629e90b3af3d'),
                   value: pausedCount > 0
-                      ? '$activeCount (+$pausedCount موقوف)'
+                      ? tr('ui_8b505e631670', {'value0': activeCount, 'value1': pausedCount})
                       : '$activeCount',
                 ),
               ],
@@ -426,7 +427,7 @@ class _HeroFact extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 14.5,
+              fontSize: V15Type.bodySmall,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -435,7 +436,7 @@ class _HeroFact extends StatelessWidget {
             label,
             style: const TextStyle(
               color: Color(0xCCE8FFF5),
-              fontSize: 11,
+              fontSize: V15Type.caption,
             ),
           ),
         ],
@@ -480,7 +481,7 @@ class _QuickAction extends StatelessWidget {
               label,
               style: const TextStyle(
                 color: AppColors.muted,
-                fontSize: 11.5,
+                fontSize: V15Type.caption,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -525,7 +526,7 @@ class _NoticeCard extends StatelessWidget {
                   title,
                   style: const TextStyle(
                     fontWeight: FontWeight.w900,
-                    fontSize: 13.5,
+                    fontSize: V15Type.label,
                     color: AppColors.ink,
                   ),
                 ),
@@ -540,7 +541,7 @@ class _NoticeCard extends StatelessWidget {
                 '• $l',
                 style: const TextStyle(
                   color: AppColors.muted,
-                  fontSize: 12.5,
+                  fontSize: V15Type.labelSmall,
                   height: 1.55,
                 ),
               ),
@@ -580,7 +581,7 @@ class _MiniStat extends StatelessWidget {
                   value,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 14.5,
+                    fontSize: V15Type.bodySmall,
                     fontWeight: FontWeight.w900,
                     color: color,
                   ),
@@ -588,7 +589,7 @@ class _MiniStat extends StatelessWidget {
                 Text(
                   label,
                   style: const TextStyle(
-                    fontSize: 11,
+                    fontSize: V15Type.caption,
                     color: AppColors.muted,
                   ),
                 ),
@@ -629,11 +630,11 @@ class _BudgetCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Text(
-                'الميزانية الشهرية',
+              Text(
+                tr('ui_51839e830ce5'),
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
-                  fontSize: 13.5,
+                  fontSize: V15Type.label,
                   color: AppColors.ink,
                 ),
               ),
@@ -642,7 +643,7 @@ class _BudgetCard extends StatelessWidget {
                 '${fmtMoney(spent, currency)} / ${fmtMoney(budget, currency)}',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
-                  fontSize: 12.5,
+                  fontSize: V15Type.labelSmall,
                   color: color,
                 ),
               ),
@@ -657,7 +658,7 @@ class _BudgetCard extends StatelessWidget {
               alignment: AlignmentDirectional.centerStart,
               child: TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0, end: ratio),
-                duration: const Duration(milliseconds: 800),
+                duration: Duration(milliseconds: 800),
                 curve: Curves.easeOutCubic,
                 builder: (context, t, _) => FractionallySizedBox(
                   widthFactor: t <= 0 ? 0.01 : t,
@@ -666,14 +667,14 @@ class _BudgetCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 7),
+          SizedBox(height: 7),
           Text(
             over
-                ? 'تجاوزت ميزانيتك بـ ${fmtMoney(spent - budget, currency)}'
-                : 'متبقي ${fmtMoney(budget - spent, currency)}',
+                ? tr('ui_020e7b265152', {'value0': fmtMoney(spent - budget, currency)})
+                : tr('ui_8300f5ee63ef', {'value0': fmtMoney(budget - spent, currency)}),
             style: TextStyle(
               color: over ? AppColors.danger : AppColors.muted,
-              fontSize: 12,
+              fontSize: V15Type.caption,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -689,14 +690,14 @@ class _GroupedTimeline extends StatelessWidget {
 
   const _GroupedTimeline({required this.subs});
 
-  static const List<String> _weekDays = [
-    'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس',
-    'الجمعة', 'السبت', 'الأحد',
+  static List<String> get _weekDays => [
+    tr('ui_69139e9f6f75'), tr('ui_3e1154b18e8a'), tr('ui_05ae1ca23dcb'), tr('ui_74c564a4b5a6'),
+    tr('ui_fa35e221b844'), tr('ui_a49412504fd0'), tr('ui_b74290ce11de'),
   ];
 
   static String _relative(int days, DateTime d) {
-    if (days <= 0) return 'اليوم';
-    if (days == 1) return 'غدًا';
+    if (days <= 0) return tr('ui_2422f71e7f4e');
+    if (days == 1) return tr('commonTomorrow');
     return '${_weekDays[d.weekday - 1]} ${d.day}/${d.month}';
   }
 
@@ -765,7 +766,7 @@ class _GroupedTimeline extends StatelessWidget {
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.w900,
-              fontSize: 13.5,
+              fontSize: V15Type.label,
             ),
           ),
           const Spacer(),
@@ -774,7 +775,7 @@ class _GroupedTimeline extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.muted,
               fontWeight: FontWeight.w800,
-              fontSize: 12.5,
+              fontSize: V15Type.labelSmall,
             ),
           ),
         ],
@@ -833,22 +834,22 @@ class _TimelineCard extends StatelessWidget {
                           Text(
                             sub.name,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w800,
-                              fontSize: 14,
+                              fontSize: V15Type.label,
                               color: AppColors.ink,
                             ),
                           ),
                           Text(
                             sub.kind == PaymentKind.installment &&
                                     sub.remainingInstallments() != null
-                                ? 'قسط • متبقي ${sub.remainingInstallments()}'
+                                ? tr('ui_cd6d76c191c9', {'value0': sub.remainingInstallments()})
                                 : sub.kind == PaymentKind.bill
-                                    ? 'فاتورة • ${sub.cycle.labelAr}'
-                                    : sub.cycle.labelAr,
+                                    ? tr('ui_e02a979a78d0', {'value0': localizedBillingCycle(sub.cycle.name)})
+                                    : localizedBillingCycle(sub.cycle.name),
                             style: const TextStyle(
                               color: AppColors.muted,
-                              fontSize: 11.5,
+                              fontSize: V15Type.caption,
                             ),
                           ),
                         ],
@@ -858,7 +859,7 @@ class _TimelineCard extends StatelessWidget {
                       fmtMoney(sub.price, sub.currency),
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
-                        fontSize: 15,
+                        fontSize: V15Type.bodySmall,
                         color: color,
                       ),
                     ),
@@ -890,7 +891,7 @@ class _EmptyState extends StatelessWidget {
               width: 110,
               height: 110,
               alignment: Alignment.center,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: AppColors.heroGradient,
                 shape: BoxShape.circle,
                 boxShadow: [
@@ -900,34 +901,34 @@ class _EmptyState extends StatelessWidget {
                   ),
                 ],
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.credit_card_rounded,
                 color: Colors.white,
                 size: 52,
               ),
             ),
-            const SizedBox(height: 22),
-            const Text(
-              'كم تدفع فعليًا كل شهر؟',
+            SizedBox(height: 22),
+            Text(
+              tr('ui_24951fbd4c50'),
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 22,
+                fontSize: V15Type.title,
                 fontWeight: FontWeight.w900,
                 color: AppColors.ink,
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'أضف اشتراكاتك وأقساطك وفواتيرك واكتشف مجموعها الحقيقي '
-              'ومواعيد خصمها قبل أن تُخصم.',
+            SizedBox(height: 8),
+            Text(
+              tr('ui_d00120a9a84f') +
+              tr('ui_f59f967ab825'),
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.muted, height: 1.6),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             FilledButton.icon(
               onPressed: onAdd,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('أضف أول التزام'),
+              icon: Icon(Icons.add_rounded),
+              label: Text(tr('ui_4c0420fa98b8')),
             ),
           ],
         ),

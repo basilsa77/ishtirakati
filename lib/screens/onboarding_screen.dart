@@ -4,6 +4,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/subscription_store.dart';
 import 'login_screen.dart';
 import '../theme.dart';
@@ -20,52 +21,52 @@ class _OnboardPage {
   });
 }
 
-const List<_OnboardPage> _pages = [
+List<_OnboardPage> get _pages => [
   _OnboardPage(
     icon: Icons.waving_hand_rounded,
-    title: 'أهلًا بك في «اشتراكاتي»',
-    body: 'يسعدنا انضمامك! معظمنا يدفع لاشتراكات نسيها منذ شهور — '
-        'من اليوم، كل ريال يخرج من جيبك سيمر من أمام عينيك أولًا.\n\n'
-        'هذا تطبيقك أنت: بيانات اشتراكاتك مشفّرة على جهازك، بدون إعلانات، '
-        'وبدون حسابات إجبارية.',
+    title: tr('ui_2b992a728cb2'),
+    body: tr('ui_1391ea89c15f') +
+        tr('ui_c5535e167b21') +
+        tr('ui_faa589fdb7c0') +
+        tr('ui_07c0fd2dd582'),
   ),
   _OnboardPage(
     icon: Icons.playlist_add_rounded,
-    title: 'أضف اشتراكاتك في ثوانٍ',
-    body: 'ثلاث طرق، اختر أسهلها:\n\n'
-        '١. يدويًا — اختر من قائمة تضم أكثر من ٥٠ خدمة بأسعارها '
-        'وشعاراتها الرسمية.\n\n'
-        '٢. الاستيراد الذكي — الصق رسائل البنك أو إيصالات Apple '
-        'وسيستخرجها التطبيق تلقائيًا.\n\n'
-        '٣. ربط البريد — يفحص إيصالاتك في آخر ٦ أشهر ويجلب '
-        'كل اشتراكاتك دفعة واحدة.',
+    title: tr('ui_364a0c218fdd'),
+    body: tr('ui_03c08f7f11cb') +
+        tr('ui_1b8ae8c6c0b9') +
+        tr('ui_70b4eebf6347') +
+        tr('ui_5e07fa5502e0') +
+        tr('ui_ee5f0ff55e85') +
+        tr('ui_0b80d7c28a68') +
+        tr('ui_75d1e9784dd5'),
   ),
   _OnboardPage(
     icon: Icons.notifications_active_rounded,
-    title: 'لا مفاجآت في الفاتورة بعد اليوم',
-    body: 'إشعار قبل كل خصم بالمدة التي تحددها، وتحذير خاص قبل '
-        'تحول التجارب المجانية إلى مدفوعة.\n\n'
-        'حدد ميزانية شهرية وسيظهر شريط يتابعها معك، '
-        'ويحذرك عند الاقتراب من تجاوزها.\n\n'
-        'وجدول تجديدات زمني يعرض الخصومات القادمة بوضوح.',
+    title: tr('ui_e9495438033d'),
+    body: tr('ui_ccbfc799f013') +
+        tr('ui_fed76af911d5') +
+        tr('ui_c352aded5496') +
+        tr('ui_b9b303aab429') +
+        tr('ui_d9f5e0136586'),
   ),
   _OnboardPage(
     icon: Icons.psychology_rounded,
-    title: 'ذكاء اصطناعي يعمل لمصلحتك',
-    body: 'فعّل مفتاح Gemini المجاني من الإعدادات (دقيقتان فقط) '
-        'وستحصل على:\n\n'
-        '• استيراد يلتقط أي اشتراك حتى لو لم نسمع به.\n\n'
-        '• مستشار ذكي يحلل اشتراكاتك ويقترح عليك أين توفر: '
-        'خدمات مكررة، بدائل أرخص، وتحويلات سنوية موفرة.',
+    title: tr('ui_acb69ef77e4d'),
+    body: tr('ui_4ca646f6ae60') +
+        tr('ui_c7db730a0bbf') +
+        tr('ui_ffda05033b78') +
+        tr('ui_773468bee4b3') +
+        tr('ui_140f7764a295'),
   ),
   _OnboardPage(
     icon: Icons.verified_user_rounded,
-    title: 'خصوصيتك خط أحمر',
-    body: 'بيانات اشتراكاتك مشفّرة محليًا. البريد والذكاء الاصطناعي '
-        'اختياريان ولا يرسلان محتوى إلا بعد موافقتك.\n\n'
-        'يمكنك قفل التطبيق ببصمة الوجه، والتحكم بإعدادات التنبيه '
-        'بكل سهولة.\n\n'
-        'كل شيء جاهز الآن — لنبدأ بإضافة أول اشتراك!',
+    title: tr('ui_a0d4d92593e1'),
+    body: tr('ui_5b1fe2b1e36e') +
+        tr('ui_a0713395ae4c') +
+        tr('ui_48c70870999d') +
+        tr('ui_0963e01daad5') +
+        tr('ui_2b5149dc5bfc'),
   ),
 ];
 
@@ -92,7 +93,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await SubscriptionStore.instance.setOnboarded();
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      MaterialPageRoute(builder: (_) => LoginScreen()),
     );
   }
 
@@ -111,11 +112,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   vertical: 4,
                 ),
                 child: isLast
-                    ? const SizedBox(height: 40)
+                    ? SizedBox(height: 40)
                     : TextButton(
                         onPressed: _finish,
                         child: Text(
-                          'تخطي',
+                          tr('ui_98874a5521b6'),
                           style: TextStyle(color: palette.textMuted),
                         ),
                       ),
@@ -158,7 +159,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           p.title,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 23,
+                            fontSize: V15Type.title,
                             fontWeight: FontWeight.w900,
                             color: palette.text,
                           ),
@@ -168,7 +169,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           p.body,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 14.5,
+                            fontSize: V15Type.bodySmall,
                             color: palette.textMuted,
                             height: 1.8,
                           ),
@@ -205,12 +206,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     _finish();
                   } else {
                     _controller.nextPage(
-                      duration: const Duration(milliseconds: 320),
+                      duration: Duration(milliseconds: 320),
                       curve: Curves.easeOutCubic,
                     );
                   }
                 },
-                child: Text(isLast ? 'ابدأ الآن' : 'التالي'),
+                child: Text(isLast ? tr('ui_95895f0a5f05') : tr('ui_5cf7af74fd3a')),
               ),
             ),
           ],

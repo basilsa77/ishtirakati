@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../design/design_tokens.dart';
+import '../l10n/app_localizations.dart';
 import '../theme.dart';
 import 'edit_subscription_screen.dart';
 import 'import_screen.dart';
@@ -9,20 +10,21 @@ import 'import_screen.dart';
 enum V12Destination { home, subscriptions, insights, calendar, settings }
 
 extension V12DestinationX on V12Destination {
-  String get label => switch (this) {
-        V12Destination.home => 'الرئيسية',
-        V12Destination.subscriptions => 'مكتبة الاشتراكات',
-        V12Destination.insights => 'التحليلات',
-        V12Destination.calendar => 'جدول التجديدات',
-        V12Destination.settings => 'الإعدادات',
+  String label(BuildContext context) => switch (this) {
+        V12Destination.home => context.l10n.text('navHome'),
+        V12Destination.subscriptions =>
+          context.l10n.text('navSubscriptionsLibrary'),
+        V12Destination.insights => context.l10n.text('navInsights'),
+        V12Destination.calendar => context.l10n.text('navRenewalsSchedule'),
+        V12Destination.settings => context.l10n.text('navSettings'),
       };
 
-  String get shortLabel => switch (this) {
-        V12Destination.home => 'الرئيسية',
-        V12Destination.subscriptions => 'اشتراكاتي',
-        V12Destination.insights => 'التحليلات',
-        V12Destination.calendar => 'التجديدات',
-        V12Destination.settings => 'الإعدادات',
+  String shortLabel(BuildContext context) => switch (this) {
+        V12Destination.home => context.l10n.text('navHome'),
+        V12Destination.subscriptions => context.l10n.text('navSubscriptions'),
+        V12Destination.insights => context.l10n.text('navInsights'),
+        V12Destination.calendar => context.l10n.text('navRenewals'),
+        V12Destination.settings => context.l10n.text('navSettings'),
       };
 
   IconData get icon => switch (this) {
@@ -82,8 +84,8 @@ class _CommandPaletteState extends State<_CommandPalette> {
     final commands = <_Command>[
       for (final destination in V12Destination.values)
         _Command(
-          label: destination.label,
-          detail: 'انتقال',
+          label: destination.label(context),
+          detail: tr('ui_f7424fc7a0ff'),
           icon: destination.icon,
           onTap: () {
             Navigator.pop(context);
@@ -91,19 +93,19 @@ class _CommandPaletteState extends State<_CommandPalette> {
           },
         ),
       _Command(
-        label: 'إضافة اشتراك جديد',
-        detail: 'إجراء',
+        label: tr('ui_009aab16265a'),
+        detail: tr('ui_8b2c85333b99'),
         icon: Icons.add_circle_outline_rounded,
         onTap: () {
           Navigator.pop(context);
           Navigator.of(context).push(
-            CupertinoPageRoute(builder: (_) => const EditSubscriptionScreen()),
+            CupertinoPageRoute(builder: (_) => EditSubscriptionScreen()),
           );
         },
       ),
       _Command(
-        label: 'استيراد فواتير أو نص',
-        detail: 'إجراء',
+        label: tr('ui_501a5a8897a1'),
+        detail: tr('ui_8b2c85333b99'),
         icon: Icons.file_download_outlined,
         onTap: () {
           Navigator.pop(context);
@@ -149,29 +151,29 @@ class _CommandPaletteState extends State<_CommandPalette> {
                   ),
                 ),
               ),
-              const SizedBox(height: V12Space.lg),
+              SizedBox(height: V12Space.lg),
               Text(
-                'اذهب أو نفّذ',
+                tr('ui_5b053ac2ac48'),
                 style: TextStyle(
                   color: context.palette.text,
-                  fontSize: V12Type.title,
+                  fontSize: V15Type.title,
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: V12Space.sm),
+              SizedBox(height: V12Space.sm),
               CupertinoSearchTextField(
                 controller: _controller,
                 autofocus: true,
                 onChanged: (value) => setState(() => _query = value),
-                placeholder: 'ابحث عن شاشة أو إجراء…',
+                placeholder: tr('ui_53b5e1ce2c0d'),
                 backgroundColor: context.palette.surfaceAlt,
               ),
-              const SizedBox(height: V12Space.md),
+              SizedBox(height: V12Space.md),
               Expanded(
                 child: visible.isEmpty
                     ? Center(
                         child: Text(
-                          'لا يوجد أمر مطابق',
+                          tr('ui_1d1f8d8d0502'),
                           style: TextStyle(color: context.palette.textMuted),
                         ),
                       )
@@ -209,7 +211,7 @@ class _CommandPaletteState extends State<_CommandPalette> {
                                         item.detail,
                                         style: TextStyle(
                                           color: context.palette.textMuted,
-                                          fontSize: V12Type.caption,
+                                          fontSize: V15Type.caption,
                                         ),
                                       ),
                                     ],

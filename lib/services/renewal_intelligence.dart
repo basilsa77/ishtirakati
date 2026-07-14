@@ -1,6 +1,7 @@
 /// Local-only renewal intelligence used by the v11 decision center.
 library;
 
+import '../l10n/app_localizations.dart';
 import '../models/subscription.dart';
 
 enum DecisionKind { trialEnding, renewalSoon, priceIncrease, neverUsed }
@@ -120,9 +121,12 @@ class RenewalIntelligence {
                 ? DecisionPriority.urgent
                 : DecisionPriority.high,
             title: days == 0
-                ? 'تنتهي تجربة ${item.name} اليوم'
-                : 'تجربة ${item.name} تنتهي خلال $days أيام',
-            detail: 'راجع قرار الاستمرار قبل بدء الخصم التلقائي.',
+                ? tr('decisionTrialToday', {'name': item.name})
+                : tr('decisionTrialSoon', {
+                    'name': item.name,
+                    'days': localizedDaysAfter(days),
+                  }),
+            detail: tr('decisionTrialDetail'),
             score: 110 - days,
           ));
           continue;
@@ -135,8 +139,8 @@ class RenewalIntelligence {
           subscription: item,
           kind: DecisionKind.renewalSoon,
           priority: DecisionPriority.urgent,
-          title: '${item.name} يتجدد قريبًا بلا استخدام مسجل',
-          detail: 'راجع حاجتك للخدمة قبل موعد الخصم.',
+          title: tr('decisionUnusedRenewal', {'name': item.name}),
+          detail: tr('decisionUnusedRenewalDetail'),
           score: 100 - renewalDays,
         ));
         continue;
@@ -150,8 +154,11 @@ class RenewalIntelligence {
           priority: increase >= 25
               ? DecisionPriority.high
               : DecisionPriority.normal,
-          title: 'ارتفع سعر ${item.name} بنسبة ${increase.round()}٪',
-          detail: 'قارن الباقة الحالية بالبدائل قبل التجديد القادم.',
+          title: tr('decisionPriceIncrease', {
+            'name': item.name,
+            'percent': localizedNumber(increase.round()),
+          }),
+          detail: tr('decisionPriceIncreaseDetail'),
           score: 70 + increase.clamp(0, 24).round(),
         ));
         continue;
@@ -162,8 +169,8 @@ class RenewalIntelligence {
           subscription: item,
           kind: DecisionKind.neverUsed,
           priority: DecisionPriority.normal,
-          title: '${item.name} بلا استخدام مسجل',
-          detail: 'سجل استخدامك أو راجع جدوى الاستمرار.',
+          title: tr('decisionNeverUsed', {'name': item.name}),
+          detail: tr('decisionNeverUsedDetail'),
           score: 50 + item.monthlyCost.clamp(0, 40).round(),
         ));
       }

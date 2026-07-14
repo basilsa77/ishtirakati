@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/subscription.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
@@ -10,7 +11,7 @@ import 'edit_subscription_screen.dart';
 Future<void> showQuickAddSheet(BuildContext context) =>
     showCupertinoModalPopup<void>(
       context: context,
-      builder: (_) => const _QuickAddSheet(),
+      builder: (_) => _QuickAddSheet(),
     );
 
 class _QuickAddSheet extends StatefulWidget {
@@ -37,11 +38,11 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
   Future<void> _save() async {
     final name = _name.text.trim();
     final price = double.tryParse(
-      _price.text.trim().replaceAll('،', '.').replaceAll(',', '.'),
+      _price.text.trim().replaceAll(tr('ui_bc4d631526af'), '.').replaceAll(',', '.'),
     );
     if (name.isEmpty || price == null || price <= 0) {
       setState(() => _validationMessage =
-          name.isEmpty ? 'أدخل اسم الخدمة.' : 'أدخل مبلغًا أكبر من صفر.');
+          name.isEmpty ? tr('ui_8836a5db4038') : tr('ui_881dedd25de1'));
       return;
     }
     setState(() => _saving = true);
@@ -112,22 +113,22 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                     decoration: BoxDecoration(color: p.stroke, borderRadius: BorderRadius.circular(3)),
                   ),
                 ),
-                const SizedBox(height: 18),
-                 Text('إضافة اشتراك', style: TextStyle(color: p.text, fontSize: 21, fontWeight: FontWeight.w800)),
-                 const SizedBox(height: 5),
-                 Text('أدخل البيانات الأساسية، ويمكنك إكمال التفاصيل لاحقًا.', style: TextStyle(color: p.textMuted, fontSize: 12.5)),
-                 const SizedBox(height: 16),
+                SizedBox(height: 18),
+                 Text(tr('ui_7e7a0c30b825'), style: TextStyle(color: p.text, fontSize: V15Type.title, fontWeight: FontWeight.w800)),
+                 SizedBox(height: 5),
+                 Text(tr('ui_a6b46f7b0864'), style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall)),
+                 SizedBox(height: 16),
                  IosTextField(
                    controller: _name,
-                   label: 'اسم الخدمة',
+                   label: tr('ui_8999278851b9'),
                    autofocus: true,
                    textInputAction: TextInputAction.next,
-                   placeholder: 'مثال: شاهد أو نتفلكس',
+                   placeholder: tr('ui_c964408c2817'),
                  ),
-                 const SizedBox(height: 12),
+                 SizedBox(height: 12),
                  IosTextField(
                    controller: _price,
-                   label: 'مبلغ التجديد',
+                   label: tr('ui_0d049d3998af'),
                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
                    placeholder: '0.00',
                    suffix: Padding(
@@ -135,22 +136,22 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                      child: Text(
                        currencySymbols[SubscriptionStore.instance.defaultCurrency] ??
                            SubscriptionStore.instance.defaultCurrency,
-                       style: TextStyle(color: p.textMuted, fontSize: 13),
+                       style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall),
                      ),
                    ),
                    onSubmitted: (_) => _save(),
                  ),
-                 const SizedBox(height: 12),
-                 Text('دورة التجديد', style: TextStyle(color: p.textMuted, fontSize: 12.5, fontWeight: FontWeight.w600)),
-                 const SizedBox(height: 7),
+                 SizedBox(height: 12),
+                 Text(tr('ui_d23a4e4bb3c4'), style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall, fontWeight: FontWeight.w600)),
+                 SizedBox(height: 7),
                  SizedBox(
                    width: double.infinity,
                    child: CupertinoSlidingSegmentedControl<BillingCycle>(
                      groupValue: _cycle,
-                     children: const {
-                       BillingCycle.weekly: Padding(padding: EdgeInsets.symmetric(vertical: 7), child: Text('أسبوعي')),
-                       BillingCycle.monthly: Padding(padding: EdgeInsets.symmetric(vertical: 7), child: Text('شهري')),
-                       BillingCycle.yearly: Padding(padding: EdgeInsets.symmetric(vertical: 7), child: Text('سنوي')),
+                     children:  {
+                       BillingCycle.weekly: Padding(padding: EdgeInsets.symmetric(vertical: 7), child: Text(tr('ui_e16e5870ecd8'))),
+                       BillingCycle.monthly: Padding(padding: EdgeInsets.symmetric(vertical: 7), child: Text(tr('ui_9c677bb93912'))),
+                       BillingCycle.yearly: Padding(padding: EdgeInsets.symmetric(vertical: 7), child: Text(tr('ui_1beeff0b0fec'))),
                      },
                      onValueChanged: (value) {
                        if (value != null) setState(() => _cycle = value);
@@ -158,22 +159,22 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                    ),
                  ),
                  if (_validationMessage != null) ...[
-                   const SizedBox(height: 10),
+                   SizedBox(height: 10),
                    IosStatusNotice(message: _validationMessage!, error: true),
                  ],
-                 const SizedBox(height: 14),
+                 SizedBox(height: 14),
                 SizedBox(
                   width: double.infinity,
                   child: CupertinoButton.filled(
                     onPressed: _saving ? null : _save,
-                    child: Text(_saving ? 'جارٍ الحفظ...' : 'حفظ'),
+                    child: Text(_saving ? tr('ui_dd81b078c15b') : tr('ui_ddfcaf9d0144')),
                   ),
                 ),
                 SizedBox(
                   width: double.infinity,
                   child: CupertinoButton(
                     onPressed: _openFullForm,
-                    child: const Text('فتح النموذج الكامل'),
+                    child: Text(tr('ui_afd7ecfe6b0d')),
                   ),
                 ),
                 ],

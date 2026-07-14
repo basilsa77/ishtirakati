@@ -1,11 +1,13 @@
 /// الهوية البصرية الحديثة لتطبيق «اشتراكاتي».
 library;
 
+export 'design/design_tokens.dart' show V15Type;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
 import 'data/service_domains.dart';
 import 'design/design_tokens.dart';
+import 'l10n/app_localizations.dart';
 
 class AppColors {
   AppColors._();
@@ -199,6 +201,80 @@ const Map<String, Color> kCategoryColors = {
 Color categoryColor(String category) =>
     kCategoryColors[category] ?? AppColors.gold;
 
+TextTheme _appTextTheme(AppPalette palette) {
+  TextStyle style(
+    double size,
+    double height, {
+    FontWeight weight = V15Type.regular,
+    Color? color,
+  }) =>
+      TextStyle(
+        color: color ?? palette.text,
+        fontFamily: V15Type.bodyFamily,
+        fontFamilyFallback: V15Type.fallbacks,
+        fontSize: size,
+        height: height,
+        fontWeight: weight,
+        letterSpacing: 0,
+      );
+
+  return TextTheme(
+    displayLarge: style(
+      V15Type.display,
+      V15Type.displayHeight,
+      weight: V15Type.semibold,
+    ),
+    displayMedium: style(
+      V15Type.displaySmall,
+      V15Type.displayHeight,
+      weight: V15Type.semibold,
+    ),
+    headlineLarge: style(
+      V15Type.headline,
+      V15Type.headlineHeight,
+      weight: V15Type.semibold,
+    ),
+    headlineMedium: style(
+      V15Type.headlineSmall,
+      V15Type.headlineHeight,
+      weight: V15Type.semibold,
+    ),
+    titleLarge: style(
+      V15Type.title,
+      V15Type.titleHeight,
+      weight: V15Type.semibold,
+    ),
+    titleMedium: style(
+      V15Type.titleSmall,
+      V15Type.titleHeight,
+      weight: V15Type.semibold,
+    ),
+    bodyLarge: style(V15Type.body, V15Type.bodyHeight),
+    bodyMedium: style(V15Type.bodySmall, V15Type.bodyHeight),
+    labelLarge: style(
+      V15Type.label,
+      V15Type.labelHeight,
+      weight: V15Type.semibold,
+    ),
+    labelMedium: style(
+      V15Type.labelSmall,
+      V15Type.labelHeight,
+      weight: V15Type.semibold,
+    ),
+    bodySmall: style(
+      V15Type.caption,
+      V15Type.captionHeight,
+      color: palette.textMuted,
+    ),
+    labelSmall: style(
+      V15Type.captionSmall,
+      V15Type.captionHeight,
+      weight: V15Type.semibold,
+      color: palette.textMuted,
+    ),
+  );
+}
+
 ThemeData buildAppTheme({bool dark = false}) {
   final palette = dark ? AppPalette.dark : AppPalette.light;
   final scheme = dark
@@ -232,8 +308,8 @@ ThemeData buildAppTheme({bool dark = false}) {
     platform: TargetPlatform.iOS,
     brightness: dark ? Brightness.dark : Brightness.light,
     colorScheme: scheme,
-    fontFamily: V12Type.bodyFamily,
-    fontFamilyFallback: V12Type.fallbacks,
+    fontFamily: V15Type.bodyFamily,
+    fontFamilyFallback: V15Type.fallbacks,
     extensions: [palette],
   );
 
@@ -246,13 +322,14 @@ ThemeData buildAppTheme({bool dark = false}) {
       textTheme: CupertinoTextThemeData(
         textStyle: TextStyle(
           color: palette.text,
-          fontSize: V12Type.body,
-          height: 1.35,
-          fontFamily: V12Type.bodyFamily,
-          fontFamilyFallback: V12Type.fallbacks,
+          fontSize: V15Type.body,
+          height: V15Type.bodyHeight,
+          fontFamily: V15Type.bodyFamily,
+          fontFamilyFallback: V15Type.fallbacks,
         ),
       ),
     ),
+    textTheme: _appTextTheme(palette),
     scaffoldBackgroundColor: palette.canvas,
     appBarTheme: AppBarTheme(
       backgroundColor: palette.canvas,
@@ -264,7 +341,7 @@ ThemeData buildAppTheme({bool dark = false}) {
       centerTitle: false,
       titleTextStyle: TextStyle(
         color: onSurface,
-        fontSize: 22,
+        fontSize: V15Type.title,
         fontWeight: FontWeight.w900,
       ),
     ),
@@ -273,7 +350,7 @@ ThemeData buildAppTheme({bool dark = false}) {
         backgroundColor: palette.accentStrong,
         foregroundColor: Colors.white,
         minimumSize: const Size.fromHeight(54),
-        textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+        textStyle: const TextStyle(fontSize: V15Type.titleSmall, fontWeight: FontWeight.w800),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(V12Radius.standard),
         ),
@@ -323,7 +400,7 @@ ThemeData buildAppTheme({bool dark = false}) {
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: dark ? palette.surfaceAlt : palette.text,
-      contentTextStyle: const TextStyle(color: Colors.white, fontSize: 15),
+      contentTextStyle: const TextStyle(color: Colors.white, fontSize: V15Type.bodySmall),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(V12Radius.standard),
@@ -337,12 +414,12 @@ ThemeData buildAppTheme({bool dark = false}) {
       backgroundColor: surface,
       titleTextStyle: TextStyle(
         color: onSurface,
-        fontSize: 18,
+        fontSize: V15Type.titleSmall,
         fontWeight: FontWeight.w800,
       ),
       contentTextStyle: TextStyle(
         color: muted,
-        fontSize: 14.5,
+        fontSize: V15Type.bodySmall,
         height: 1.6,
       ),
       shape: RoundedRectangleBorder(
@@ -406,13 +483,13 @@ class SectionTitle extends StatelessWidget {
       child: Row(
         children: [
           if (emoji != null) ...[
-            Text(emoji!, style: const TextStyle(fontSize: 18)),
+            Text(emoji!, style: const TextStyle(fontSize: V15Type.titleSmall)),
             const SizedBox(width: 7),
           ],
           Text(
             text,
             style: TextStyle(
-              fontSize: 17,
+              fontSize: V15Type.titleSmall,
               fontWeight: FontWeight.w900,
               color: context.palette.text,
             ),
@@ -442,28 +519,15 @@ class AnimatedMoney extends StatelessWidget {
       tween: Tween(begin: 0, end: value),
       duration: const Duration(milliseconds: 900),
       curve: Curves.easeOutCubic,
-      builder: (context, v, _) => Text(fmt(v), style: style),
+      builder: (context, v, _) {
+        final digits = v == v.roundToDouble() ? 0 : 2;
+        return Text(
+          context.l10n.money(v, currency, decimalDigits: digits),
+          style: style,
+        );
+      },
     );
   }
-
-  String fmt(double v) {
-    final rounded = double.parse(v.toStringAsFixed(2));
-    final s = rounded == rounded.roundToDouble()
-        ? rounded.toStringAsFixed(0)
-        : rounded.toStringAsFixed(2);
-    return '$s ${currencySymbolsView[currency] ?? currency}';
-  }
-
-  static const Map<String, String> currencySymbolsView = {
-    'SAR': 'ر.س',
-    'AED': 'د.إ',
-    'KWD': 'د.ك',
-    'QAR': 'ر.ق',
-    'BHD': 'د.ب',
-    'OMR': 'ر.ع',
-    'USD': r'$',
-    'EUR': '€',
-  };
 }
 
 /// شارة أيام التجديد: اليوم/غدًا/بعد X يوم بألوان تحذيرية متدرجة.
@@ -478,19 +542,19 @@ class RenewalBadge extends StatelessWidget {
     final Color bg;
     final Color fg;
     if (days <= 0) {
-      text = 'اليوم';
+      text = localizedDaysAfter(days);
       bg = context.palette.dangerSoft;
       fg = context.palette.danger;
     } else if (days == 1) {
-      text = 'غدًا';
+      text = localizedDaysAfter(days);
       bg = context.palette.dangerSoft;
       fg = context.palette.danger;
     } else if (days <= 7) {
-      text = 'بعد $days أيام';
+      text = localizedDaysAfter(days);
       bg = context.palette.warningSoft;
       fg = context.palette.warning;
     } else {
-      text = 'بعد $days يومًا';
+      text = localizedDaysAfter(days);
       bg = context.palette.accentSoft;
       fg = context.palette.accent;
     }
@@ -503,7 +567,7 @@ class RenewalBadge extends StatelessWidget {
       child: Text(
         text,
         style:
-            TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w800),
+            TextStyle(color: fg, fontSize: V15Type.caption, fontWeight: FontWeight.w800),
       ),
     );
   }
@@ -538,8 +602,7 @@ class FadeSlideIn extends StatelessWidget {
   }
 }
 
-String fmtDate(DateTime d) =>
-    '${d.year}/${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}';
+String fmtDate(DateTime d) => localizedDate(d);
 
 /// أيقونة الخدمة: الشعار الرسمي إن عُرف نطاقها، وإلا رمز تطبيق محايد.
 class ServiceAvatar extends StatelessWidget {

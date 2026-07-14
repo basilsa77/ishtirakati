@@ -14,6 +14,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../firebase_options.dart';
+import '../l10n/app_localizations.dart';
 
 class AuthException implements Exception {
   final String message;
@@ -57,9 +58,7 @@ class AuthService {
         );
         appCheckWarning.value = null;
       } catch (error) {
-        const message =
-            'تعذر تفعيل App Check. المزامنة محمية بالمصادقة والقواعد، '
-            'لكن يلزم مراجعة App Attest قبل النشر.';
+        final message = tr('appCheckActivationWarning');
         appCheckWarning.value = message;
         debugPrint(
           'App Check activation failed (${error.runtimeType}). '
@@ -83,10 +82,10 @@ class AuthService {
 
   static Future<User?> signInWithGoogle() async {
     if (!isAvailable) {
-      throw const AuthException('المزامنة السحابية غير مفعّلة بعد.');
+      throw AuthException(tr('firebaseNotConfigured'));
     }
     if (!_googleInitialized) {
-      throw const AuthException('تعذر تهيئة تسجيل الدخول بقوقل على هذا الجهاز.');
+      throw AuthException(tr('googleSignInInitFailed'));
     }
     try {
       final account = await GoogleSignIn.instance.authenticate();
@@ -99,20 +98,20 @@ class AuthService {
           e.code == GoogleSignInExceptionCode.interrupted) {
         return null; // ألغى المستخدم
       }
-      throw AuthException(
-        'تعذر تسجيل الدخول بقوقل (${e.code.name}). '
-        '${e.description ?? 'تحقق من إعدادات المشروع في Firebase.'}',
-      );
+      throw AuthException(tr('googleSignInFailed', {
+        'code': e.code.name,
+        'description': e.description ?? tr('firebaseNotConfigured'),
+      }));
     } on FirebaseAuthException catch (e) {
-      throw AuthException('تعذر تسجيل الدخول: ${e.code}');
+      throw AuthException(tr('signInFailed', {'code': e.code}));
     } catch (error) {
-      throw AuthException('تعذر تسجيل الدخول بقوقل: $error');
+      throw AuthException(tr('googleSignInUnexpected', {'error': error}));
     }
   }
 
   static Future<User?> signInWithApple() async {
     if (!isAvailable) {
-      throw const AuthException('المزامنة السحابية غير مفعّلة بعد.');
+      throw AuthException(tr('firebaseNotConfigured'));
     }
     try {
       final credential = await _appleCredential();
@@ -121,14 +120,9 @@ class AuthService {
       return result.user;
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) return null;
-      throw const AuthException(
-        'دخول Apple يتطلب نشر التطبيق بحساب مطور — '
-        'استخدم Google حاليًا.',
-      );
+      throw AuthException(tr('appleSignInRequiresDeveloper'));
     } catch (_) {
-      throw const AuthException(
-        'دخول Apple غير متاح في النسخة الحالية — استخدم Google.',
-      );
+      throw AuthException(tr('appleSignInUnavailable'));
     }
   }
 
@@ -137,20 +131,18 @@ class AuthService {
     try {
       await FirebaseAuth.instance.signOut();
     } catch (_) {
-      throw const AuthException(
-        'تعذر تسجيل الخروج بأمان. تحقق من الاتصال وأعد المحاولة.',
-      );
+      throw AuthException(tr('signOutFailed'));
     }
   }
 
   static Future<void> reauthenticateCurrentUser() async {
     final user = currentUser;
-    if (user == null) throw const AuthException('لا يوجد حساب مسجل لحذفه.');
+    if (user == null) throw AuthException(tr('noAccountToDelete'));
     final providers = user.providerData.map((item) => item.providerId).toSet();
     try {
       if (providers.contains('google.com')) {
         if (!_googleInitialized) {
-          throw const AuthException('تعذر تهيئة إعادة المصادقة بقوقل.');
+          throw AuthException(tr('googleReauthInitFailed'));
         }
         await GoogleSignIn.instance.signOut();
         final account = await GoogleSignIn.instance.authenticate();
@@ -165,15 +157,15 @@ class AuthService {
     } on AuthException {
       rethrow;
     } on FirebaseAuthException catch (error) {
-      throw AuthException('تعذرت إعادة المصادقة: ${error.code}');
+      throw AuthException(tr('reauthFailed', {'code': error.code}));
     } catch (_) {
-      throw const AuthException('أُلغيت إعادة المصادقة أو تعذرت.');
+      throw AuthException(tr('reauthCancelled'));
     }
   }
 
   static Future<void> deleteCurrentUser() async {
     final user = currentUser;
-    if (user == null) throw const AuthException('لا يوجد حساب مسجل لحذفه.');
+    if (user == null) throw AuthException(tr('noAccountToDelete'));
     try {
       await user.delete();
       try {
@@ -181,9 +173,9 @@ class AuthService {
       } catch (_) {}
     } on FirebaseAuthException catch (error) {
       if (error.code == 'requires-recent-login') {
-        throw const AuthException('يلزم تأكيد هويتك مجددًا قبل حذف الحساب.');
+        throw AuthException(tr('recentLoginRequired'));
       }
-      throw AuthException('تعذر حذف الحساب: ${error.code}');
+      throw AuthException(tr('deleteAccountFailed', {'code': error.code}));
     }
   }
 
@@ -193,7 +185,7 @@ class AuthService {
     final auth = account.authentication;
     final idToken = auth.idToken;
     if (idToken == null || idToken.isEmpty) {
-      throw const AuthException('لم يصل رمز مصادقة صالح من Google.');
+      throw AuthException(tr('missingGoogleToken'));
     }
     return GoogleAuthProvider.credential(idToken: idToken);
   }
@@ -210,7 +202,7 @@ class AuthService {
     );
     final identityToken = apple.identityToken;
     if (identityToken == null || identityToken.isEmpty) {
-      throw const AuthException('لم يصل رمز مصادقة صالح من Apple.');
+      throw AuthException(tr('missingAppleToken'));
     }
     return OAuthProvider('apple.com').credential(
       idToken: identityToken,

@@ -8,7 +8,9 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/app_localizations.dart';
 import 'auth_service.dart';
 import 'subscription_store.dart';
 
@@ -23,6 +25,7 @@ enum CloudSyncFailure {
   timeout,
   offline,
   permissionDenied,
+  conflict,
   unknown,
 }
 
@@ -65,6 +68,7 @@ class CloudSync {
   static const _schemaVersion = 1;
   static const _maxBackupBytes = 850000;
   static const _networkTimeout = Duration(seconds: 10);
+  static const _revisionKeyPrefix = 'ishtirakati_cloud_revision_v15_';
   static final ValueNotifier<CloudSyncStatus> status =
       ValueNotifier(const CloudSyncStatus(CloudSyncPhase.idle));
 
@@ -85,15 +89,11 @@ class CloudSync {
 
   @visibleForTesting
   static String messageForFirebaseCode(String code) => switch (code) {
-        'permission-denied' =>
-          'رفضت Firebase المزامنة. تحقق من تسجيل App Check ونشر قواعد Firestore.',
-        'unauthenticated' =>
-          'انتهت جلسة الحساب. سجّل الدخول مجددًا ثم أعد المحاولة.',
-        'unavailable' || 'network-request-failed' =>
-          'لا يمكن الوصول إلى Firebase الآن. تحقق من الإنترنت وأعد المحاولة.',
-        'deadline-exceeded' =>
-          'استغرقت المزامنة وقتًا طويلًا. حاول مجددًا بعد لحظات.',
-        _ => 'تعذرت المزامنة بسبب خطأ من Firebase ($code).',
+        'permission-denied' => tr('cloudPermissionDenied'),
+        'unauthenticated' => tr('cloudUnauthenticated'),
+        'unavailable' || 'network-request-failed' => tr('cloudOffline'),
+        'deadline-exceeded' => tr('cloudTimeout'),
+        _ => tr('cloudFirebaseError', {'code': code}),
       };
 
   static CloudSyncFailure _failureForFirebaseCode(String code) =>
@@ -113,19 +113,44 @@ class CloudSync {
     );
   }
 
+  @visibleForTesting
+  static bool canPushRevision({
+    required int localRevision,
+    required int remoteRevision,
+    required bool remoteExists,
+  }) =>
+      !remoteExists || localRevision == remoteRevision;
+
+  static Future<int> _localRevision(String uid) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('$_revisionKeyPrefix$uid') ?? 0;
+  }
+
+  static Future<void> _saveLocalRevision(String uid, int revision) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('$_revisionKeyPrefix$uid', revision);
+  }
+
   /// رفع نسخة كاملة من البيانات إلى حساب المستخدم.
   static Future<bool> push() async {
     final doc = _doc();
+    final uid = AuthService.currentUser?.uid;
     if (doc == null) {
       return _fail(
         CloudSyncFailure.unauthenticated,
-        'سجّل الدخول أولًا لتفعيل المزامنة.',
+        tr('cloudSignInToSync'),
+      );
+    }
+    if (uid == null) {
+      return _fail(
+        CloudSyncFailure.unauthenticated,
+        tr('cloudSignInToSync'),
       );
     }
     if (!SubscriptionStore.instance.storageHealthy) {
       return _fail(
         CloudSyncFailure.storageLocked,
-        'المزامنة متوقفة لحماية السجل المشفر حتى تنجح استعادته.',
+        tr('cloudStorageLocked'),
       );
     }
     status.value = const CloudSyncStatus(CloudSyncPhase.syncing);
@@ -134,25 +159,47 @@ class CloudSync {
       if (utf8.encode(backup).length > _maxBackupBytes) {
         return _fail(
           CloudSyncFailure.payloadTooLarge,
-          'حجم البيانات أكبر من حد المزامنة السحابية.',
+          tr('cloudPayloadTooLarge'),
         );
       }
-      await doc
-          .set({
-            'backup': backup,
-            'updatedAt': FieldValue.serverTimestamp(),
-            'schemaVersion': _schemaVersion,
+      final localRevision = await _localRevision(uid);
+      final nextRevision = await FirebaseFirestore.instance
+          .runTransaction<int>((transaction) async {
+            final snapshot = await transaction.get(doc);
+            final remoteRevision =
+                (snapshot.data()?['revision'] as num?)?.toInt() ?? 0;
+            if (!canPushRevision(
+              localRevision: localRevision,
+              remoteRevision: remoteRevision,
+              remoteExists: snapshot.exists,
+            )) {
+              throw const _CloudRevisionConflict();
+            }
+            final next = remoteRevision + 1;
+            transaction.set(doc, {
+              'backup': backup,
+              'updatedAt': FieldValue.serverTimestamp(),
+              'schemaVersion': _schemaVersion,
+              'revision': next,
+            });
+            return next;
           })
           .timeout(_networkTimeout);
+      await _saveLocalRevision(uid, nextRevision);
       status.value = CloudSyncStatus(
         CloudSyncPhase.success,
         updatedAt: DateTime.now(),
       );
       return true;
+    } on _CloudRevisionConflict {
+      return _fail(
+        CloudSyncFailure.conflict,
+        tr('cloudConflict'),
+      );
     } on TimeoutException {
       return _fail(
         CloudSyncFailure.timeout,
-        'استغرقت المزامنة وقتًا طويلًا. حاول مجددًا بعد لحظات.',
+        tr('cloudTimeout'),
       );
     } on FirebaseException catch (error) {
       return _failFirebase(error);
@@ -160,7 +207,7 @@ class CloudSync {
       debugPrint('Cloud push failed (${error.runtimeType}).');
       return _fail(
         CloudSyncFailure.unknown,
-        'تعذرت مزامنة البيانات. أعد المحاولة بعد التحقق من الاتصال.',
+        tr('cloudSyncUnknown'),
       );
     }
   }
@@ -169,29 +216,33 @@ class CloudSync {
   /// يعيد عدد العناصر المستوردة، -1 إن لم توجد نسخة أو فشل الجلب.
   static Future<int> pull() async {
     final doc = _doc();
+    final uid = AuthService.currentUser?.uid;
     if (doc == null) {
       _fail(
         CloudSyncFailure.unauthenticated,
-        'سجّل الدخول أولًا لاستعادة البيانات.',
+        tr('cloudSignInToRestore'),
       );
       return -1;
     }
+    if (uid == null) return -1;
     status.value = const CloudSyncStatus(CloudSyncPhase.syncing);
     try {
       final snap = await doc.get().timeout(_networkTimeout);
       final data = snap.data();
       final raw = data?['backup'] as String?;
       final schemaVersion = data?['schemaVersion'];
+      final revision = (data?['revision'] as num?)?.toInt() ?? 0;
       if (raw == null || raw.isEmpty ||
           (schemaVersion != null && schemaVersion != _schemaVersion) ||
           utf8.encode(raw).length > _maxBackupBytes) {
         _fail(
           CloudSyncFailure.invalidBackup,
-          'النسخة السحابية غير صالحة أو من إصدار غير مدعوم، ولم تُستبدل بيانات جهازك.',
+          tr('cloudInvalidBackup'),
         );
         return -1;
       }
       final count = await SubscriptionStore.instance.importJson(raw);
+      if (count >= 0) await _saveLocalRevision(uid, revision);
       status.value = CloudSyncStatus(
         count >= 0 ? CloudSyncPhase.success : CloudSyncPhase.failure,
         updatedAt: count >= 0 ? DateTime.now() : null,
@@ -200,7 +251,7 @@ class CloudSync {
     } on TimeoutException {
       _fail(
         CloudSyncFailure.timeout,
-        'استغرقت الاستعادة وقتًا طويلًا. حاول مجددًا بعد لحظات.',
+        tr('cloudRestoreTimeout'),
       );
       return -1;
     } on FirebaseException catch (error) {
@@ -210,7 +261,7 @@ class CloudSync {
       debugPrint('Cloud pull failed (${error.runtimeType}).');
       _fail(
         CloudSyncFailure.unknown,
-        'تعذرت استعادة النسخة السحابية، ولم تتغير بيانات جهازك.',
+        tr('cloudRestoreUnknown'),
       );
       return -1;
     }
@@ -222,7 +273,7 @@ class CloudSync {
     if (doc == null) {
       _fail(
         CloudSyncFailure.unauthenticated,
-        'سجّل الدخول أولًا لتفعيل المزامنة.',
+        tr('cloudSignInToSync'),
       );
       return const CloudSyncResult.failed(CloudSyncFailure.unauthenticated);
     }
@@ -245,7 +296,7 @@ class CloudSync {
     } on TimeoutException {
       _fail(
         CloudSyncFailure.timeout,
-        'استغرقت المزامنة وقتًا طويلًا. حاول مجددًا بعد لحظات.',
+        tr('cloudTimeout'),
       );
       return const CloudSyncResult.failed(CloudSyncFailure.timeout);
     } on FirebaseException catch (error) {
@@ -255,7 +306,7 @@ class CloudSync {
       debugPrint('Cloud restore failed (${error.runtimeType}).');
       _fail(
         CloudSyncFailure.unknown,
-        'تعذرت مزامنة الحساب، ولم تتغير بيانات جهازك.',
+        tr('cloudAccountSyncUnknown'),
       );
       return const CloudSyncResult.failed(CloudSyncFailure.unknown);
     }
@@ -264,8 +315,13 @@ class CloudSync {
   /// حذف النسخة الخاصة بالمستخدم قبل حذف حساب المصادقة.
   static Future<void> deleteRemoteData() async {
     final doc = _doc();
+    final uid = AuthService.currentUser?.uid;
     if (doc == null) throw StateError('No authenticated cloud document.');
     await doc.delete().timeout(_networkTimeout);
+    if (uid != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('$_revisionKeyPrefix$uid');
+    }
     status.value = const CloudSyncStatus(CloudSyncPhase.idle);
   }
 
@@ -282,4 +338,8 @@ class CloudSync {
       await push();
     });
   }
+}
+
+class _CloudRevisionConflict implements Exception {
+  const _CloudRevisionConflict();
 }

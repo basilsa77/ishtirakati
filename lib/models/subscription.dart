@@ -1,6 +1,8 @@
 /// نموذج بيانات الاشتراك وحسابات التجديد والتكاليف.
 library;
 
+import '../l10n/app_localizations.dart'
+    show isEnglishLocale, localizedNumber;
 import 'subscription_schema.dart';
 
 /// دورة الفوترة.
@@ -105,15 +107,17 @@ String buildCsv(List<Subscription> subs) {
 String fmtMoney(double v, String currency) {
   // بطلب المستخدم: المبلغ فقط بدون اسم/رمز العملة.
   final rounded = double.parse(v.toStringAsFixed(2));
-  return rounded == rounded.roundToDouble()
-      ? rounded.toStringAsFixed(0)
-      : rounded.toStringAsFixed(2);
+  final digits = rounded == rounded.roundToDouble() ? 0 : 2;
+  return localizedNumber(rounded, decimalDigits: digits);
 }
 
 /// صياغة واضحة للقوائم التي يجب أن تبيّن العملة بجانب المبلغ.
 String fmtMoneyWithCurrency(double value, String currency) {
-  final symbol = currencySymbols[currency] ?? currency;
-  return '${fmtMoney(value, currency)} $symbol'.trim();
+  final symbol = isEnglishLocale && currency == 'SAR'
+      ? 'SAR'
+      : currencySymbols[currency] ?? currency;
+  final amount = fmtMoney(value, currency);
+  return (isEnglishLocale ? '$symbol $amount' : '$amount $symbol').trim();
 }
 
 class Subscription {

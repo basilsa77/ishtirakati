@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/renewal_intelligence.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
@@ -22,7 +23,7 @@ class _DecisionCenterScreenState extends State<DecisionCenterScreen> {
   Widget build(BuildContext context) {
     final store = SubscriptionStore.instance;
     return Scaffold(
-      appBar: AppBar(title: const Text('مركز القرار')),
+      appBar: AppBar(title: Text(tr('ui_28960e5355cb'))),
       body: ListenableBuilder(
         listenable: store,
         builder: (context, _) {
@@ -37,35 +38,35 @@ class _DecisionCenterScreenState extends State<DecisionCenterScreen> {
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 36),
             children: [
               _DecisionHero(total: all.length, urgent: urgent),
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
                     _FilterChip(
-                      label: 'الكل',
+                      label: tr('ui_65f276da33cf'),
                       selected: _filter == null,
                       onTap: () => setState(() => _filter = null),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     _FilterChip(
-                      label: 'عاجل',
+                      label: tr('ui_5858bf88ec0b'),
                       selected: _filter == DecisionPriority.urgent,
                       onTap: () => setState(
                         () => _filter = DecisionPriority.urgent,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     _FilterChip(
-                      label: 'مهم',
+                      label: tr('ui_d0ac893de481'),
                       selected: _filter == DecisionPriority.high,
                       onTap: () => setState(
                         () => _filter = DecisionPriority.high,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     _FilterChip(
-                      label: 'للمراجعة',
+                      label: tr('ui_573fb812710c'),
                       selected: _filter == DecisionPriority.normal,
                       onTap: () => setState(
                         () => _filter = DecisionPriority.normal,
@@ -112,35 +113,35 @@ class _DecisionHero extends StatelessWidget {
             height: 48,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: const Color(0x24FFFFFF),
+              color: Color(0x24FFFFFF),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.rule_folder_rounded,
               color: Colors.white,
             ),
           ),
-          const SizedBox(width: 13),
+          SizedBox(width: 13),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'قرارات تستحق انتباهك',
+                Text(
+                  tr('ui_2374a9a65ea0'),
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: V15Type.body,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   total == 0
-                      ? 'كل شيء منظم حاليًا.'
-                      : '$total مراجعات، منها $urgent عاجلة.',
+                      ? tr('ui_92a21744db1f')
+                      : tr('ui_23f338c9231e', {'value0': total, 'value1': urgent}),
                   style: const TextStyle(
                     color: Color(0xCCFFFFFF),
-                    fontSize: 12,
+                    fontSize: V15Type.caption,
                   ),
                 ),
               ],
@@ -150,7 +151,7 @@ class _DecisionHero extends StatelessWidget {
             '$total',
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 28,
+              fontSize: V15Type.headline,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -199,7 +200,7 @@ class _DecisionCard extends StatelessWidget {
     await SubscriptionStore.instance.recordUsage(insight.subscription.id);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('سُجل استخدام ${insight.subscription.name}.')),
+      SnackBar(content: Text(tr('ui_178651ef6495', {'value0': insight.subscription.name}))),
     );
   }
 
@@ -233,7 +234,7 @@ class _DecisionCard extends StatelessWidget {
                       insight.title,
                       style: TextStyle(
                         color: p.text,
-                        fontSize: 14,
+                        fontSize: V15Type.label,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -242,7 +243,7 @@ class _DecisionCard extends StatelessWidget {
                       insight.detail,
                       style: TextStyle(
                         color: p.textMuted,
-                        fontSize: 12,
+                        fontSize: V15Type.caption,
                         height: 1.5,
                       ),
                     ),
@@ -251,22 +252,22 @@ class _DecisionCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Row(
             children: [
               RenewalBadge(days: item.daysUntilRenewal()),
-              const Spacer(),
+              Spacer(),
               if (insight.kind == DecisionKind.neverUsed ||
                   insight.kind == DecisionKind.renewalSoon)
                 IconButton(
-                  tooltip: 'تسجيل استخدام',
+                  tooltip: tr('ui_6a4c67c60827'),
                   onPressed: () => _recordUsage(context),
-                  icon: const Icon(Icons.add_task_rounded),
+                  icon: Icon(Icons.add_task_rounded),
                 ),
               IconButton(
-                tooltip: 'فتح التفاصيل',
+                tooltip: tr('ui_7605930f1ed9'),
                 onPressed: () => showSubscriptionDetails(context, item),
-                icon: const Icon(Icons.arrow_back_rounded),
+                icon: Icon(Icons.arrow_back_rounded),
               ),
             ],
           ),
@@ -287,20 +288,20 @@ class _DecisionEmpty extends StatelessWidget {
       child: Column(
         children: [
           Icon(Icons.verified_rounded, color: p.accent, size: 46),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(
-            'لا توجد قرارات معلقة',
+            tr('ui_462367b2ae1a'),
             style: TextStyle(
               color: p.text,
-              fontSize: 16,
+              fontSize: V15Type.body,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 5),
+          SizedBox(height: 5),
           Text(
-            'سنظهر هنا أي تجديد أو تغير يستحق المراجعة.',
+            tr('ui_a5f497bfa756'),
             textAlign: TextAlign.center,
-            style: TextStyle(color: p.textMuted, fontSize: 12.5),
+            style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall),
           ),
         ],
       ),

@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/app_localizations.dart';
 import '../data/presets.dart';
 import '../models/subscription.dart';
 import '../services/subscription_store.dart';
@@ -156,9 +157,9 @@ class _LibraryHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('الاشتراكات', style: TextStyle(color: p.text, fontSize: 30, fontWeight: FontWeight.w800)),
-                const SizedBox(height: 4),
-                Text('$total اشتراكًا نشطًا', style: TextStyle(color: p.textMuted, fontSize: 13)),
+                Text(tr('ui_17cbe710ffe6'), style: TextStyle(color: p.text, fontSize: V15Type.headline, fontWeight: FontWeight.w800)),
+                SizedBox(height: 4),
+                Text(tr('ui_82171abee2e6', {'value0': total}), style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall)),
               ],
             ),
           ),
@@ -170,7 +171,7 @@ class _LibraryHeader extends StatelessWidget {
           CupertinoButton(
             padding: const EdgeInsets.all(10),
             onPressed: onAdd,
-            child: const Icon(CupertinoIcons.add_circled_solid, size: 27),
+            child: Icon(CupertinoIcons.add_circled_solid, size: 27),
           ),
         ]),
       ],
@@ -199,20 +200,20 @@ class _SearchLine extends StatelessWidget {
         Expanded(
           child: CupertinoSearchTextField(
             controller: controller,
-            placeholder: 'ابحث باسم الخدمة',
+            placeholder: tr('ui_de80c5ac5eac'),
             onChanged: (_) => onChanged(),
-            style: TextStyle(color: p.text, fontSize: 15),
+            style: TextStyle(color: p.text, fontSize: V15Type.bodySmall),
             backgroundColor: p.surface,
           ),
         ),
-        const SizedBox(width: 9),
+        SizedBox(width: 9),
         CupertinoButton(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
           color: p.surface,
           onPressed: () async {
             final selected = await showIosPicker<_SortOrder>(
               context: context,
-              title: 'ترتيب الاشتراكات',
+              title: tr('ui_b5841e813df3'),
               selected: sort,
               values: _SortOrder.values,
               label: _sortLabel,
@@ -223,8 +224,8 @@ class _SearchLine extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(CupertinoIcons.arrow_up_arrow_down, color: p.accent, size: 18),
-              const SizedBox(width: 5),
-              Text(_sortLabel(sort), style: TextStyle(color: p.text, fontSize: 11.5)),
+              SizedBox(width: 5),
+              Text(_sortLabel(sort), style: TextStyle(color: p.text, fontSize: V15Type.caption)),
             ],
           ),
         ),
@@ -233,9 +234,9 @@ class _SearchLine extends StatelessWidget {
   }
 
   String _sortLabel(_SortOrder value) => switch (value) {
-        _SortOrder.renewal => 'الأقرب',
-        _SortOrder.cost => 'الأعلى',
-        _SortOrder.name => 'الاسم',
+        _SortOrder.renewal => tr('ui_0c3117b358fd'),
+        _SortOrder.cost => tr('ui_c0924d94939b'),
+        _SortOrder.name => tr('ui_52ab09847cf8'),
       };
 }
 
@@ -263,18 +264,18 @@ class _FilterRail extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Text('نوع الدفعة', style: TextStyle(color: context.palette.textMuted, fontSize: 11.5, fontWeight: FontWeight.w700)),
+          child: Text(tr('ui_448543036e9c'), style: TextStyle(color: context.palette.textMuted, fontSize: V15Type.caption, fontWeight: FontWeight.w700)),
         ),
         const SizedBox(height: 7),
         SizedBox(height: 37, child: ListView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 20),
           children: [
-          _FilterChip(label: 'الكل', selected: selectedKind == null && selectedCategory == null, onTap: onAll),
+          _FilterChip(label: tr('ui_65f276da33cf'), selected: selectedKind == null && selectedCategory == null, onTap: onAll),
           for (final kind in PaymentKind.values) ...[
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             _FilterChip(
-              label: kind.labelAr,
+              label: localizedPaymentKind(kind.name),
               selected: selectedKind == kind,
               onTap: () => onKind(selectedKind == kind ? null : kind),
             ),
@@ -282,10 +283,10 @@ class _FilterRail extends StatelessWidget {
           ],
         )),
         if (usedCategories.isNotEmpty) ...[
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Text('التصنيف', style: TextStyle(color: context.palette.textMuted, fontSize: 11.5, fontWeight: FontWeight.w700)),
+            child: Text(tr('ui_3a7c87ed0100'), style: TextStyle(color: context.palette.textMuted, fontSize: V15Type.caption, fontWeight: FontWeight.w700)),
           ),
           const SizedBox(height: 7),
           SizedBox(height: 37, child: ListView(
@@ -334,7 +335,7 @@ class _FilterChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: TextStyle(color: selected ? CupertinoColors.white : p.text, fontSize: 12, fontWeight: FontWeight.w700),
+          style: TextStyle(color: selected ? CupertinoColors.white : p.text, fontSize: V15Type.caption, fontWeight: FontWeight.w700),
         ),
       ),
     );
@@ -382,7 +383,7 @@ class _SubscriptionRow extends StatelessWidget {
                 tint: categoryColor(subscription.category),
                 size: 50,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -394,24 +395,24 @@ class _SubscriptionRow extends StatelessWidget {
                             subscription.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: 15),
+                            style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: V15Type.bodySmall),
                           ),
                         ),
-                        if (subscription.isPaused) _StatePill(text: 'موقوف', color: p.warning, background: p.warningSoft),
-                        if (subscription.isTrialActive()) _StatePill(text: 'تجربة', color: p.danger, background: p.dangerSoft),
+                        if (subscription.isPaused) _StatePill(text: tr('ui_e858894dedb7'), color: p.warning, background: p.warningSoft),
+                        if (subscription.isTrialActive()) _StatePill(text: tr('ui_87a9108dad6d'), color: p.danger, background: p.dangerSoft),
                       ],
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      '${subscription.category} · ${subscription.cycle.labelAr}',
-                      style: TextStyle(color: p.textMuted, fontSize: 11.5),
+                      '${localizedCategory(subscription.category)} · ${localizedBillingCycle(subscription.cycle.name)}',
+                      style: TextStyle(color: p.textMuted, fontSize: V15Type.caption),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 92),
+                constraints: BoxConstraints(maxWidth: 92),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -419,12 +420,12 @@ class _SubscriptionRow extends StatelessWidget {
                     fmtMoneyWithCurrency(subscription.price, subscription.currency),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: p.accent, fontWeight: FontWeight.w900, fontSize: 14),
+                    style: TextStyle(color: p.accent, fontWeight: FontWeight.w900, fontSize: V15Type.label),
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   Text(
-                    subscription.isPaused ? 'متوقف' : _renewalText(subscription.daysUntilRenewal()),
-                    style: TextStyle(color: p.textMuted, fontSize: 10.5, fontWeight: FontWeight.w700),
+                    subscription.isPaused ? tr('ui_0494e50b7138') : _renewalText(subscription.daysUntilRenewal()),
+                    style: TextStyle(color: p.textMuted, fontSize: V15Type.caption, fontWeight: FontWeight.w700),
                   ),
                   ],
                 ),
@@ -439,9 +440,9 @@ class _SubscriptionRow extends StatelessWidget {
   Future<bool> _confirmDelete(BuildContext context, String name) async {
     return showIosConfirmation(
       context: context,
-      title: 'حذف الاشتراك؟',
-      message: 'سيُحذف «$name» من قائمتك نهائيًا.',
-      confirmLabel: 'حذف',
+      title: tr('ui_8a2f22ef602c'),
+      message: tr('ui_408dcf474886', {'value0': name}),
+      confirmLabel: tr('ui_59ca629220a6'),
       destructive: true,
     );
   }
@@ -459,7 +460,7 @@ class _StatePill extends StatelessWidget {
         margin: const EdgeInsetsDirectional.only(start: 6),
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
         decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(99)),
-        child: Text(text, style: TextStyle(color: color, fontSize: 9.5, fontWeight: FontWeight.w900)),
+        child: Text(text, style: TextStyle(color: color, fontSize: V15Type.captionSmall, fontWeight: FontWeight.w900)),
       );
 }
 
@@ -474,8 +475,8 @@ class _LibraryEmpty extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(CupertinoIcons.search, color: p.textMuted, size: 32),
-          const SizedBox(height: 10),
-          Text('لا توجد نتائج مطابقة.', style: TextStyle(color: p.text, fontWeight: FontWeight.w800)),
+          SizedBox(height: 10),
+          Text(tr('ui_c19b06bfe3c2'), style: TextStyle(color: p.text, fontWeight: FontWeight.w800)),
         ],
       ),
     );
@@ -483,9 +484,9 @@ class _LibraryEmpty extends StatelessWidget {
 }
 
 String _renewalText(int days) {
-  if (days <= 0) return 'اليوم';
-  if (days == 1) return 'غدًا';
-  return 'بعد $days يوم';
+  if (days <= 0) return tr('ui_2422f71e7f4e');
+  if (days == 1) return tr('commonTomorrow');
+  return tr('ui_68300aba1efe', {'value0': days});
 }
 
 Future<void> showSubscriptionDetails(BuildContext context, Subscription sub) async {
@@ -533,23 +534,23 @@ Future<void> showSubscriptionDetails(BuildContext context, Subscription sub) asy
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(sub.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: 19, fontWeight: FontWeight.w900)),
-                          const SizedBox(height: 4),
-                          Text('${sub.category} · ${sub.cycle.labelAr}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.textMuted, fontSize: 12)),
+                          Text(sub.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: V15Type.titleSmall, fontWeight: FontWeight.w900)),
+                          SizedBox(height: 4),
+                          Text('${localizedCategory(sub.category)} · ${localizedBillingCycle(sub.cycle.name)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
                         ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 18),
-                Text(fmtMoneyWithCurrency(sub.price, sub.currency), style: TextStyle(color: p.accent, fontWeight: FontWeight.w900, fontSize: 22)),
-                const SizedBox(height: 16),
-                _DetailMetric(icon: Icons.event_repeat_rounded, label: 'التجديد القادم', value: _renewalText(sub.daysUntilRenewal())),
-                const SizedBox(height: 10),
-                _DetailMetric(icon: Icons.payments_outlined, label: 'التكلفة الشهرية', value: fmtMoneyWithCurrency(sub.monthlyCost, sub.currency)),
+                SizedBox(height: 18),
+                Text(fmtMoneyWithCurrency(sub.price, sub.currency), style: TextStyle(color: p.accent, fontWeight: FontWeight.w900, fontSize: V15Type.title)),
+                SizedBox(height: 16),
+                _DetailMetric(icon: Icons.event_repeat_rounded, label: tr('ui_b4f5658d61f3'), value: _renewalText(sub.daysUntilRenewal())),
+                SizedBox(height: 10),
+                _DetailMetric(icon: Icons.payments_outlined, label: tr('ui_118b84c4c576'), value: fmtMoneyWithCurrency(sub.monthlyCost, sub.currency)),
                 if (sub.notes.trim().isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  _DetailMetric(icon: Icons.notes_rounded, label: 'ملاحظة', value: sub.notes),
+                  SizedBox(height: 10),
+                  _DetailMetric(icon: Icons.notes_rounded, label: tr('ui_0be7afd7e65f'), value: sub.notes),
                 ],
                 const SizedBox(height: 18),
                 LayoutBuilder(
@@ -571,7 +572,7 @@ Future<void> showSubscriptionDetails(BuildContext context, Subscription sub) asy
                         ),
                 ),
                 if (sub.manageUrl.trim().isNotEmpty) ...[
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   CupertinoButton(
                     color: p.surfaceAlt,
                     onPressed: () async {
@@ -581,9 +582,9 @@ Future<void> showSubscriptionDetails(BuildContext context, Subscription sub) asy
                           await showCupertinoDialog<void>(
                             context: sheetContext,
                             builder: (dialogContext) => CupertinoAlertDialog(
-                              title: const Text('تعذر فتح الرابط'),
-                              content: const Text('الرابط غير آمن. استخدم رابط HTTPS من شاشة التعديل.'),
-                              actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: const Text('حسنًا'))],
+                              title: Text(tr('ui_36f5ac81955e')),
+                              content: Text(tr('ui_370a5905d9f7')),
+                              actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: Text(tr('ui_a64b3d93816b')))],
                             ),
                           );
                         }
@@ -594,16 +595,16 @@ Future<void> showSubscriptionDetails(BuildContext context, Subscription sub) asy
                         mode: LaunchMode.externalApplication,
                       );
                     },
-                    child: const Text('فتح صفحة إدارة الاشتراك'),
+                    child: Text(tr('ui_62501bf71e29')),
                   ),
                 ],
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 CupertinoButton(
                   onPressed: () async {
                     await store.recordUsage(sub.id);
                     if (sheetContext.mounted) Navigator.pop(sheetContext);
                   },
-                  child: const Text('تسجيل استخدام الخدمة'),
+                  child: Text(tr('ui_0c361266d921')),
                 ),
               ],
             ),
@@ -626,14 +627,14 @@ List<Widget> _actionButtons(
           Navigator.pop(sheetContext);
           Navigator.of(context).push(CupertinoPageRoute(builder: (_) => EditSubscriptionScreen(existing: sub)));
         },
-        child: const Text('تعديل'),
+        child: Text(tr('ui_113d570d6555')),
       ),
       CupertinoButton.filled(
         onPressed: () async {
           await store.togglePause(sub.id);
           if (sheetContext.mounted) Navigator.pop(sheetContext);
         },
-        child: Text(sub.isPaused ? 'استئناف المتابعة' : 'إيقاف مؤقت'),
+        child: Text(sub.isPaused ? tr('ui_60d84c243b4d') : tr('ui_cb7f6fd46259')),
       ),
     ];
 
@@ -658,11 +659,11 @@ class _DetailMetric extends StatelessWidget {
             children: [
               Icon(icon, color: p.accent, size: 19),
               const SizedBox(width: 9),
-              Expanded(child: Text(label, style: TextStyle(color: p.textMuted, fontSize: 12))),
+              Expanded(child: Text(label, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption))),
             ],
           ),
           const SizedBox(height: 7),
-          Text(value, maxLines: 3, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: 13, fontWeight: FontWeight.w800)),
+          Text(value, maxLines: 3, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: V15Type.labelSmall, fontWeight: FontWeight.w800)),
         ],
       ),
     );

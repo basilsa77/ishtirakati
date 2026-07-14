@@ -4,7 +4,9 @@ library;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../services/ai_extractor.dart' show aiProviderById, kAiProviders;
+import '../l10n/app_localizations.dart';
+import '../services/ai_extractor.dart'
+    show LocalizedAiProviderInfo, aiProviderById, kAiProviders;
 import '../services/subscription_store.dart';
 import '../theme.dart';
 
@@ -43,7 +45,7 @@ class _AiToolsScreenState extends State<AiToolsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          _aiKey.text.trim().isEmpty ? 'تم إيقاف الذكاء الاصطناعي.' : 'تم حفظ مفتاح الذكاء الاصطناعي.',
+          _aiKey.text.trim().isEmpty ? tr('ui_38317d82302b') : tr('ui_b50e4e22cdb6'),
         ),
       ),
     );
@@ -53,25 +55,25 @@ class _AiToolsScreenState extends State<AiToolsScreen> {
     final store = SubscriptionStore.instance;
     if (store.aiApiKey.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('أضف مفتاح الذكاء الاصطناعي أولًا.')),
+        SnackBar(content: Text(tr('ui_a4959fcedf25'))),
       );
       return;
     }
     final approved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('تصنيف الخدمات؟'),
-        content: const Text(
-          'سيُرسل اسم الخدمة غير المصنفة فقط إلى المزود الذي اخترته. لا تُرسل الأسعار أو الملاحظات.',
+        title: Text(tr('ui_eef371eb1d45')),
+        content: Text(
+          tr('ui_082d038f71f9'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('إلغاء'),
+            child: Text(tr('ui_9a30dc2a96b8')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('متابعة'),
+            child: Text(tr('ui_322b7b613468')),
           ),
         ],
       ),
@@ -81,7 +83,7 @@ class _AiToolsScreenState extends State<AiToolsScreen> {
       final count = await store.reclassifyUnknownsWithAi();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(count == 0 ? 'لا توجد خدمات تحتاج تصنيفًا.' : 'تم تصنيف $count خدمات.')),
+        SnackBar(content: Text(count == 0 ? tr('ui_d1cd2db743db') : tr('ui_50ccfb7bccbb', {'value0': count}))),
       );
     } catch (error) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
@@ -99,8 +101,8 @@ class _AiToolsScreenState extends State<AiToolsScreen> {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          'أدوات الذكاء الاصطناعي',
-          style: TextStyle(color: p.text, fontSize: 17, fontWeight: FontWeight.w900),
+          tr('ui_6ec927377748'),
+          style: TextStyle(color: p.text, fontSize: V15Type.titleSmall, fontWeight: FontWeight.w900),
         ),
         iconTheme: IconThemeData(color: p.text),
       ),
@@ -117,41 +119,41 @@ class _AiToolsScreenState extends State<AiToolsScreen> {
                   Row(
                     children: [
                       Icon(Icons.auto_awesome_rounded, color: p.accent),
-                      const SizedBox(width: 9),
-                      Text('استوديو الذكاء الاصطناعي', style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: 15)),
+                      SizedBox(width: 9),
+                      Text(tr('ui_973e33017592'), style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: V15Type.bodySmall)),
                     ],
                   ),
-                  const SizedBox(height: 7),
-                  Text('المفتاح يُحفظ على جهازك ويُستخدم فقط بعد موافقتك.', style: TextStyle(color: p.textMuted, fontSize: 12)),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 7),
+                  Text(tr('ui_19cfaabab144'), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
+                  SizedBox(height: 14),
                   DropdownButtonFormField<String>(
                     initialValue: store.aiProvider,
                     dropdownColor: p.surface,
-                    decoration: const InputDecoration(labelText: 'المزود'),
+                    decoration: InputDecoration(labelText: tr('ui_cc2eabfd9f3a')),
                     items: [
                       for (final provider in kAiProviders)
-                        DropdownMenuItem(value: provider.id, child: Text(provider.label)),
+                        DropdownMenuItem(value: provider.id, child: Text(provider.localizedLabel)),
                     ],
                     onChanged: (value) {
                       if (value != null) store.setAiProvider(value);
                     },
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   TextField(
                     controller: _aiKey,
                     obscureText: !_showKey,
                     textDirection: TextDirection.ltr,
                     decoration: InputDecoration(
-                      labelText: 'مفتاح API',
+                      labelText: tr('ui_b0f1d5fd42e0'),
                       hintText: aiProviderById(store.aiProvider).hint,
                       suffixIcon: IconButton(
-                        tooltip: _showKey ? 'إخفاء المفتاح' : 'إظهار المفتاح',
+                        tooltip: _showKey ? tr('ui_a4d2edd73560') : tr('ui_1832fb9316dc'),
                         onPressed: () => setState(() => _showKey = !_showKey),
                         icon: Icon(_showKey ? Icons.visibility_off_rounded : Icons.visibility_rounded),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
@@ -160,24 +162,24 @@ class _AiToolsScreenState extends State<AiToolsScreen> {
                             Uri.parse(aiProviderById(store.aiProvider).keyUrl),
                             mode: LaunchMode.externalApplication,
                           ),
-                          icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                          label: const Text('إنشاء مفتاح'),
+                          icon: Icon(Icons.open_in_new_rounded, size: 18),
+                          label: Text(tr('ui_7d7b50eb8777')),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      SizedBox(width: 10),
                       IconButton.filled(
-                        tooltip: 'حفظ المفتاح',
+                        tooltip: tr('ui_2157a38aeffc'),
                         onPressed: _saveAiKey,
-                        icon: const Icon(Icons.check_rounded),
+                        icon: Icon(Icons.check_rounded),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(46)),
                     onPressed: store.aiApiKey.trim().isEmpty ? null : _classifyUnknowns,
-                    icon: const Icon(Icons.category_rounded, size: 18),
-                    label: const Text('تصنيف الخدمات غير المعروفة'),
+                    icon: Icon(Icons.category_rounded, size: 18),
+                    label: Text(tr('ui_6e9a9b882540')),
                   ),
                 ],
               ),

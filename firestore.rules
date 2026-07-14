@@ -8,17 +8,29 @@ service cloud.firestore {
 
     function hasValidBackup() {
       return request.resource.data.keys()
-          .hasOnly(['backup', 'updatedAt', 'schemaVersion'])
+          .hasOnly(['backup', 'updatedAt', 'schemaVersion', 'revision'])
           && request.resource.data.backup is string
           && request.resource.data.backup.size() > 0
           && request.resource.data.backup.size() <= 850000
           && request.resource.data.schemaVersion == 1
+          && request.resource.data.revision is int
+          && request.resource.data.revision > 0
           && request.resource.data.updatedAt == request.time;
     }
 
     match /users/{uid} {
       allow read, delete: if isOwner(uid);
-      allow create, update: if isOwner(uid) && hasValidBackup();
+      allow create: if isOwner(uid)
+                    && hasValidBackup()
+                    && request.resource.data.revision == 1;
+      allow update: if isOwner(uid)
+                    && hasValidBackup()
+                    && (
+                      (!resource.data.keys().hasAny(['revision'])
+                        && request.resource.data.revision == 1)
+                      || request.resource.data.revision
+                        == resource.data.revision + 1
+                    );
     }
   }
 }

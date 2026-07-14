@@ -5,15 +5,17 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../l10n/app_localizations.dart';
+
 /// نسخة التطبيق الحالية — تُحدَّث مع كل إصدار.
-const String kAppVersion = '15.1.2';
-const String kAppBuildNumber = '34';
+const String kAppVersion = '15.2.0';
+const String kAppBuildNumber = '35';
 const String kAppBuildLabel = '$kAppVersion ($kAppBuildNumber)';
-const String kAppBuildMode = kReleaseMode
-    ? 'إصدار نهائي'
+String get kAppBuildMode => kReleaseMode
+    ? tr('buildRelease')
     : kProfileMode
-        ? 'اختبار أداء'
-        : 'تطوير';
+        ? tr('buildProfile')
+        : tr('buildDebug');
 
 const String _pubspecUrl =
     'https://raw.githubusercontent.com/basilsa77/ishtirakati/main/pubspec.yaml';

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../design/design_tokens.dart';
+import '../l10n/app_localizations.dart';
 import '../screens/command_palette.dart';
 import '../theme.dart';
 
@@ -98,7 +99,7 @@ class _IOSBottomBar extends StatelessWidget {
                       key: ValueKey('v12-dock-${item.name}'),
                     ),
                     activeIcon: Icon(item.selectedIcon),
-                    label: item.shortLabel,
+                    label: item.shortLabel(context),
                   ),
               ],
             ),
@@ -129,12 +130,12 @@ class _CycleRail extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.all(V12Space.xs),
                 child: Text(
-                  'اشتراكاتي',
+                  context.l10n.text('appTitle'),
                   style: TextStyle(
                     color: context.palette.text,
-                    fontFamily: V12Type.displayFamily,
-                    fontFamilyFallback: V12Type.fallbacks,
-                    fontSize: V12Type.title,
+                    fontFamily: V15Type.displayFamily,
+                    fontFamilyFallback: V15Type.fallbacks,
+                    fontSize: V15Type.title,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -150,13 +151,13 @@ class _CycleRail extends StatelessWidget {
               CupertinoButton(
                 onPressed: onCommands,
                 padding: const EdgeInsets.symmetric(vertical: V12Space.sm),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(CupertinoIcons.search, size: 20),
-                    SizedBox(width: V12Space.sm),
+                    const Icon(CupertinoIcons.search, size: 20),
+                    const SizedBox(width: V12Space.sm),
                     Expanded(
                       child: Text(
-                        'بحث وأوامر',
+                        context.l10n.text('searchAndCommands'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -203,7 +204,7 @@ class _SidebarButton extends StatelessWidget {
               const SizedBox(width: V12Space.sm),
               Expanded(
                 child: Text(
-                  destination.label,
+                  destination.label(context),
                   style: TextStyle(
                     color: selected
                         ? context.palette.accent

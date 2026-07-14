@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/subscription.dart';
 import '../data/presets.dart';
+import '../l10n/app_localizations.dart';
 import 'import_parser.dart';
 
 /// نماذج نجربها بالترتيب (الأحدث أولًا، مع بدائل إن أُوقف نموذج).
@@ -122,7 +123,7 @@ List<ImportCandidate> parseAiCandidates(String raw) {
       currency: validCurrencies.contains(currencyRaw) ? currencyRaw : '',
       cycle: cycle,
       anchor: anchor,
-      sourceLine: 'استخراج بالذكاء الاصطناعي',
+      sourceLine: tr('aiExtractionSource'),
     ));
   }
   return out;
@@ -145,6 +146,14 @@ class AiProviderInfo {
     required this.model,
     required this.hint,
   });
+}
+
+extension LocalizedAiProviderInfo on AiProviderInfo {
+  String get localizedLabel => tr(switch (id) {
+        'gemini' => 'aiProviderGemini',
+        'groq' => 'aiProviderGroq',
+        _ => label,
+      });
 }
 
 const List<AiProviderInfo> kAiProviders = [
@@ -232,14 +241,10 @@ Future<String> aiGenerateText(
           continue;
         }
         if (res.statusCode == 400 || res.statusCode == 403) {
-          throw const AiExtractionException(
-            'مفتاح API غير صالح — راجعه في الإعدادات',
-          );
+          throw AiExtractionException(tr('aiInvalidKey'));
         }
         if (res.statusCode == 429) {
-          throw const AiExtractionException(
-            'تجاوزت حد الاستخدام مؤقتًا — انتظر دقيقة وأعد المحاولة',
-          );
+          throw AiExtractionException(tr('aiRateLimited'));
         }
         if (res.statusCode != 200) {
           lastError = 'HTTP ${res.statusCode}';
@@ -254,7 +259,9 @@ Future<String> aiGenerateText(
         lastError = e;
       }
     }
-    throw AiExtractionException('تعذر الاتصال بالذكاء الاصطناعي: $lastError');
+    throw AiExtractionException(
+      tr('aiConnectionFailed', {'error': lastError}),
+    );
   }
 
   // مزودات متوافقة مع OpenAI (Groq / OpenAI / DeepSeek)
@@ -279,16 +286,16 @@ Future<String> aiGenerateText(
         .timeout(timeout);
     if (res.statusCode == 401 || res.statusCode == 403) {
       throw AiExtractionException(
-        'مفتاح ${provider.label} غير صالح — راجعه في الإعدادات',
+        tr('aiProviderKeyInvalid', {'provider': provider.localizedLabel}),
       );
     }
     if (res.statusCode == 429) {
-      throw const AiExtractionException(
-        'تجاوزت حد الاستخدام مؤقتًا — انتظر دقيقة وأعد المحاولة',
-      );
+      throw AiExtractionException(tr('aiRateLimited'));
     }
     if (res.statusCode != 200) {
-      throw AiExtractionException('تعذر الاتصال: HTTP ${res.statusCode}');
+      throw AiExtractionException(
+        tr('aiHttpFailed', {'code': res.statusCode}),
+      );
     }
     return extractOpenAiResponseText(
       jsonDecode(utf8.decode(res.bodyBytes)),
@@ -296,7 +303,7 @@ Future<String> aiGenerateText(
   } on AiExtractionException {
     rethrow;
   } catch (e) {
-    throw AiExtractionException('تعذر الاتصال بالذكاء الاصطناعي: $e');
+    throw AiExtractionException(tr('aiConnectionFailed', {'error': e}));
   }
 }
 

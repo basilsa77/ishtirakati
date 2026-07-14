@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/subscription.dart';
 import '../data/presets.dart';
+import '../l10n/app_localizations.dart';
 import 'category_classifier.dart';
 import 'ai_extractor.dart';
 import 'notification_service.dart';
@@ -43,6 +44,7 @@ class SubscriptionStore extends ChangeNotifier {
   static const String _aiProviderKey = 'ishtirakati_ai_provider';
   static const String _onboardKey = 'ishtirakati_onboarded_v1';
   static const String _themeModeKey = 'ishtirakati_theme_mode';
+  static const String _languageModeKey = 'ishtirakati_language_mode_v15';
   static const int _maxImportBytes = 2 * 1024 * 1024;
   static const int _maxImportRecords = 5000;
 
@@ -55,6 +57,7 @@ class SubscriptionStore extends ChangeNotifier {
   String _aiApiKey = '';
   String _aiProvider = 'gemini';
   String _themeMode = 'system'; // dark | light | system
+  String _languageMode = 'system'; // ar | en | system
   bool _hasOnboarded = false;
   bool _loaded = false;
   String? _storageError;
@@ -74,6 +77,7 @@ class SubscriptionStore extends ChangeNotifier {
   String get aiApiKey => _aiApiKey;
   String get aiProvider => _aiProvider;
   String get themeMode => _themeMode;
+  String get languageMode => _languageMode;
   bool get hasOnboarded => _hasOnboarded;
   bool get isLoaded => _loaded;
   bool get storageHealthy => _storageHealthy;
@@ -89,6 +93,11 @@ class SubscriptionStore extends ChangeNotifier {
     _hasOnboarded = prefs.getBool(_onboardKey) ?? false;
     _aiProvider = prefs.getString(_aiProviderKey) ?? 'gemini';
     _themeMode = prefs.getString(_themeModeKey) ?? 'system';
+    final storedLanguage = prefs.getString(_languageModeKey);
+    _languageMode = switch (storedLanguage) {
+      'ar' || 'en' || 'system' => storedLanguage!,
+      _ => 'system',
+    };
     // Keychain أولًا. نسخ v12 غير الآمنة تُقرأ فقط لترحيلها إلى Keychain.
     _aiApiKey = '';
     final secureAiValues = await _secretStore.readAll(_aiKeyKey);
@@ -133,7 +142,7 @@ class SubscriptionStore extends ChangeNotifier {
       try {
         final decoded = jsonDecode(await _dataCodec.decrypt(encrypted));
         if (decoded is! List) {
-          throw const SecureDataException('صيغة البيانات المشفرة غير صالحة.');
+          throw SecureDataException(tr('securePayloadInvalid'));
         }
         records.addAll(decoded);
         _storageHealthy = true;
@@ -145,8 +154,7 @@ class SubscriptionStore extends ChangeNotifier {
           await prefs.setString(_backupSubsKey, encrypted);
         }
         _storageHealthy = false;
-        _storageError =
-            'تعذر فتح البيانات المشفرة. البيانات الأصلية محفوظة ولم تُستبدل.';
+        _storageError = tr('secureRecordLocked');
       }
     } else {
       // ترحيل بيانات الإصدارات السابقة إلى صيغة مشفّرة مرة واحدة.
@@ -195,7 +203,7 @@ class SubscriptionStore extends ChangeNotifier {
   void _ensureWritable() {
     if (!_storageHealthy) {
       throw SecureDataException(
-        _storageError ?? 'التخزين مقفل لحماية بياناتك من الاستبدال.',
+        _storageError ?? tr('secureStorageLocked'),
       );
     }
   }
@@ -211,6 +219,14 @@ class SubscriptionStore extends ChangeNotifier {
     _themeMode = mode;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_themeModeKey, mode);
+    notifyListeners();
+  }
+
+  Future<void> setLanguageMode(String mode) async {
+    if (mode != 'ar' && mode != 'en' && mode != 'system') return;
+    _languageMode = mode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_languageModeKey, mode);
     notifyListeners();
   }
 
@@ -231,9 +247,7 @@ class SubscriptionStore extends ChangeNotifier {
     } else {
       final keychainReady = await _secretStore.writeAll(_aiKeyKey, next);
       if (!keychainReady) {
-        throw const SecureDataException(
-          'تعذر حفظ مفتاح الذكاء الاصطناعي في Keychain.',
-        );
+        throw SecureDataException(tr('secureAiKeySaveFailed'));
       }
       await prefs.remove('${_aiKeyKey}_mirror');
       await prefs.remove(_aiKeyKey);
@@ -491,6 +505,7 @@ class SubscriptionStore extends ChangeNotifier {
     _aiApiKey = '';
     _aiProvider = 'gemini';
     _themeMode = 'system';
+    _languageMode = 'system';
     _hasOnboarded = false;
     _storageHealthy = true;
     _storageError = null;
@@ -558,10 +573,6 @@ class SubscriptionStore extends ChangeNotifier {
     int months = 6,
     DateTime? from,
   }) {
-    const labels = [
-      'ينا', 'فبر', 'مار', 'أبر', 'ماي', 'يون',
-      'يول', 'أغس', 'سبت', 'أكت', 'نوف', 'ديس',
-    ];
     final ref = from ?? DateTime.now();
     final out = <MapEntry<String, double>>[];
     for (var i = months - 1; i >= 0; i--) {
@@ -570,7 +581,7 @@ class SubscriptionStore extends ChangeNotifier {
       for (final s in _items.where((s) => s.currency == currency)) {
         total += s.paymentsInMonth(d.year, d.month) * s.price;
       }
-      out.add(MapEntry(labels[d.month - 1], total));
+      out.add(MapEntry(localizedDate(d, skeleton: 'MMM'), total));
     }
     return out;
   }

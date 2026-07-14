@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/subscription.dart';
 import '../services/financial_assistant.dart';
 import '../services/subscription_store.dart';
@@ -15,8 +16,8 @@ class FinancialReviewScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final store = SubscriptionStore.instance;
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(
-        middle: Text('المراجعات المالية'),
+      navigationBar: CupertinoNavigationBar(
+        middle: Text(tr('ui_f0cac12b4c73')),
       ),
       child: SafeArea(
         child: ListenableBuilder(
@@ -62,26 +63,26 @@ class FinancialReviewScreen extends StatelessWidget {
       context: context,
       builder: (sheetContext) => CupertinoActionSheet(
         title: Text(subscription.name),
-        message: const Text('اختر الإجراء الذي يعكس قرارك الحالي.'),
+        message: Text(tr('ui_fe79a06b79f9')),
         actions: [
           CupertinoActionSheetAction(
             onPressed: () async {
               Navigator.pop(sheetContext);
               await store.recordUsage(subscription.id);
             },
-            child: const Text('تسجيل استخدام اليوم'),
+            child: Text(tr('ui_2af3653b0c9f')),
           ),
           CupertinoActionSheetAction(
             onPressed: () async {
               Navigator.pop(sheetContext);
               await store.markReviewed(subscription.id);
             },
-            child: const Text('تمت مراجعة الاشتراك'),
+            child: Text(tr('ui_abb7607440cf')),
           ),
         ],
         cancelButton: CupertinoActionSheetAction(
           onPressed: () => Navigator.pop(sheetContext),
-          child: const Text('إلغاء'),
+          child: Text(tr('ui_9a30dc2a96b8')),
         ),
       ),
     );
@@ -107,19 +108,19 @@ class _ReviewSummary extends StatelessWidget {
       child: Row(
         children: [
           Icon(CupertinoIcons.chart_bar_alt_fill, color: p.accent, size: 28),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${analysis.reviewItems.length} عناصر تحتاج قرارًا',
-                  style: TextStyle(color: p.text, fontSize: 16, fontWeight: FontWeight.w800),
+                  tr('ui_1ae481061748', {'value0': analysis.reviewItems.length}),
+                  style: TextStyle(color: p.text, fontSize: V15Type.body, fontWeight: FontWeight.w800),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
-                  'توفير محتمل ${fmtMoney(analysis.potentialMonthlySavings, currency)} شهريًا',
-                  style: TextStyle(color: p.textMuted, fontSize: 13),
+                  tr('ui_c7ca26cba27e', {'value0': fmtMoney(analysis.potentialMonthlySavings, currency)}),
+                  style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall),
                 ),
               ],
             ),
@@ -164,18 +165,18 @@ class _ReviewRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.subscription.name, style: TextStyle(color: p.text, fontSize: 15, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 3),
-                  Text(_labelFor(item.reason), style: TextStyle(color: p.textMuted, fontSize: 12)),
+                  Text(item.subscription.name, style: TextStyle(color: p.text, fontSize: V15Type.bodySmall, fontWeight: FontWeight.w800)),
+                  SizedBox(height: 3),
+                  Text(_labelFor(item.reason), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
                 ],
               ),
             ),
             if (_monthlySaving(item) > 0)
               Text(
                 fmtMoney(_monthlySaving(item), currency),
-                style: TextStyle(color: p.accent, fontSize: 12, fontWeight: FontWeight.w800),
+                style: TextStyle(color: p.accent, fontSize: V15Type.caption, fontWeight: FontWeight.w800),
               ),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Icon(CupertinoIcons.chevron_left, color: p.textMuted, size: 16),
           ],
         ),
@@ -184,10 +185,10 @@ class _ReviewRow extends StatelessWidget {
   }
 
   static String _labelFor(FinancialReviewReason reason) => switch (reason) {
-        FinancialReviewReason.duplicate => 'اشتراك مكرر في الخدمة نفسها',
-        FinancialReviewReason.unusedAutoRenewal => 'متجدد تلقائيًا ولم يُسجل استخدامه',
-        FinancialReviewReason.priceIncrease => 'ارتفع سعره ويستحق المقارنة',
-        FinancialReviewReason.overdueReview => 'لم تُراجع شروطه منذ مدة',
+        FinancialReviewReason.duplicate => tr('ui_b319d9a58104'),
+        FinancialReviewReason.unusedAutoRenewal => tr('ui_2ac3ff1ff32b'),
+        FinancialReviewReason.priceIncrease => tr('ui_9b64a8bbe48b'),
+        FinancialReviewReason.overdueReview => tr('ui_287936e31433'),
       };
 
   static IconData _iconFor(FinancialReviewReason reason) => switch (reason) {
@@ -218,10 +219,10 @@ class _ReviewEmpty extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(CupertinoIcons.checkmark_shield_fill, color: p.accent, size: 48),
-            const SizedBox(height: 14),
-            Text('لا توجد مراجعات معلقة', style: TextStyle(color: p.text, fontSize: 20, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 6),
-            Text('اشتراكاتك الحالية لا تعرض مؤشرات تستدعي قرارًا الآن.', textAlign: TextAlign.center, style: TextStyle(color: p.textMuted, fontSize: 13)),
+            SizedBox(height: 14),
+            Text(tr('ui_84180a00b479'), style: TextStyle(color: p.text, fontSize: V15Type.title, fontWeight: FontWeight.w800)),
+            SizedBox(height: 6),
+            Text(tr('ui_cc941d2bd31f'), textAlign: TextAlign.center, style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall)),
           ],
         ),
       ),

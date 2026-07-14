@@ -5,6 +5,7 @@ library;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../main.dart';
 import '../services/auth_service.dart';
 import '../services/cloud_sync.dart';
@@ -35,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _busy = false;
       if (!sync.success) {
         _error = CloudSync.status.value.message ??
-            'تعذرت المزامنة. أعد المحاولة من الإعدادات.';
+            tr('ui_7eb5d2bf9dcd');
       }
     });
     if (sync.success) await _continueToApp();
@@ -48,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     Navigator.of(context).pushReplacement(
       CupertinoPageRoute(
-        builder: (_) => const LockGate(child: RootShell()),
+        builder: (_) => LockGate(child: RootShell()),
       ),
     );
   }
@@ -72,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!sync.success) {
         setState(() {
           _error = CloudSync.status.value.message ??
-              'تم تسجيل الدخول، لكن تعذرت المزامنة. أعد المحاولة من الإعدادات.';
+              tr('ui_cffd5d591fa0');
         });
         return;
       }
@@ -87,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _error = 'حدث خطأ غير متوقع — أعد المحاولة.';
+        _error = tr('ui_77156fb0bf1f');
       });
     }
   }
@@ -109,62 +110,62 @@ class _LoginScreenState extends State<LoginScreen> {
                 hasScrollBody: false,
                 child: Column(
             children: [
-              const Spacer(),
+              Spacer(),
               Container(
                 width: 104,
                 height: 104,
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: AppColors.heroGradient,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(color: Color(0x5514B886), blurRadius: 30),
                   ],
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.cloud_sync_rounded,
                   color: Colors.white,
                   size: 48,
                 ),
               ),
-              const SizedBox(height: 28),
+              SizedBox(height: 28),
               Text(
-                'احفظ بياناتك مع حسابك',
+                tr('ui_3502ec3b7f9b'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 23,
+                  fontSize: V15Type.title,
                   fontWeight: FontWeight.w900,
                   color: p.text,
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Text(
                 configured
-                    ? 'سجّل دخولك لتُحفظ اشتراكاتك بأمان مع حسابك، '
-                        'وتستعيدها تلقائيًا على أي جهاز جديد.\n'
-                        'اختياري تمامًا — التطبيق يعمل كاملًا بدونه.\n'
-                        'بيانات الجهاز مشفرة بـ AES-256-GCM ومفتاحها في Keychain. '
-                        'أما النسخة السحابية فتحميها Firebase أثناء النقل والتخزين، وليست تشفيرًا طرفيًا E2E.'
-                    : 'المزامنة السحابية قيد التجهيز وستتوفر في تحديث '
-                        'قريب — يمكنك استخدام التطبيق كاملًا الآن، '
-                        'وبياناتك محفوظة مشفّرة على جهازك.',
+                    ? tr('ui_4bffc5821b60') +
+                        tr('ui_097f251b4dfb') +
+                        tr('ui_3c23a47a16b1') +
+                        tr('ui_109c78d3b1e9') +
+                        tr('ui_2b0d41e83704')
+                    : tr('ui_b5da29068d03') +
+                        tr('ui_a8b972961189') +
+                        tr('ui_fe70ed8741e8'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 14.5,
+                  fontSize: V15Type.bodySmall,
                   color: p.textMuted,
                   height: 1.8,
                 ),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: 32),
               _AuthButton(
                 backgroundColor: CupertinoColors.white,
                 foregroundColor: CupertinoColors.black,
                 onPressed: (!configured || _busy || signedIn)
                     ? null
                     : () => _signIn(AuthService.signInWithApple),
-                icon: const Icon(Icons.apple_rounded, size: 26),
-                label: const Text(
-                  'المتابعة بحساب Apple',
+                icon: Icon(Icons.apple_rounded, size: 26),
+                label: Text(
+                  tr('ui_99e77aefca64'),
                 ),
               ),
               const SizedBox(height: 12),
@@ -177,60 +178,60 @@ class _LoginScreenState extends State<LoginScreen> {
                         ? _retrySync
                         : () => _signIn(AuthService.signInWithGoogle),
                 icon: _busy
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CupertinoActivityIndicator(
                           color: CupertinoColors.white,
                         ),
                       )
-                    : const Text(
+                    : Text(
                         'G',
                         style: TextStyle(
-                          fontSize: 22,
+                          fontSize: V15Type.title,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                 label: Text(
                   signedIn
-                      ? 'إعادة محاولة المزامنة'
-                      : 'المتابعة بحساب Google',
+                      ? tr('ui_eb496e41e621')
+                      : tr('ui_39553349fb40'),
                 ),
               ),
               if (_error != null) ...[
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 Text(
                   _error!,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: p.danger,
-                    fontSize: 13,
+                    fontSize: V15Type.labelSmall,
                     fontWeight: FontWeight.w700,
                     height: 1.6,
                   ),
                 ),
               ],
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               CupertinoButton(
                 onPressed: _busy ? null : _continueToApp,
                 child: Text(
-                  'المتابعة بدون حساب',
+                  tr('ui_14cc566e3f90'),
                   style: TextStyle(
                     color: p.textMuted,
-                    fontSize: 14.5,
+                    fontSize: V15Type.bodySmall,
                   ),
                 ),
               ),
-              const Spacer(),
+              Spacer(),
               Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: Text(
-                  'بياناتك تُحفظ في مساحة خاصة بحسابك فقط، '
-                  'ولا نستخدمها لأي غرض آخر.',
+                  tr('ui_51c4df2de9fd') +
+                  tr('ui_712795b04159'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: p.textMuted,
-                    fontSize: 11.5,
+                    fontSize: V15Type.caption,
                     height: 1.6,
                   ),
                 ),
@@ -275,8 +276,8 @@ class _AuthButton extends StatelessWidget {
               color: onPressed == null
                   ? context.palette.textMuted
                   : foregroundColor,
-              fontFamily: 'IBM Plex Sans Arabic',
-              fontSize: 16,
+              fontFamily: V15Type.bodyFamily,
+              fontSize: V15Type.body,
               fontWeight: FontWeight.w700,
             ),
             child: IconTheme(

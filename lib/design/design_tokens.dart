@@ -43,8 +43,10 @@ abstract final class V12Radius {
   static const signature = 14.0;
 }
 
-abstract final class V12Type {
-  static const displayFamily = 'Tajawal';
+/// v15 bilingual type scale. IBM Plex Sans Arabic contains harmonised Arabic
+/// and Latin glyphs and is bundled under the SIL Open Font License 1.1.
+abstract final class V15Type {
+  static const displayFamily = 'IBM Plex Sans Arabic';
   static const bodyFamily = 'IBM Plex Sans Arabic';
   static const fallbacks = <String>[
     'SF Arabic',
@@ -53,12 +55,30 @@ abstract final class V12Type {
     'sans-serif',
   ];
 
+  // Size tokens. Variants remain within the six-level product type scale.
+  static const captionSmall = 10.0;
   static const caption = 12.0;
-  static const body = 14.0;
-  static const emphasized = 16.0;
+  static const labelSmall = 13.0;
+  static const label = 14.0;
+  static const bodySmall = 15.0;
+  static const body = 16.0;
+  static const titleSmall = 18.0;
   static const title = 20.0;
+  static const headlineSmall = 24.0;
   static const headline = 28.0;
-  static const display = 36.0;
+  static const displaySmall = 36.0;
+  static const display = 44.0;
+
+  // Arabic needs more leading than Latin so marks and dots never collide.
+  static const captionHeight = 1.45;
+  static const labelHeight = 1.45;
+  static const bodyHeight = 1.55;
+  static const titleHeight = 1.40;
+  static const headlineHeight = 1.30;
+  static const displayHeight = 1.22;
+
+  static const regular = FontWeight.w400;
+  static const semibold = FontWeight.w600;
 }
 
 abstract final class V12Motion {
@@ -69,4 +89,3 @@ abstract final class V12Motion {
 
 bool reduceMotion(BuildContext context) =>
     MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-

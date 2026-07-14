@@ -1,9 +1,7 @@
 /// مستشار الاشتراكات الذكي: يرسل ملخص اشتراكاتك إلى Gemini
 /// ويعيد تحليلًا عربيًا عمليًا — فرص توفير، تكرارات، ومقارنات أسعار.
 library;
-
-
-
+import '../l10n/app_localizations.dart';
 import '../models/subscription.dart';
 import 'ai_extractor.dart'
     show AiExtractionException, aiGenerateText;
@@ -35,6 +33,19 @@ const String _advisorPrompt = '''
 اشتراكات المستخدم:
 ''';
 
+const String _advisorPromptEn = '''
+You are a concise financial advisor specializing in digital subscriptions.
+Analyze the user's subscriptions and return 3-6 practical bullet points in English:
+1. Clear savings opportunities from overlapping services.
+2. Plans that appear expensive or may have a cheaper alternative.
+3. Cases where switching from monthly to yearly billing may usually save money.
+4. Useful observations about expiring trials or forgotten paused subscriptions.
+Start each line with "-". Do not add an introduction or conclusion, and do not
+invent exact competitor prices.
+
+User subscriptions:
+''';
+
 class AiAdvisor {
   /// يعيد نص النصائح، أو يرمي [AiExtractionException] برسالة واضحة.
   static Future<String> advise(
@@ -43,14 +54,15 @@ class AiAdvisor {
     String providerId = 'gemini',
   }) async {
     final summary = buildAdvisorSummary(subs);
+    final prompt = isEnglishLocale ? _advisorPromptEn : _advisorPrompt;
     final answer = (await aiGenerateText(
-      '$_advisorPrompt\n$summary',
+      '$prompt\n$summary',
       apiKey,
       providerId: providerId,
       temperature: 0.4,
       timeout: const Duration(seconds: 60),
     ))
         .trim();
-    return answer.isEmpty ? 'لم يصلنا تحليل — أعد المحاولة.' : answer;
+    return answer.isEmpty ? tr('aiNoAnalysis') : answer;
   }
 }

@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/subscription.dart';
 import '../services/ai_extractor.dart';
 import '../services/import_parser.dart';
@@ -57,8 +58,8 @@ class _ImportScreenState extends State<ImportScreen> {
           ..addAll(local.map((c) => c.name));
         _analyzed = true;
         _aiNote = apiKey.isEmpty
-            ? 'تحليل محلي. أضف مفتاح Gemini من الإعدادات لتفعيل التحليل الاختياري.'
-            : 'تحليل محلي: لا يُرسل النص إلى أي خدمة خارجية.';
+            ? tr('ui_dee07a5c1274')
+            : tr('ui_229f0d67f339');
       });
       return;
     }
@@ -87,7 +88,7 @@ class _ImportScreenState extends State<ImportScreen> {
           ..clear()
           ..addAll(merged.map((c) => c.name));
         _analyzed = true;
-        _aiNote = 'حُلل بالذكاء الاصطناعي — ${ai.length} اشتراكًا مكتشفًا';
+        _aiNote = tr('ui_b1cd86d7fe54', {'value0': ai.length});
       });
     } on AiExtractionException catch (e) {
       if (!mounted) return;
@@ -98,7 +99,7 @@ class _ImportScreenState extends State<ImportScreen> {
           ..clear()
           ..addAll(local.map((c) => c.name));
         _analyzed = true;
-        _aiNote = '${e.message} — عرضنا نتائج التحليل المحلي بدلًا منه.';
+        _aiNote = tr('ui_b36451274fbd', {'value0': e.message});
       });
     } catch (_) {
       if (!mounted) return;
@@ -109,7 +110,7 @@ class _ImportScreenState extends State<ImportScreen> {
           ..clear()
           ..addAll(local.map((c) => c.name));
         _analyzed = true;
-        _aiNote = 'تعذر الاتصال بالذكاء الاصطناعي — عرضنا التحليل المحلي.';
+        _aiNote = tr('ui_c38305c72d90');
       });
     }
   }
@@ -123,20 +124,20 @@ class _ImportScreenState extends State<ImportScreen> {
     final approved = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('إرسال للتحليل بالذكاء الاصطناعي؟'),
+        title: Text(tr('ui_705db619b661')),
         content: Text(
-          'سيُرسل النص الذي ألصقته فقط إلى ${provider.label} لتحليله. '
-          'لا تُرسل كلمة مرور البريد، '
-          'لكن قد يحتوي النص على أسماء خدمات ومبالغ وتواريخ. يمكنك استخدام التحليل المحلي بدلًا من ذلك.',
+          tr('ui_c11e01eb5eb6', {'value0': provider.localizedLabel}) +
+          tr('ui_d230610f0657') +
+          tr('ui_a4c994f880a4'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('تحليل محلي'),
+            child: Text(tr('ui_945994bd18bf')),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('أوافق وأحلل'),
+            child: Text(tr('ui_77eea08e3919')),
           ),
         ],
       ),
@@ -172,8 +173,8 @@ class _ImportScreenState extends State<ImportScreen> {
       SnackBar(
         content: Text(
           count == 0
-              ? 'لم يُضف شيء — الاشتراكات المحددة موجودة مسبقًا'
-              : 'تمت إضافة $count اشتراكًا — راجع الأسعار الناقصة',
+              ? tr('ui_f0317810d9ff')
+              : tr('ui_0eb9a89cc403', {'value0': count}),
         ),
       ),
     );
@@ -183,7 +184,7 @@ class _ImportScreenState extends State<ImportScreen> {
   Widget build(BuildContext context) {
     final p = context.palette;
     return Scaffold(
-      appBar: AppBar(title: const Text('الاستيراد الذكي')),
+      appBar: AppBar(title: Text(tr('ui_c85bec9e0d7d'))),
       body: SafeArea(
         child: ListView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -196,40 +197,40 @@ class _ImportScreenState extends State<ImportScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'كيف يعمل؟',
+                    tr('ui_3063ba1543bf'),
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
-                      fontSize: 15,
+                      fontSize: V15Type.bodySmall,
                       color: p.text,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   Text(
-                    'الصق أي نص فيه اشتراكاتك وسنتعرف عليها تلقائيًا مع '
-                    'أسعارها وتواريخ خصمها:\n'
-                    '• رسائل البنك النصية (انسخ عدة رسائل دفعة واحدة)\n'
-                    '• إيصالات Apple من بريدك «إيصالك من Apple»\n'
-                    '• أو اكتب أسماء الخدمات ببساطة\n\n'
-                    'التحليل المحلي لا يرسل النص خارج جهازك. تحليل Gemini اختياري '
-                    'ويتطلب موافقتك قبل الإرسال.',
+                    tr('ui_889c860bee20') +
+                    tr('ui_cca10b08f6ad') +
+                    tr('ui_5bacebf257d7') +
+                    tr('ui_5d19772faebc') +
+                    tr('ui_5540ca8f5c45') +
+                    tr('ui_991025a8bff8') +
+                    tr('ui_6b6a00386b15'),
                     style: TextStyle(
                       color: p.textMuted,
-                      fontSize: 13,
+                      fontSize: V15Type.labelSmall,
                       height: 1.7,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             FilledButton.icon(
               onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const EmailLinkScreen()),
+                MaterialPageRoute(builder: (_) => EmailLinkScreen()),
               ),
-              icon: const Icon(Icons.alternate_email_rounded),
-              label: const Text('ربط بريدي وجلب الاشتراكات تلقائيًا'),
+              icon: Icon(Icons.alternate_email_rounded),
+              label: Text(tr('ui_3caf822da7ef')),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             AppCard(
               padding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -243,10 +244,10 @@ class _ImportScreenState extends State<ImportScreen> {
                   iconColor: p.accent,
                   collapsedIconColor: p.textMuted,
                   title: Text(
-                    'أين أجد اشتراكات App Store؟',
+                    tr('ui_3702f9205260'),
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
-                      fontSize: 14,
+                      fontSize: V15Type.label,
                       color: p.text,
                     ),
                   ),
@@ -254,14 +255,14 @@ class _ImportScreenState extends State<ImportScreen> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Text(
-                        '١. افتح الإعدادات ← اسمك ← الاشتراكات، وشاهد القائمة '
-                        'ثم اكتب أسماءها هنا (أو صوّرها وانسخ النص من الصور).\n'
-                        '٢. الأسهل: افتح بريدك وابحث عن «إيصالك من Apple»، '
-                        'انسخ محتوى الإيصالات والصقها هنا — سنستخرج الخدمة '
-                        'والسعر والتاريخ تلقائيًا.',
+                        tr('ui_a3ab239ebeb0') +
+                        tr('ui_1ae11cf6e308') +
+                        tr('ui_b812c49ac2ae') +
+                        tr('ui_1d7a6a07268d') +
+                        tr('ui_22518f807c6c'),
                         style: TextStyle(
                           color: p.textMuted,
-                          fontSize: 13,
+                          fontSize: V15Type.labelSmall,
                           height: 1.8,
                         ),
                       ),
@@ -270,17 +271,17 @@ class _ImportScreenState extends State<ImportScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             TextField(
               controller: _text,
               maxLines: 6,
-              decoration: const InputDecoration(
-                hintText: 'الصق النص هنا...\n\n'
-                    'مثال: شراء إنترنت NETFLIX.COM بمبلغ 55.99 ر.س',
+              decoration: InputDecoration(
+                hintText: tr('ui_f8a35a86c6f3') +
+                    tr('ui_2a954cd4fda0'),
                 alignLabelWithHint: true,
               ),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
@@ -289,8 +290,8 @@ class _ImportScreenState extends State<ImportScreen> {
                       minimumSize: const Size.fromHeight(50),
                     ),
                     onPressed: _pasteFromClipboard,
-                    icon: const Icon(Icons.content_paste_rounded, size: 20),
-                    label: const Text('لصق وتحليل'),
+                    icon: Icon(Icons.content_paste_rounded, size: 20),
+                    label: Text(tr('ui_91aa1adaf1ca')),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -301,7 +302,7 @@ class _ImportScreenState extends State<ImportScreen> {
                     ),
                     onPressed: _aiBusy ? null : _analyzeWithAi,
                     icon: _aiBusy
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
@@ -309,34 +310,34 @@ class _ImportScreenState extends State<ImportScreen> {
                               color: Colors.white,
                             ),
                           )
-                        : const Icon(Icons.auto_awesome_rounded, size: 20),
-                    label: Text(_aiBusy ? 'يحلل...' : 'تحليل AI'),
+                        : Icon(Icons.auto_awesome_rounded, size: 20),
+                    label: Text(_aiBusy ? tr('ui_8c53372aebc9') : tr('ui_bcace51b5ecb')),
                   ),
                 ),
               ],
             ),
             if (_aiNote != null) ...[
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               Text(
                 _aiNote!,
                 style: TextStyle(
                   color: p.textMuted,
-                  fontSize: 12.5,
+                  fontSize: V15Type.labelSmall,
                   height: 1.6,
                 ),
               ),
             ],
-            const SizedBox(height: 18),
+            SizedBox(height: 18),
             if (_analyzed && !_aiBusy && _candidates.isEmpty)
               AppCard(
                 child: Row(
                   children: [
                     Icon(Icons.search_off_rounded, color: p.textMuted, size: 26),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'لم نتعرف على اشتراكات في هذا النص. '
-                        'جرّب لصق رسائل البنك أو إيصالات Apple كما هي.',
+                        tr('ui_fb5c2bdd515a') +
+                        tr('ui_0b1c98ff466f'),
                         style: TextStyle(
                           color: p.textMuted,
                           height: 1.6,
@@ -347,7 +348,7 @@ class _ImportScreenState extends State<ImportScreen> {
                 ),
               ),
             if (_candidates.isNotEmpty) ...[
-              SectionTitle('اكتشفنا ${_candidates.length} اشتراكًا'),
+              SectionTitle(tr('ui_edd53f935323', {'value0': _candidates.length})),
               for (final c in _candidates)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
@@ -365,11 +366,11 @@ class _ImportScreenState extends State<ImportScreen> {
                     }),
                   ),
                 ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               FilledButton.icon(
                 onPressed: _selected.isEmpty ? null : _addSelected,
-                icon: const Icon(Icons.playlist_add_check_rounded),
-                label: Text('إضافة المحدد (${_selected.length})'),
+                icon: Icon(Icons.playlist_add_check_rounded),
+                label: Text(tr('ui_a0357a01193b', {'value0': _selected.length})),
               ),
             ],
           ],
@@ -401,9 +402,9 @@ class _CandidateTile extends StatelessWidget {
       if (c.price != null)
         fmtMoney(c.price!, c.currency.isEmpty ? 'SAR' : c.currency)
       else
-        'بدون سعر — عدّله لاحقًا',
-      c.cycle.labelAr,
-      if (c.anchor != null) 'آخر خصم ${fmtDate(c.anchor!)}',
+        tr('ui_df146f594d3a'),
+      localizedBillingCycle(c.cycle.name),
+      if (c.anchor != null) tr('lastCharge', {'date': fmtDate(c.anchor!)}),
     ];
     return AppCard(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -426,7 +427,7 @@ class _CandidateTile extends StatelessWidget {
                 color: catColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(13),
               ),
-              child: Text(c.emoji, style: const TextStyle(fontSize: 22)),
+              child: Text(c.emoji, style: const TextStyle(fontSize: V15Type.title)),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -441,13 +442,13 @@ class _CandidateTile extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
-                            fontSize: 14.5,
+                            fontSize: V15Type.bodySmall,
                             color: p.text,
                           ),
                         ),
                       ),
                       if (alreadyExists) ...[
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 7,
@@ -458,9 +459,9 @@ class _CandidateTile extends StatelessWidget {
                             borderRadius: BorderRadius.circular(9),
                           ),
                           child: Text(
-                            'موجود مسبقًا',
+                            tr('ui_6d86bf5cc6ce'),
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: V15Type.captionSmall,
                               fontWeight: FontWeight.w800,
                               color: p.warning,
                             ),
@@ -474,7 +475,7 @@ class _CandidateTile extends StatelessWidget {
                     details.join(' • '),
                     style: TextStyle(
                       color: p.textMuted,
-                      fontSize: 12,
+                      fontSize: V15Type.caption,
                     ),
                   ),
                 ],

@@ -4,6 +4,7 @@ library;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/subscription.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
@@ -22,11 +23,11 @@ class CalendarPage extends StatelessWidget {
         backgroundColor: p.canvas.withValues(alpha: .92),
         border: Border(bottom: BorderSide(color: p.stroke)),
         middle: Text(
-          'جدول التجديدات',
-          style: TextStyle(color: p.text, fontSize: 17, fontWeight: FontWeight.w900),
+          tr('ui_43268af638e5'),
+          style: TextStyle(color: p.text, fontSize: V15Type.titleSmall, fontWeight: FontWeight.w900),
         ),
       ),
-      child: const SafeArea(top: false, child: CalendarScreen()),
+      child: SafeArea(top: false, child: CalendarScreen()),
     );
   }
 }
@@ -39,11 +40,11 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  static const _months = [
-    'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+  List<String> get _months => [
+    tr('ui_bc40bf9bf5db'), tr('ui_4c9195d55893'), tr('ui_121f3712ae7c'), tr('ui_b5021be42c23'), tr('ui_e490a80977c5'), tr('ui_f6c57592aa1d'),
+    tr('ui_7f5c6765af36'), tr('ui_47bea73f4ca8'), tr('ui_339eb2be7171'), tr('ui_128ed0f7c924'), tr('ui_0b699e61fe99'), tr('ui_c22ea1f7f156'),
   ];
-  static const _weekdays = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'];
+  List<String> get _weekdays => [tr('ui_56750292f58c'), tr('ui_cb92a8b00c69'), tr('ui_e57c96ba8aea'), tr('ui_36a9d753b0bd'), tr('ui_84d816dcc533'), tr('ui_51c9a584ad13'), tr('ui_861183a44bf3')];
 
   late DateTime _month;
   bool _calendarView = false;
@@ -77,23 +78,23 @@ class _CalendarScreenState extends State<CalendarScreen> {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
           children: [
             _CalendarHeader(total: total, currency: currency, itemCount: byDay.values.expand((items) => items).length),
-            const SizedBox(height: 18),
+            SizedBox(height: 18),
             Semantics(
-              label: 'اختيار طريقة عرض التجديدات',
+              label: tr('ui_30e4cbf695ec'),
               child: CupertinoSlidingSegmentedControl<bool>(
                 groupValue: _calendarView,
                 backgroundColor: context.palette.surfaceAlt,
                 thumbColor: context.palette.accent,
                 children: {
                   false: _CalendarViewOption(
-                    key: const Key('renewals-timeline-option'),
-                    label: 'القائمة الزمنية',
+                    key: Key('renewals-timeline-option'),
+                    label: tr('ui_ff0c5210ac46'),
                     icon: CupertinoIcons.list_bullet,
                     selected: !_calendarView,
                   ),
                   true: _CalendarViewOption(
-                    key: const Key('renewals-calendar-option'),
-                    label: 'التقويم',
+                    key: Key('renewals-calendar-option'),
+                    label: tr('ui_c6c25b9b516f'),
                     icon: CupertinoIcons.calendar,
                     selected: _calendarView,
                   ),
@@ -114,21 +115,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
               },
             ),
             if (_calendarView) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               _CalendarGrid(
-                key: const Key('renewals-calendar-grid'),
+                key: Key('renewals-calendar-grid'),
                 month: _month,
                 weekdays: _weekdays,
                 entries: byDay,
                 onOpen: (day, subscriptions) =>
                     _openDay(context, day, subscriptions),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
             ] else
-              const SizedBox(height: 24),
-            Text('التجديدات حسب التاريخ', style: TextStyle(color: context.palette.text, fontSize: 18, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 5),
-            Text(byDay.isEmpty ? 'لا توجد دفعات مسجلة لهذا الشهر.' : 'اختر أي خدمة لعرض تفاصيلها.', style: TextStyle(color: context.palette.textMuted, fontSize: 12.5)),
+              SizedBox(height: 24),
+            Text(tr('ui_fd07cb92b0fe'), style: TextStyle(color: context.palette.text, fontSize: V15Type.titleSmall, fontWeight: FontWeight.w900)),
+            SizedBox(height: 5),
+            Text(byDay.isEmpty ? tr('ui_cfe0939cd3d2') : tr('ui_221f5f83bb44'), style: TextStyle(color: context.palette.textMuted, fontSize: V15Type.labelSmall)),
             const SizedBox(height: 12),
             if (byDay.isEmpty)
               const _CalendarEmpty()
@@ -162,15 +163,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 controller: controller,
                 padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
                 itemCount: subscriptions.length + 1,
-                separatorBuilder: (_, index) => index == 0 ? const SizedBox(height: 14) : Divider(color: p.stroke, height: 1),
+                separatorBuilder: (_, index) => index == 0 ? SizedBox(height: 14) : Divider(color: p.stroke, height: 1),
                 itemBuilder: (context, index) {
                   if (index == 0) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Center(child: Container(width: 38, height: 4, decoration: BoxDecoration(color: p.stroke, borderRadius: BorderRadius.circular(99)))),
-                        const SizedBox(height: 18),
-                        Text('دفعات يوم $day', style: TextStyle(color: p.text, fontSize: 18, fontWeight: FontWeight.w900)),
+                        SizedBox(height: 18),
+                        Text(tr('ui_122244edc329', {'value0': day}), style: TextStyle(color: p.text, fontSize: V15Type.titleSmall, fontWeight: FontWeight.w900)),
                       ],
                     );
                   }
@@ -260,18 +261,18 @@ class _CalendarHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('جدول التجديدات', style: TextStyle(color: p.text, fontSize: 27, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 5),
-        Text('موعد كل خصم أمامك، بلا مفاجآت.', style: TextStyle(color: p.textMuted, fontSize: 13)),
-        const SizedBox(height: 16),
+        Text(tr('ui_43268af638e5'), style: TextStyle(color: p.text, fontSize: V15Type.headlineSmall, fontWeight: FontWeight.w900)),
+        SizedBox(height: 5),
+        Text(tr('ui_dfba2e3d71cb'), style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall)),
+        SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(17),
           decoration: BoxDecoration(color: p.surfaceAlt, borderRadius: BorderRadius.circular(21)),
           child: Row(
             children: [
               Icon(Icons.event_available_rounded, color: p.accent),
-              const SizedBox(width: 10),
-              Expanded(child: Text('$itemCount دفعات في هذا الشهر', style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: 13))),
+              SizedBox(width: 10),
+              Expanded(child: Text(tr('ui_c594d3d42dde', {'value0': itemCount}), style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: V15Type.labelSmall))),
               Text(fmtMoney(total, currency), style: TextStyle(color: p.accent, fontWeight: FontWeight.w900)),
             ],
           ),
@@ -299,13 +300,13 @@ class _MonthControl extends StatelessWidget {
           onPressed: onNext,
           child: Icon(CupertinoIcons.chevron_right, color: p.text),
         ),
-        Expanded(child: Text(label, textAlign: TextAlign.center, style: TextStyle(color: p.text, fontSize: 18, fontWeight: FontWeight.w900))),
+        Expanded(child: Text(label, textAlign: TextAlign.center, style: TextStyle(color: p.text, fontSize: V15Type.titleSmall, fontWeight: FontWeight.w900))),
         CupertinoButton(
           padding: const EdgeInsets.all(8),
           onPressed: onPrevious,
           child: Icon(CupertinoIcons.chevron_left, color: p.text),
         ),
-        CupertinoButton(onPressed: onToday, child: const Text('اليوم')),
+        CupertinoButton(onPressed: onToday, child: Text(tr('ui_2422f71e7f4e'))),
       ],
     );
   }
@@ -338,7 +339,7 @@ class _CalendarGrid extends StatelessWidget {
           Row(
             children: [
               for (final weekday in weekdays)
-                Expanded(child: Center(child: Text(weekday, style: TextStyle(color: p.textMuted, fontSize: 11, fontWeight: FontWeight.w800)))),
+                Expanded(child: Center(child: Text(weekday, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption, fontWeight: FontWeight.w800)))),
             ],
           ),
           const SizedBox(height: 9),
@@ -364,7 +365,7 @@ class _CalendarGrid extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('$day', style: TextStyle(color: todaySelected ? Colors.white : subscriptions.isNotEmpty ? p.accent : p.text, fontSize: 12, fontWeight: FontWeight.w900)),
+                      Text('$day', style: TextStyle(color: todaySelected ? Colors.white : subscriptions.isNotEmpty ? p.accent : p.text, fontSize: V15Type.caption, fontWeight: FontWeight.w900)),
                       if (subscriptions.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Container(width: 5, height: 5, decoration: BoxDecoration(color: todaySelected ? Colors.white : categoryColor(subscriptions.first.category), shape: BoxShape.circle)),
@@ -409,14 +410,14 @@ class _CalendarPayment extends StatelessWidget {
             const SizedBox(width: 10),
             ServiceAvatar(name: subscription.name, emoji: subscription.emoji, manageUrl: subscription.manageUrl, iconUrl: subscription.iconUrl, tint: categoryColor(subscription.category), size: 40),
             const SizedBox(width: 10),
-            Expanded(child: Text(subscription.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: 13.5))),
+            Expanded(child: Text(subscription.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: V15Type.label))),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 92),
               child: Text(
                 fmtMoneyWithCurrency(subscription.price, subscription.currency),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: p.accent, fontWeight: FontWeight.w900, fontSize: 12.5),
+                style: TextStyle(color: p.accent, fontWeight: FontWeight.w900, fontSize: V15Type.labelSmall),
               ),
             ),
           ],
@@ -438,8 +439,8 @@ class _CalendarEmpty extends StatelessWidget {
       child: Row(
         children: [
           Icon(CupertinoIcons.calendar_badge_minus, color: p.textMuted),
-          const SizedBox(width: 10),
-          Expanded(child: Text('لا توجد تجديدات مسجلة في هذا الشهر.', style: TextStyle(color: p.textMuted, fontSize: 12.5))),
+          SizedBox(width: 10),
+          Expanded(child: Text(tr('ui_d880c697cfa5'), style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall))),
         ],
       ),
     );

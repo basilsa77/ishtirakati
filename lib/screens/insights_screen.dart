@@ -6,11 +6,12 @@ import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/subscription.dart';
 import '../services/ai_advisor.dart';
 import '../services/ai_consent_service.dart';
 import '../services/ai_extractor.dart'
-    show AiExtractionException, aiProviderById;
+    show AiExtractionException, LocalizedAiProviderInfo, aiProviderById;
 import '../services/financial_assistant.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
@@ -41,32 +42,32 @@ class InsightsScreen extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
           children: [
-            const _InsightsHeader(),
-            const SizedBox(height: 22),
+            _InsightsHeader(),
+            SizedBox(height: 22),
             if (top.isEmpty)
-              const _InsightsEmpty()
+              _InsightsEmpty()
             else ...[
               _InsightHero(total: total, currency: currency, categories: entries.length),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               _ForecastCard(snapshot: assistant),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               Row(
                 children: [
-                  Expanded(child: _MiniMetric(label: 'متوسط الخدمة', value: fmtMoney(average, currency), icon: CupertinoIcons.money_dollar_circle)),
-                  const SizedBox(width: 10),
-                  Expanded(child: _MiniMetric(label: 'خلال أسبوع', value: '$upcoming تجديد', icon: CupertinoIcons.timer)),
+                  Expanded(child: _MiniMetric(label: tr('ui_d734d8e10283'), value: fmtMoney(average, currency), icon: CupertinoIcons.money_dollar_circle)),
+                  SizedBox(width: 10),
+                  Expanded(child: _MiniMetric(label: tr('ui_2bf7132fc74f'), value: tr('ui_81b71fad9298', {'value0': upcoming}), icon: CupertinoIcons.timer)),
                 ],
               ),
-              const SizedBox(height: 28),
-              const _InsightsLabel('توزيع الالتزامات'),
-              const SizedBox(height: 10),
+              SizedBox(height: 28),
+              _InsightsLabel(tr('ui_5721f95a7e69')),
+              SizedBox(height: 10),
               _DistributionCard(entries: entries, total: total, currency: currency),
-              const SizedBox(height: 28),
-              const _InsightsLabel('مسار الإنفاق'),
-              const SizedBox(height: 10),
+              SizedBox(height: 28),
+              _InsightsLabel(tr('ui_12e08f28e326')),
+              SizedBox(height: 10),
               _TrendCard(history: history, currency: currency),
-              const SizedBox(height: 28),
-              const _InsightsLabel('الخدمات الأعلى أثرًا'),
+              SizedBox(height: 28),
+              _InsightsLabel(tr('ui_38304db9f15d')),
               const SizedBox(height: 10),
               for (var index = 0; index < top.take(4).length; index++) ...[
                 _TopServiceRow(subscription: top[index], rank: index + 1),
@@ -107,18 +108,18 @@ class _ForecastCard extends StatelessWidget {
           Row(
             children: [
               Icon(CupertinoIcons.calendar_badge_plus, color: p.accent, size: 20),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Expanded(
-                child: Text('توقع المصروفات', style: TextStyle(color: p.text, fontSize: 16, fontWeight: FontWeight.w800)),
+                child: Text(tr('ui_8798d8c93a04'), style: TextStyle(color: p.text, fontSize: V15Type.body, fontWeight: FontWeight.w800)),
               ),
               Text(
                 fmtMoney(snapshot.next12MonthsForecast, snapshot.currency),
-                style: TextStyle(color: p.accent, fontSize: 12, fontWeight: FontWeight.w800),
+                style: TextStyle(color: p.accent, fontSize: V15Type.caption, fontWeight: FontWeight.w800),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text('دفعات 12 شهرًا قادمة حسب مواعيد التجديد الفعلية', style: TextStyle(color: p.textMuted, fontSize: 11.5)),
+          SizedBox(height: 4),
+          Text(tr('ui_d572be94e17f'), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
           const SizedBox(height: 18),
           SizedBox(
             height: 106,
@@ -138,14 +139,14 @@ class _ForecastCard extends StatelessWidget {
                         item.total <= 0 ? '0' : item.total.toStringAsFixed(0),
                         maxLines: 1,
                         overflow: TextOverflow.fade,
-                        style: TextStyle(color: p.textMuted, fontSize: 9.5, fontWeight: FontWeight.w700),
+                        style: TextStyle(color: p.textMuted, fontSize: V15Type.captionSmall, fontWeight: FontWeight.w700),
                       ),
                       Text(
-                        '${item.paymentCount} دفعة',
+                        tr('ui_4e55769aaac7', {'value0': item.paymentCount}),
                         maxLines: 1,
                         style: TextStyle(
                           color: p.textMuted,
-                          fontSize: 8.5,
+                          fontSize: V15Type.captionSmall,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -157,10 +158,10 @@ class _ForecastCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(6),
                         ),
                       ),
-                      const SizedBox(height: 5),
+                      SizedBox(height: 5),
                       Text(
                         _monthName(item.month.month),
-                        style: TextStyle(color: p.textMuted, fontSize: 9.5),
+                        style: TextStyle(color: p.textMuted, fontSize: V15Type.captionSmall),
                       ),
                     ],
                   ),
@@ -173,9 +174,9 @@ class _ForecastCard extends StatelessWidget {
     );
   }
 
-  static String _monthName(int month) => const [
-        'ينا', 'فبر', 'مار', 'أبر', 'ماي', 'يون',
-        'يول', 'أغس', 'سبت', 'أكت', 'نوف', 'ديس',
+  static String _monthName(int month) => [
+        tr('ui_b8178e8dc532'), tr('ui_e55e2876d0b7'), tr('ui_40bf6976617c'), tr('ui_febf2d9a96e0'), tr('ui_795e5a93bd9b'), tr('ui_5e4422defbc2'),
+        tr('ui_921d0afb33bf'), tr('ui_68effcdc4e3e'), tr('ui_a648ffa7360b'), tr('ui_d633d9ed1fd0'), tr('ui_8a239d29b450'), tr('ui_d4ee1840e9bb'),
       ][month - 1];
 }
 
@@ -188,9 +189,9 @@ class _InsightsHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('تحليلاتك', style: TextStyle(color: p.text, fontSize: 27, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 5),
-        Text('قراءة مختصرة لما يذهب إليه إنفاقك.', style: TextStyle(color: p.textMuted, fontSize: 13)),
+        Text(tr('ui_0ccf6fbe1b40'), style: TextStyle(color: p.text, fontSize: V15Type.headlineSmall, fontWeight: FontWeight.w900)),
+        SizedBox(height: 5),
+        Text(tr('ui_b1c64046bb33'), style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall)),
       ],
     );
   }
@@ -222,18 +223,18 @@ class _InsightHero extends StatelessWidget {
             decoration: BoxDecoration(color: p.accentSoft, borderRadius: BorderRadius.circular(16)),
             child: Icon(Icons.insights_rounded, color: p.accent),
           ),
-          const SizedBox(width: 13),
+          SizedBox(width: 13),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('إجمالي الالتزامات الشهرية', style: TextStyle(color: p.textMuted, fontSize: 12)),
-                const SizedBox(height: 4),
-                Text(fmtMoney(total, currency), style: TextStyle(color: p.text, fontSize: 22, fontWeight: FontWeight.w900)),
+                Text(tr('ui_d7c496f31754'), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
+                SizedBox(height: 4),
+                Text(fmtMoney(total, currency), style: TextStyle(color: p.text, fontSize: V15Type.title, fontWeight: FontWeight.w900)),
               ],
             ),
           ),
-          Text('$categories\nتصنيفات', textAlign: TextAlign.center, style: TextStyle(color: p.accent, fontSize: 11, height: 1.5, fontWeight: FontWeight.w900)),
+          Text(tr('ui_f916d7d0556e', {'value0': categories}), textAlign: TextAlign.center, style: TextStyle(color: p.accent, fontSize: V15Type.caption, height: 1.5, fontWeight: FontWeight.w900)),
         ],
       ),
     );
@@ -258,9 +259,9 @@ class _MiniMetric extends StatelessWidget {
         children: [
           Icon(icon, color: p.accent, size: 20),
           const SizedBox(height: 14),
-          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: 13.5, fontWeight: FontWeight.w900)),
+          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: V15Type.label, fontWeight: FontWeight.w900)),
           const SizedBox(height: 3),
-          Text(label, style: TextStyle(color: p.textMuted, fontSize: 10.5)),
+          Text(label, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
         ],
       ),
     );
@@ -275,7 +276,7 @@ class _InsightsLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         text,
-        style: TextStyle(color: context.palette.text, fontSize: 18, fontWeight: FontWeight.w900),
+        style: TextStyle(color: context.palette.text, fontSize: V15Type.titleSmall, fontWeight: FontWeight.w900),
       );
 }
 
@@ -303,8 +304,8 @@ class _DistributionCard extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('${entries.length}', style: TextStyle(color: p.text, fontSize: 24, fontWeight: FontWeight.w900)),
-                    Text('تصنيفات', style: TextStyle(color: p.textMuted, fontSize: 10.5)),
+                    Text('${entries.length}', style: TextStyle(color: p.text, fontSize: V15Type.headlineSmall, fontWeight: FontWeight.w900)),
+                    Text(tr('ui_92c216f0e607'), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
                   ],
                 ),
               ),
@@ -318,9 +319,9 @@ class _DistributionCard extends StatelessWidget {
                   child: Row(
                     children: [
                       Container(width: 8, height: 8, decoration: BoxDecoration(color: categoryColor(entry.key), shape: BoxShape.circle)),
-                      const SizedBox(width: 7),
-                      Expanded(child: Text(entry.key, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: 11.5, fontWeight: FontWeight.w700))),
-                      Text('${total <= 0 ? 0 : (entry.value / total * 100).round()}٪', style: TextStyle(color: p.textMuted, fontSize: 11, fontWeight: FontWeight.w800)),
+                      SizedBox(width: 7),
+                      Expanded(child: Text(localizedCategory(entry.key), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: V15Type.caption, fontWeight: FontWeight.w700))),
+                      Text(tr('ui_bb234490a0b0', {'value0': total <= 0 ? 0 : (entry.value / total * 100).round()}), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption, fontWeight: FontWeight.w800)),
                     ],
                   ),
                 ),
@@ -391,9 +392,9 @@ class _TrendCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('آخر 6 أشهر', style: TextStyle(color: p.textMuted, fontSize: 12)),
+          Text(tr('ui_67636ff4cd0e'), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
           const SizedBox(height: 4),
-          Text(fmtMoney(current, currency), style: TextStyle(color: p.text, fontSize: 20, fontWeight: FontWeight.w900)),
+          Text(fmtMoney(current, currency), style: TextStyle(color: p.text, fontSize: V15Type.title, fontWeight: FontWeight.w900)),
           const SizedBox(height: 18),
           SizedBox(
             height: 118,
@@ -419,7 +420,7 @@ class _TrendCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 7),
-                          Text(item.key, style: TextStyle(color: p.textMuted, fontSize: 10.5, fontWeight: FontWeight.w700)),
+                          Text(item.key, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption, fontWeight: FontWeight.w700)),
                         ],
                       ),
                     ),
@@ -451,7 +452,7 @@ class _TopServiceRow extends StatelessWidget {
             height: 25,
             alignment: Alignment.center,
             decoration: BoxDecoration(color: rank == 1 ? p.warningSoft : p.surfaceAlt, shape: BoxShape.circle),
-            child: Text('$rank', style: TextStyle(color: rank == 1 ? p.warning : p.textMuted, fontSize: 11, fontWeight: FontWeight.w900)),
+            child: Text('$rank', style: TextStyle(color: rank == 1 ? p.warning : p.textMuted, fontSize: V15Type.caption, fontWeight: FontWeight.w900)),
           ),
           const SizedBox(width: 10),
           ServiceAvatar(name: subscription.name, emoji: subscription.emoji, manageUrl: subscription.manageUrl, iconUrl: subscription.iconUrl, tint: categoryColor(subscription.category), size: 40),
@@ -466,7 +467,7 @@ class _TopServiceRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: p.text,
-                    fontSize: 13.5,
+                    fontSize: V15Type.label,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -475,7 +476,7 @@ class _TopServiceRow extends StatelessWidget {
                   subscription.displayQualifier,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: p.textMuted, fontSize: 10.5),
+                  style: TextStyle(color: p.textMuted, fontSize: V15Type.caption),
                 ),
               ],
             ),
@@ -486,7 +487,7 @@ class _TopServiceRow extends StatelessWidget {
               fmtMoney(subscription.monthlyCost, subscription.currency),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: p.accent, fontSize: 12.5, fontWeight: FontWeight.w900),
+              style: TextStyle(color: p.accent, fontSize: V15Type.labelSmall, fontWeight: FontWeight.w900),
             ),
           ),
         ],
@@ -508,7 +509,7 @@ class _AdvisorPanelState extends State<_AdvisorPanel> {
   Future<void> _advise() async {
     final store = SubscriptionStore.instance;
     if (store.aiApiKey.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('أضف مفتاح الذكاء الاصطناعي من الإعدادات أولًا.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('ui_9bd9d2dd3287'))));
       return;
     }
     final provider = aiProviderById(store.aiProvider);
@@ -519,24 +520,24 @@ class _AdvisorPanelState extends State<_AdvisorPanel> {
         context: context,
         builder: (dialogContext) => StatefulBuilder(
           builder: (context, setDialogState) => AlertDialog(
-            title: const Text('إرسال للتحليل الذكي؟'),
+            title: Text(tr('ui_0fa7afa000eb')),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'سيُرسل إلى ${provider.label}:\n'
-                  '${AiConsentService.advisorFieldsAr}.\n\n'
-                  'لن تُرسل مفاتيح API أو كلمة مرور البريد. يخضع المحتوى '
-                  'لسياسة خصوصية المزود، ويمكنك الإلغاء الآن.',
-                  style: const TextStyle(height: 1.6),
+                  tr('ui_d966ce5d4f37', {'value0': provider.localizedLabel}) +
+                  '${tr('advisorFields')}.\n\n' +
+                  tr('ui_9b1aedeb7ba4') +
+                  tr('ui_30aec583e95d'),
+                  style: TextStyle(height: 1.6),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 CheckboxListTile(
                   value: remember,
                   contentPadding: EdgeInsets.zero,
                   controlAffinity: ListTileControlAffinity.leading,
-                  title: const Text('تذكّر موافقتي لهذا المزود'),
+                  title: Text(tr('ui_0230af2320da')),
                   onChanged: (value) =>
                       setDialogState(() => remember = value ?? false),
                 ),
@@ -545,11 +546,11 @@ class _AdvisorPanelState extends State<_AdvisorPanel> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('إلغاء'),
+                child: Text(tr('ui_9a30dc2a96b8')),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(dialogContext, true),
-                child: const Text('أوافق وأحلل'),
+                child: Text(tr('ui_77eea08e3919')),
               ),
             ],
           ),
@@ -581,10 +582,10 @@ class _AdvisorPanelState extends State<_AdvisorPanel> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: sheetContext.palette.stroke, borderRadius: BorderRadius.circular(99)))),
-                  const SizedBox(height: 18),
-                  Text('قراءة المستشار', style: TextStyle(color: sheetContext.palette.text, fontSize: 19, fontWeight: FontWeight.w900)),
-                  const SizedBox(height: 12),
-                  Text(answer, style: TextStyle(color: sheetContext.palette.text, height: 1.8, fontSize: 14)),
+                  SizedBox(height: 18),
+                  Text(tr('ui_8f0829c0c27c'), style: TextStyle(color: sheetContext.palette.text, fontSize: V15Type.titleSmall, fontWeight: FontWeight.w900)),
+                  SizedBox(height: 12),
+                  Text(answer, style: TextStyle(color: sheetContext.palette.text, height: 1.8, fontSize: V15Type.label)),
                 ],
               ),
             ),
@@ -599,7 +600,7 @@ class _AdvisorPanelState extends State<_AdvisorPanel> {
     } catch (_) {
       if (mounted) {
         setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر الاتصال بالمستشار الآن.')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('ui_119b3ae79afa'))));
       }
     }
   }
@@ -612,25 +613,25 @@ class _AdvisorPanelState extends State<_AdvisorPanel> {
       decoration: BoxDecoration(color: p.accentStrong, borderRadius: BorderRadius.circular(22)),
       child: Row(
         children: [
-          const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 25),
-          const SizedBox(width: 11),
-          const Expanded(
+          Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 25),
+          SizedBox(width: 11),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('اسأل مستشارك', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15)),
+                Text(tr('ui_4e0cddfd6647'), style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: V15Type.bodySmall)),
                 SizedBox(height: 3),
-                Text('اقرأ فرص التوفير والتكرارات.', style: TextStyle(color: Color(0xCCFFFFFF), fontSize: 11.5)),
+                Text(tr('ui_592f4ddb5b3a'), style: TextStyle(color: Color(0xCCFFFFFF), fontSize: V15Type.caption)),
               ],
             ),
           ),
           IconButton.filled(
-            tooltip: 'تحليل ذكي',
+            tooltip: tr('ui_9f6ebae84a2f'),
             style: IconButton.styleFrom(backgroundColor: Colors.white, foregroundColor: p.accentStrong),
             onPressed: _loading ? null : _advise,
             icon: _loading
                 ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: p.accentStrong))
-                : const Icon(Icons.arrow_back_rounded),
+                : Icon(Icons.arrow_back_rounded),
           ),
         ],
       ),
@@ -649,8 +650,8 @@ class _InsightsEmpty extends StatelessWidget {
       child: Column(
         children: [
           Icon(Icons.query_stats_rounded, size: 44, color: p.textMuted),
-          const SizedBox(height: 12),
-          Text('أضف اشتراكًا نشطًا لتبدأ القراءة.', style: TextStyle(color: p.text, fontWeight: FontWeight.w800)),
+          SizedBox(height: 12),
+          Text(tr('ui_4b58101a9f82'), style: TextStyle(color: p.text, fontWeight: FontWeight.w800)),
         ],
       ),
     );

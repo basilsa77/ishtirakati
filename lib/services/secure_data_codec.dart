@@ -11,6 +11,8 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/app_localizations.dart';
+
 class SecureDataException implements Exception {
   final String message;
 
@@ -148,18 +150,14 @@ class SecureDataCodec {
     final mirror = await _legacyMirrorKey();
     if (mirror != null) {
       if (await _acceptVerifiedKey(mirror)) return mirror;
-      throw const SecureDataException(
-        'تعذر ترحيل مفتاح البيانات القديم إلى Keychain. لم تُحفظ أي بيانات جديدة.',
-      );
+      throw SecureDataException(tr('secureLegacyKeyMigrationFailed'));
     }
 
     final generated = await _cipher.newSecretKey();
     final bytes = await generated.extractBytes();
     final keychainReady = await _writeKeychain(bytes);
     if (!keychainReady) {
-      throw const SecureDataException(
-        'تعذر إنشاء مفتاح آمن في Keychain. لم تُحفظ أي بيانات جديدة.',
-      );
+      throw SecureDataException(tr('secureKeyCreationFailed'));
     }
     return bytes;
   }
@@ -205,14 +203,14 @@ class SecureDataCodec {
     } on SecureDataException {
       rethrow;
     } catch (_) {
-      throw const SecureDataException('تعذر تشفير البيانات محليًا.');
+      throw SecureDataException(tr('secureEncryptionFailed'));
     }
   }
 
   Future<String> decrypt(String payload) async {
     final box = _decodeBox(payload);
     if (box == null) {
-      throw const SecureDataException('صيغة البيانات المشفرة غير صالحة.');
+      throw SecureDataException(tr('securePayloadInvalid'));
     }
 
     // المرحلة الأولى: Keychain فقط.
@@ -235,7 +233,7 @@ class SecureDataCodec {
         return clear;
       }
     }
-    throw const SecureDataException('تعذر فك تشفير البيانات المحلية.');
+    throw SecureDataException(tr('secureDecryptionFailed'));
   }
 
   SecretBox? _decodeBox(String payload) {

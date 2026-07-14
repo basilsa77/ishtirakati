@@ -1,4 +1,5 @@
 import '../models/subscription.dart';
+import '../l10n/app_localizations.dart';
 
 class PlannedNotification {
   final DateTime when;
@@ -31,11 +32,13 @@ abstract final class NotificationPlanner {
           planned.add(PlannedNotification(
             when: when,
             title: privateContent
-                ? 'تجربة مجانية تنتهي قريبًا'
-                : 'تجربة ${subscription.name} تنتهي قريبًا',
+                ? tr('notificationTrialPrivateTitle')
+                : tr('notificationTrialTitle', {'name': subscription.name}),
             body: privateContent
-                ? 'راجع التجربة قبل تحولها إلى اشتراك مدفوع.'
-                : 'راجعها قبل ${trial.year}/${trial.month}/${trial.day}.',
+                ? tr('notificationTrialPrivateBody')
+                : tr('notificationTrialBody', {
+                    'date': localizedDate(trial),
+                  }),
             priority: 120,
           ));
         }
@@ -55,11 +58,17 @@ abstract final class NotificationPlanner {
       planned.add(PlannedNotification(
         when: when,
         title: privateContent
-            ? 'اشتراك سيتجدد قريبًا'
-            : 'تجديد قريب: ${subscription.name}',
+            ? tr('notificationRenewalPrivateTitle')
+            : tr('notificationRenewalTitle', {'name': subscription.name}),
         body: privateContent
-            ? 'راجع اشتراكاتك قبل موعد الخصم.'
-            : 'سيُخصم ${fmtMoney(subscription.price, subscription.currency)} بعد $leadDays ${leadDays == 1 ? 'يوم' : 'أيام'}.',
+            ? tr('notificationRenewalPrivateBody')
+            : tr('notificationRenewalBody', {
+                'amount': fmtMoneyWithCurrency(
+                  subscription.price,
+                  subscription.currency,
+                ),
+                'afterDays': localizedDaysAfter(leadDays),
+              }),
         priority: 70 +
             (subscription.isEssential ? 10 : 0) +
             (subscription.cycle == BillingCycle.yearly ? 8 : 0),

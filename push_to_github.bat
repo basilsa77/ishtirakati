@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=15.1.2"
-set "COMMIT_MESSAGE=v15.1.2+34: restore Material text inheritance across app"
+set "RELEASE_VERSION=15.2.0"
+set "COMMIT_MESSAGE=v15.2.0+35: bilingual typography and resilient Firebase sync"
 
 git init
 git config user.name "basilsa77"

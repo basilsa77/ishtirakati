@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/subscription.dart' show currencySymbols;
+import '../l10n/app_localizations.dart';
 import '../services/account_deletion_service.dart';
 import '../services/auth_service.dart';
 import '../services/cloud_sync.dart';
@@ -58,14 +59,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context, _) => ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         children: [
-          const _SettingsIntro(),
+          _SettingsIntro(),
           if (!store.storageHealthy) ...[
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             AppCard(
               color: context.palette.dangerSoft,
               borderColor: context.palette.danger,
               child: Text(
-                store.storageError ?? 'التخزين مقفل لحماية بياناتك.',
+                store.storageError ?? tr('ui_8fb06d4b1479'),
                 style: TextStyle(
                   color: context.palette.danger,
                   fontWeight: FontWeight.w800,
@@ -74,26 +75,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ],
-          const SizedBox(height: 22),
+          SizedBox(height: 22),
           _AccountCard(
             onChanged: () => setState(() {}),
             onDeleteAccount: _confirmDeleteAccount,
           ),
+          SizedBox(height: 26),
+          _SettingsLabel(context.l10n.text('settingsAppearance')),
+          SizedBox(height: 10),
+          _ThemeModeCard(),
           const SizedBox(height: 26),
-          const _SettingsLabel('المظهر'),
+          _SettingsLabel(context.l10n.text('language')),
           const SizedBox(height: 10),
-          const _ThemeModeCard(),
+          const _LanguageModeCard(),
           const SizedBox(height: 26),
-          const _SettingsLabel('التنبيهات'),
-          const SizedBox(height: 10),
+           _SettingsLabel(tr('ui_f3e1723cfe33')),
+          SizedBox(height: 10),
           AppCard(
             padding: EdgeInsets.zero,
             child: Column(
               children: [
                 _SettingsSwitch(
                   icon: Icons.notifications_none_rounded,
-                  title: 'تنبيهات التجديد',
-                  detail: 'تذكير قبل الخصم والتجارب المجانية',
+                  title: tr('ui_551e77811caa'),
+                  detail: tr('ui_0354b6cd5038'),
                   value: store.notificationsEnabled,
                   onChanged: (value) async {
                     if (value) {
@@ -102,9 +107,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         await showCupertinoDialog<void>(
                           context: context,
                           builder: (dialogContext) => CupertinoAlertDialog(
-                            title: const Text('الإشعارات غير مفعلة'),
-                            content: const Text('اسمح بالإشعارات من إعدادات iPhone لتلقي تنبيهات التجديد.'),
-                            actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: const Text('حسنًا'))],
+                            title: Text(tr('ui_b6d4d093c09d')),
+                            content: Text(tr('ui_7459d276bf09')),
+                            actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: Text(tr('ui_a64b3d93816b')))],
                           ),
                         );
                       }
@@ -115,84 +120,84 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Divider(height: 1, color: context.palette.stroke),
                 _SettingsSwitch(
                   icon: CupertinoIcons.lock_shield,
-                  title: 'إخفاء تفاصيل التنبيهات',
-                  detail: 'لا يظهر اسم الخدمة أو المبلغ على شاشة القفل',
+                  title: tr('ui_d1161e76379a'),
+                  detail: tr('ui_77cd4e71bca6'),
                   value: store.privateNotifications,
                   onChanged: store.setPrivateNotifications,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 26),
-          const _SettingsLabel('الأمان والخصوصية'),
-          const SizedBox(height: 10),
+          SizedBox(height: 26),
+          _SettingsLabel(tr('ui_976adf68f49a')),
+          SizedBox(height: 10),
           AppCard(
             padding: EdgeInsets.zero,
             child: Column(
               children: [
                 _SettingsSwitch(
                   icon: Icons.face_retouching_natural_rounded,
-                  title: 'قفل التطبيق',
-                  detail: 'استخدم Face ID عند الفتح أو العودة',
+                  title: tr('ui_b2eb28c06d2a'),
+                  detail: tr('ui_5acd34c06919'),
                   value: store.appLockEnabled,
                   onChanged: store.setAppLockEnabled,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 26),
-          const _SettingsLabel('التخطيط المالي'),
-          const SizedBox(height: 10),
+          SizedBox(height: 26),
+          _SettingsLabel(tr('ui_2c0c0a6a3389')),
+          SizedBox(height: 10),
           _BudgetCard(controller: _budget, onSave: _saveBudget),
-          const SizedBox(height: 26),
-          const _SettingsLabel('أدواتك الذكية'),
-          const SizedBox(height: 10),
+          SizedBox(height: 26),
+          _SettingsLabel(tr('ui_70f79cf39f31')),
+          SizedBox(height: 10),
           AppCard(
             padding: EdgeInsets.zero,
             child: Column(
               children: [
                 _SettingsAction(
                   icon: Icons.document_scanner_rounded,
-                  title: 'استيراد من النصوص',
-                  detail: 'حلّل رسائل البنك أو الإيصالات',
+                  title: tr('ui_4d5bbc8f3ce7'),
+                  detail: tr('ui_3ad982d68db0'),
                   onTap: () => Navigator.of(context).push(
-                    CupertinoPageRoute(builder: (_) => const ImportScreen()),
+                    CupertinoPageRoute(builder: (_) => ImportScreen()),
                   ),
                 ),
                 Divider(height: 1, color: context.palette.stroke),
                 _SettingsAction(
                   icon: Icons.alternate_email_rounded,
-                  title: 'ربط البريد',
-                  detail: 'اكتشف الاشتراكات من إيصالاتك',
+                  title: tr('ui_c4d54697418a'),
+                  detail: tr('ui_05c130b7df4a'),
                   onTap: () => Navigator.of(context).push(
-                    CupertinoPageRoute(builder: (_) => const EmailLinkScreen()),
+                    CupertinoPageRoute(builder: (_) => EmailLinkScreen()),
                   ),
                 ),
                 Divider(height: 1, color: context.palette.stroke),
                 _SettingsAction(
                   icon: Icons.auto_awesome_rounded,
-                  title: 'أدوات الذكاء الاصطناعي',
-                  detail: 'المزود والمفتاح وتصنيف الخدمات',
+                  title: tr('ui_6ec927377748'),
+                  detail: tr('ui_6e55c742696f'),
                   onTap: () => Navigator.of(context).push(
-                    CupertinoPageRoute(builder: (_) => const AiToolsScreen()),
+                    CupertinoPageRoute(builder: (_) => AiToolsScreen()),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 26),
-          const _SettingsLabel('البيانات'),
-          const SizedBox(height: 10),
+          SizedBox(height: 26),
+          _SettingsLabel(tr('ui_b4fba865ed46')),
+          SizedBox(height: 10),
           _DataCard(onDelete: _confirmWipe),
-          const SizedBox(height: 26),
-          const _SettingsLabel('حول التطبيق'),
-          const SizedBox(height: 10),
-          const _AboutCard(),
-          const SizedBox(height: 30),
+          SizedBox(height: 26),
+          _SettingsLabel(tr('ui_db69cd4d6275')),
+          SizedBox(height: 10),
+          _AboutCard(),
+          SizedBox(height: 30),
           Center(
             child: Text(
-              'صُنع بحب في السعودية 🇸🇦',
-              style: TextStyle(color: context.palette.textMuted, fontSize: 12.5, fontWeight: FontWeight.w700),
+              tr('ui_ed185d7957db'),
+              style: TextStyle(color: context.palette.textMuted, fontSize: V15Type.labelSmall, fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -202,7 +207,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _saveBudget() async {
     final value = double.tryParse(
-          _budget.text.trim().replaceAll('،', '.').replaceAll(',', '.'),
+          _budget.text.trim().replaceAll(tr('ui_bc4d631526af'), '.').replaceAll(',', '.'),
         ) ??
         0;
     await SubscriptionStore.instance.setMonthlyBudget(value);
@@ -210,8 +215,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await showCupertinoDialog<void>(
       context: context,
       builder: (dialogContext) => CupertinoAlertDialog(
-        content: Text(value <= 0 ? 'تم إيقاف الميزانية الشهرية.' : 'تم حفظ الميزانية الشهرية.'),
-        actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: const Text('تم'))],
+        content: Text(value <= 0 ? tr('ui_46e83de05124') : tr('ui_e7311dcecd04')),
+        actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: Text(tr('ui_3ef541b90a31')))],
       ),
     );
   }
@@ -219,9 +224,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _confirmWipe() async {
     final confirmed = await showIosConfirmation(
       context: context,
-      title: 'حذف جميع الاشتراكات؟',
-      message: 'سيُحذف سجل الاشتراكات من هذا الجهاز نهائيًا.',
-      confirmLabel: 'حذف نهائي',
+      title: tr('ui_6d5931ec133b'),
+      message: tr('ui_5e32a3fb9f4d'),
+      confirmLabel: tr('ui_cd6f896cc0ee'),
       destructive: true,
     );
     if (!confirmed) return;
@@ -230,8 +235,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await showCupertinoDialog<void>(
         context: context,
         builder: (dialogContext) => CupertinoAlertDialog(
-          content: const Text('تم حذف جميع الاشتراكات من هذا الجهاز.'),
-          actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: const Text('تم'))],
+          content: Text(tr('ui_2753acf39a49')),
+          actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: Text(tr('ui_3ef541b90a31')))],
         ),
       );
     }
@@ -240,9 +245,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _confirmDeleteAccount() async {
     final confirmed = await showIosConfirmation(
       context: context,
-      title: 'حذف الحساب نهائيًا؟',
-      message: 'سنطلب تأكيد هويتك، ثم نحذف بياناتك السحابية وحسابك، وبعد نجاح ذلك نمسح بيانات هذا الجهاز. حذف الحساب لا يلغي اشتراكاتك لدى الخدمات الأخرى.',
-      confirmLabel: 'حذف الحساب',
+      title: tr('ui_1ab7cb67413b'),
+      message: tr('ui_a69b6d3b9499'),
+      confirmLabel: tr('ui_d7939def6a41'),
       destructive: true,
     );
     if (!confirmed || !mounted) return;
@@ -250,14 +255,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showCupertinoDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const PopScope(
+      builder: (_) => PopScope(
         canPop: false,
         child: CupertinoAlertDialog(
           content: Row(
             children: [
               CupertinoActivityIndicator(),
               SizedBox(width: 12),
-              Expanded(child: Text('جارٍ حذف الحساب والبيانات...')),
+              Expanded(child: Text(tr('ui_2bdda9dc2f90'))),
             ],
           ),
         ),
@@ -268,7 +273,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
       Navigator.of(context).pushAndRemoveUntil(
-        CupertinoPageRoute(builder: (_) => const OnboardingScreen()),
+        CupertinoPageRoute(builder: (_) => OnboardingScreen()),
         (_) => false,
       );
     } catch (error) {
@@ -276,13 +281,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       Navigator.of(context, rootNavigator: true).pop();
       final message = error is AuthException
           ? error.message
-          : 'تعذر إكمال الحذف. لم نمسح بيانات هذا الجهاز؛ أعد المحاولة.';
+          : tr('ui_1b4978e420cd');
       await showCupertinoDialog<void>(
         context: context,
         builder: (dialogContext) => CupertinoAlertDialog(
-          title: const Text('تعذر حذف الحساب'),
+          title: Text(tr('ui_c9f721ee4fd2')),
           content: Text(message),
-          actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: const Text('حسنًا'))],
+          actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: Text(tr('ui_a64b3d93816b')))],
         ),
       );
     }
@@ -298,9 +303,9 @@ class _SettingsIntro extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('الإعدادات', style: TextStyle(color: p.text, fontSize: 30, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 5),
-        Text('الحساب، الخصوصية، التنبيهات وأدوات الاستيراد.', style: TextStyle(color: p.textMuted, fontSize: 13)),
+        Text(tr('ui_5fd9563e6846'), style: TextStyle(color: p.text, fontSize: V15Type.headline, fontWeight: FontWeight.w800)),
+        SizedBox(height: 5),
+        Text(tr('ui_58d077f29d61'), style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall)),
       ],
     );
   }
@@ -338,40 +343,40 @@ class _AccountCard extends StatelessWidget {
                 decoration: BoxDecoration(color: p.accentSoft, borderRadius: BorderRadius.circular(12)),
                 child: Icon(CupertinoIcons.cloud, color: p.accent, size: 21),
               ),
-              const SizedBox(width: 11),
+              SizedBox(width: 11),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('الحساب والمزامنة', style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: 15)),
-                    const SizedBox(height: 3),
+                    Text(tr('ui_0458a671e96c'), style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: V15Type.bodySmall)),
+                    SizedBox(height: 3),
                     Text(
                       !AuthService.isAvailable
-                          ? 'الخدمة غير متاحة في هذا البناء'
+                          ? tr('ui_0380d88f6407')
                           : signedIn
                               ? AuthService.userEmail
-                              : 'سجّل دخولك لتستعيد بياناتك على أجهزتك',
+                              : tr('ui_02776b074d68'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: p.textMuted, fontSize: 12),
+                      style: TextStyle(color: p.textMuted, fontSize: V15Type.caption),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           if (!signedIn)
             CupertinoButton.filled(
               onPressed: !AuthService.isAvailable
                   ? null
                   : () async {
                       await Navigator.of(context).push(
-                        CupertinoPageRoute(builder: (_) => const LoginScreen(fromSettings: true)),
+                        CupertinoPageRoute(builder: (_) => LoginScreen(fromSettings: true)),
                       );
                       onChanged();
                     },
-              child: const Text('تسجيل الدخول'),
+              child: Text(tr('ui_beb869eecc12')),
             )
           else
             Column(
@@ -383,7 +388,7 @@ class _AccountCard extends StatelessWidget {
                         onPressed: () async {
                           await CloudSync.push();
                         },
-                        child: const Text('مزامنة الآن'),
+                        child: Text(tr('ui_1c9524c2caca')),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -400,7 +405,7 @@ class _AccountCard extends StatelessWidget {
                             context: context,
                             builder: (dialogContext) => CupertinoAlertDialog(
                               content: Text(error.message),
-                              actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: const Text('حسنًا'))],
+                              actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: Text(tr('ui_a64b3d93816b')))],
                             ),
                           );
                         }
@@ -409,14 +414,14 @@ class _AccountCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 ValueListenableBuilder<CloudSyncStatus>(
                   valueListenable: CloudSync.status,
                   builder: (context, status, _) {
                     final (icon, text, color) = switch (status.phase) {
                       CloudSyncPhase.syncing => (
                            CupertinoIcons.arrow_2_circlepath,
-                           'جارٍ مزامنة البيانات...',
+                           tr('ui_990fa33ab762'),
                           p.accent,
                         ),
                       CloudSyncPhase.success => (
@@ -427,25 +432,25 @@ class _AccountCard extends StatelessWidget {
                       CloudSyncPhase.failure => (
                            CupertinoIcons.exclamationmark_circle,
                            status.message ??
-                               'تعذرت المزامنة. أعد المحاولة بعد التحقق من الاتصال.',
+                               tr('ui_9326a71f2574'),
                           p.danger,
                         ),
                       CloudSyncPhase.idle => (
                            CupertinoIcons.cloud,
-                           'لم تبدأ مزامنة جديدة بعد.',
+                           tr('ui_72bd581dc069'),
                           p.textMuted,
                         ),
                     };
                     return Row(
                       children: [
                         Icon(icon, color: color, size: 17),
-                        const SizedBox(width: 7),
+                        SizedBox(width: 7),
                         Expanded(
                           child: Text(
                             text,
                             style: TextStyle(
                               color: color,
-                              fontSize: 11.5,
+                              fontSize: V15Type.caption,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -454,17 +459,17 @@ class _AccountCard extends StatelessWidget {
                     );
                   },
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 CupertinoButton(
                   onPressed: onDeleteAccount,
-                  child: Text('حذف الحساب والبيانات السحابية', style: TextStyle(color: p.danger)),
+                  child: Text(tr('ui_70f341498d46'), style: TextStyle(color: p.danger)),
                 ),
               ],
             ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(
-            'بياناتك على هذا الجهاز مشفرة بـ AES-256-GCM، ويُحفظ مفتاحها في Keychain. عند تفعيل المزامنة، تنقل Firebase النسخة عبر اتصال مشفر وتحميها في التخزين السحابي، لكنها ليست تشفيرًا طرفيًا بمفتاح لا تستطيع الخوادم قراءته.',
-            style: TextStyle(color: p.textMuted, fontSize: 11.5, height: 1.6),
+            tr('ui_87621ec0d18d'),
+            style: TextStyle(color: p.textMuted, fontSize: V15Type.caption, height: 1.6),
           ),
           ValueListenableBuilder<String?>(
             valueListenable: AuthService.appCheckWarning,
@@ -482,7 +487,7 @@ class _AccountCard extends StatelessWidget {
                         warning,
                         style: TextStyle(
                           color: p.danger,
-                          fontSize: 11.5,
+                          fontSize: V15Type.caption,
                           fontWeight: FontWeight.w700,
                           height: 1.5,
                         ),
@@ -499,10 +504,10 @@ class _AccountCard extends StatelessWidget {
   }
 
   static String _syncSuccessText(DateTime? at) {
-    if (at == null) return 'اكتملت المزامنة';
+    if (at == null) return tr('syncCompleted');
     final hour = at.hour.toString().padLeft(2, '0');
     final minute = at.minute.toString().padLeft(2, '0');
-    return 'آخر مزامنة ناجحة $hour:$minute';
+    return tr('ui_1e0af0b94ec1', {'value0': hour, 'value1': minute});
   }
 }
 
@@ -514,7 +519,7 @@ class _SettingsLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         text,
-        style: TextStyle(color: context.palette.textMuted, fontSize: 12, fontWeight: FontWeight.w900),
+        style: TextStyle(color: context.palette.textMuted, fontSize: V15Type.caption, fontWeight: FontWeight.w900),
       );
 }
 
@@ -546,9 +551,9 @@ class _SettingsSwitch extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: 14)),
+                Text(title, style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: V15Type.label)),
                 const SizedBox(height: 3),
-                Text(detail, style: TextStyle(color: p.textMuted, fontSize: 11.5)),
+                Text(detail, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
               ],
             ),
           ),
@@ -592,9 +597,9 @@ class _SettingsAction extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: 14)),
+                  Text(title, style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: V15Type.label)),
                   const SizedBox(height: 3),
-                  Text(detail, style: TextStyle(color: p.textMuted, fontSize: 11.5)),
+                  Text(detail, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
                 ],
               ),
             ),
@@ -623,12 +628,12 @@ class _BudgetCard extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.pie_chart_outline_rounded, color: p.accent),
-              const SizedBox(width: 9),
-              Text('ميزانية الشهر', style: TextStyle(color: p.text, fontSize: 15, fontWeight: FontWeight.w900)),
+              SizedBox(width: 9),
+              Text(tr('ui_b6775a5543d9'), style: TextStyle(color: p.text, fontSize: V15Type.bodySmall, fontWeight: FontWeight.w900)),
             ],
           ),
-          const SizedBox(height: 7),
-          Text('ضع سقفًا مرنًا لمتابعة الالتزامات الشهرية.', style: TextStyle(color: p.textMuted, fontSize: 12)),
+          SizedBox(height: 7),
+          Text(tr('ui_bf208c21fb03'), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
           const SizedBox(height: 15),
           Row(
             children: [
@@ -646,12 +651,12 @@ class _BudgetCard extends StatelessWidget {
                   decoration: BoxDecoration(color: p.surfaceAlt, borderRadius: BorderRadius.circular(11), border: Border.all(color: p.stroke)),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               CupertinoButton(
                 padding: const EdgeInsets.all(11),
                 color: p.accent,
                 onPressed: onSave,
-                child: const Icon(CupertinoIcons.check_mark, color: CupertinoColors.white),
+                child: Icon(CupertinoIcons.check_mark, color: CupertinoColors.white),
               ),
             ],
           ),
@@ -671,11 +676,11 @@ class _AboutCard extends StatelessWidget {
       padding: EdgeInsets.zero,
       child: Column(
         children: [
-          const _AboutLine(label: 'التطبيق', value: 'اشتراكاتي'),
+          _AboutLine(label: tr('ui_d83483faf7f9'), value: tr('ui_64e2da14cf04')),
           Divider(height: 1, color: p.stroke),
-          const _AboutLine(label: 'الإصدار', value: kAppBuildLabel),
+          _AboutLine(label: tr('ui_f14158b9c061'), value: kAppBuildLabel),
           Divider(height: 1, color: p.stroke),
-          const _AboutLine(label: 'نوع البناء', value: kAppBuildMode),
+          _AboutLine(label: tr('ui_edcad556ffd0'), value: kAppBuildMode),
           Divider(height: 1, color: p.stroke),
           CupertinoButton(
             padding: EdgeInsets.zero,
@@ -689,7 +694,7 @@ class _AboutCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
                 children: [
-                  Expanded(child: Text('سياسة الخصوصية', style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: 13))),
+                  Expanded(child: Text(tr('ui_23a13bc51d58'), style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: V15Type.labelSmall))),
                   Icon(CupertinoIcons.arrow_up_right_square, color: p.textMuted, size: 18),
                 ],
               ),
@@ -714,9 +719,9 @@ class _AboutLine extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
-          Text(label, style: TextStyle(color: p.textMuted, fontSize: 12)),
+          Text(label, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
           const Spacer(),
-          Text(value, style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: 13)),
+          Text(value, style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: V15Type.labelSmall)),
         ],
       ),
     );
@@ -735,9 +740,9 @@ class _ThemeModeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('مظهر التطبيق', style: TextStyle(color: p.text, fontSize: 14, fontWeight: FontWeight.w900)),
+          Text(context.l10n.text('settingsAppearanceTitle'), style: TextStyle(color: p.text, fontSize: V15Type.label, fontWeight: FontWeight.w900)),
           const SizedBox(height: 4),
-          Text('اختر المظهر الذي يناسب جهازك؛ الوضع التلقائي يتبع iPhone.', style: TextStyle(color: p.textMuted, fontSize: 12)),
+          Text(context.l10n.text('settingsAppearanceDescription'), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
@@ -747,17 +752,17 @@ class _ThemeModeCard extends StatelessWidget {
               thumbColor: p.accent,
               children: {
                 'system': _ThemeModeOption(
-                  label: 'حسب النظام',
+                  label: context.l10n.text('themeSystem'),
                   icon: CupertinoIcons.device_phone_portrait,
                   selected: store.themeMode == 'system',
                 ),
                 'dark': _ThemeModeOption(
-                  label: 'داكن',
+                  label: context.l10n.text('themeDark'),
                   icon: CupertinoIcons.moon_fill,
                   selected: store.themeMode == 'dark',
                 ),
                 'light': _ThemeModeOption(
-                  label: 'فاتح',
+                  label: context.l10n.text('themeLight'),
                   icon: CupertinoIcons.sun_max_fill,
                   selected: store.themeMode == 'light',
                 ),
@@ -771,6 +776,89 @@ class _ThemeModeCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _LanguageModeCard extends StatelessWidget {
+  const _LanguageModeCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final store = SubscriptionStore.instance;
+    final p = context.palette;
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.l10n.text('language'),
+            style: TextStyle(
+              color: p.text,
+              fontSize: V15Type.label,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            context.l10n.text('languageDescription'),
+            style: TextStyle(
+              color: p.textMuted,
+              fontSize: V15Type.caption,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: CupertinoSlidingSegmentedControl<String>(
+              groupValue: store.languageMode,
+              backgroundColor: p.surfaceAlt,
+              thumbColor: p.accent,
+              children: {
+                'system': _LanguageModeOption(
+                  label: context.l10n.text('languageSystem'),
+                  selected: store.languageMode == 'system',
+                ),
+                'ar': _LanguageModeOption(
+                  label: context.l10n.text('languageArabic'),
+                  selected: store.languageMode == 'ar',
+                ),
+                'en': _LanguageModeOption(
+                  label: context.l10n.text('languageEnglish'),
+                  selected: store.languageMode == 'en',
+                ),
+              },
+              onValueChanged: (value) {
+                if (value != null) store.setLanguageMode(value);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LanguageModeOption extends StatelessWidget {
+  const _LanguageModeOption({required this.label, required this.selected});
+
+  final String label;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            maxLines: 1,
+            style: TextStyle(
+              color: selected ? CupertinoColors.white : context.palette.text,
+              fontSize: V15Type.caption,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      );
 }
 
 class _ThemeModeOption extends StatelessWidget {
@@ -807,7 +895,7 @@ class _ThemeModeOption extends StatelessWidget {
                   color: selected
                       ? CupertinoColors.white
                       : context.palette.text,
-                  fontSize: 12,
+                  fontSize: V15Type.caption,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -834,14 +922,14 @@ class _DataCard extends StatelessWidget {
         child: Row(
           children: [
             Icon(CupertinoIcons.delete, color: p.danger, size: 20),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('حذف جميع الاشتراكات', style: TextStyle(color: p.danger, fontWeight: FontWeight.w800, fontSize: 13.5)),
-                  const SizedBox(height: 3),
-                  Text('يمسح السجل من هذا الجهاز نهائيًا', style: TextStyle(color: p.danger.withValues(alpha: .75), fontSize: 11.5)),
+                  Text(tr('ui_e70886198cca'), style: TextStyle(color: p.danger, fontWeight: FontWeight.w800, fontSize: V15Type.label)),
+                  SizedBox(height: 3),
+                  Text(tr('ui_a5571e3ecfb5'), style: TextStyle(color: p.danger.withValues(alpha: .75), fontSize: V15Type.caption)),
                 ],
               ),
             ),

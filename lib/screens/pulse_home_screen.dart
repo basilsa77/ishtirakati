@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../design/design_tokens.dart';
 import '../models/subscription.dart';
 import '../services/financial_assistant.dart';
@@ -150,26 +151,26 @@ class _PulseHeader extends StatelessWidget {
           greeting,
           style: TextStyle(
             color: context.palette.textMuted,
-            fontSize: V12Type.body,
+            fontSize: V15Type.body,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: V12Space.xxs),
+        SizedBox(height: V12Space.xxs),
         Text(
-          'ملخص الاشتراكات',
+          tr('ui_e33b470d27ac'),
           style: TextStyle(
             color: context.palette.text,
-            fontFamily: V12Type.displayFamily,
-            fontFamilyFallback: V12Type.fallbacks,
-            fontSize: V12Type.headline,
+            fontFamily: V15Type.displayFamily,
+            fontFamilyFallback: V15Type.fallbacks,
+            fontSize: V15Type.headline,
             fontWeight: FontWeight.w800,
           ),
         ),
         Text(
-          '$activeCount التزامات نشطة',
+          tr('ui_d286a8d930ae', {'value0': activeCount}),
           style: TextStyle(
             color: context.palette.textMuted,
-            fontSize: V12Type.caption,
+            fontSize: V15Type.caption,
           ),
         ),
       ],
@@ -178,12 +179,12 @@ class _PulseHeader extends StatelessWidget {
       spacing: V12Space.xs,
       children: [
         _HeaderAction(
-          tooltip: 'بحث وأوامر',
+          tooltip: tr('ui_36d82999c153'),
           icon: Icons.search_rounded,
           onTap: onSearch,
         ),
         _HeaderAction(
-          tooltip: 'إضافة اشتراك',
+          tooltip: tr('ui_7e7a0c30b825'),
           icon: Icons.add_rounded,
           emphasized: true,
           onTap: onAdd,
@@ -264,8 +265,8 @@ class _RenewalSummary extends StatelessWidget {
   Widget build(BuildContext context) => Semantics(
         button: true,
         label: upcoming.isEmpty
-            ? 'لا توجد تجديدات خلال 30 يومًا'
-            : '${upcoming.length} تجديدات خلال 30 يومًا',
+            ? tr('ui_50680a15e64f')
+            : tr('ui_0714259fe05e', {'value0': upcoming.length}),
         child: CupertinoButton(
           onPressed: onOpen,
           padding: EdgeInsets.zero,
@@ -294,47 +295,47 @@ class _RenewalSummary extends StatelessWidget {
                         child: Icon(Icons.event_repeat_rounded,
                             color: context.palette.accent),
                       ),
-                      const SizedBox(width: V12Space.sm),
+                      SizedBox(width: V12Space.sm),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('التجديدات القادمة',
+                            Text(tr('ui_67114cde38ee'),
                                 style: TextStyle(
                                   color: context.palette.text,
-                                  fontSize: V12Type.title,
+                                  fontSize: V15Type.title,
                                   fontWeight: FontWeight.w800,
                                 )),
                             Text(
                               upcoming.isEmpty
-                                  ? 'لا توجد خصومات خلال 30 يومًا'
-                                  : '${upcoming.length} خصومات خلال 30 يومًا',
+                                  ? tr('ui_500c004577c2')
+                                  : tr('ui_46bcb22bca02', {'value0': upcoming.length}),
                               style: TextStyle(
                                 color: context.palette.textMuted,
-                                fontSize: V12Type.caption,
+                                fontSize: V15Type.caption,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(Icons.arrow_back_rounded),
+                      Icon(Icons.arrow_back_rounded),
                     ],
                   ),
-                  const SizedBox(height: V12Space.lg),
-                  Text('دفعات 12 شهرًا القادمة',
+                  SizedBox(height: V12Space.lg),
+                  Text(tr('ui_08965782a0af'),
                       style: TextStyle(color: context.palette.textMuted)),
                   Text(
                     fmtMoney(next12MonthsForecast, currency),
                     style: TextStyle(
                       color: context.palette.text,
-                      fontSize: V12Type.headline,
+                      fontSize: V15Type.headline,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   if (upcoming.isNotEmpty) ...[
                     const SizedBox(height: V12Space.md),
                     Divider(color: context.palette.stroke, height: 1),
-                    const SizedBox(height: V12Space.sm),
+                    SizedBox(height: V12Space.sm),
                     for (final item in upcoming.take(3))
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: V12Space.xs),
@@ -347,8 +348,8 @@ class _RenewalSummary extends StatelessWidget {
                             ),
                             Text(
                               item.daysUntilRenewal() == 0
-                                  ? 'اليوم'
-                                  : 'بعد ${item.daysUntilRenewal()} يوم',
+                                  ? tr('ui_2422f71e7f4e')
+                                  : tr('ui_a9d288efc42d', {'value0': item.daysUntilRenewal()}),
                               style: TextStyle(color: context.palette.textMuted),
                             ),
                           ],
@@ -384,17 +385,17 @@ class _DecisionColumn extends StatelessWidget {
             snapshot: assistant,
             onReview: onOpenReviews,
           ),
-          const SizedBox(height: V12Space.xl),
+          SizedBox(height: V12Space.xl),
           _SectionHeading(
-            title: 'الخصومات القادمة',
+            title: tr('ui_de80197a70d0'),
             detail: upcoming.isEmpty
-                ? 'لا خصومات خلال 30 يومًا'
-                : '${upcoming.length} عمليات خلال 30 يومًا',
+                ? tr('ui_918e81b61c22')
+                : tr('ui_04f46fabefa1', {'value0': upcoming.length}),
             onTap: onOpenLibrary,
           ),
-          const SizedBox(height: V12Space.sm),
+          SizedBox(height: V12Space.sm),
           if (upcoming.isEmpty)
-            const _QuietLine()
+            _QuietLine()
           else
             for (final item in upcoming.take(4))
               _RenewalLine(subscription: item),
@@ -413,8 +414,8 @@ class _LeakageBand extends StatelessWidget {
     final reviews = snapshot.reviewItems.length;
     return Semantics(
       label: reviews == 0
-          ? 'لا توجد اشتراكات تحتاج مراجعة'
-          : '$reviews اشتراكات تحتاج مراجعة',
+          ? tr('ui_6614ee580a9b')
+          : tr('ui_414fcd139acc', {'value0': reviews}),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: context.palette.surfaceAlt,
@@ -432,13 +433,13 @@ class _LeakageBand extends StatelessWidget {
                 children: [
                   Icon(CupertinoIcons.chart_bar_alt_fill,
                       color: context.palette.danger, size: 20),
-                  const SizedBox(width: V12Space.xs),
+                  SizedBox(width: V12Space.xs),
                   Expanded(
                     child: Text(
-                      'مؤشرات تحتاج مراجعة',
+                      tr('ui_6e9931c44667'),
                       style: TextStyle(
                         color: context.palette.text,
-                        fontSize: V12Type.emphasized,
+                        fontSize: V15Type.body,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -452,37 +453,37 @@ class _LeakageBand extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: V12Space.sm),
+              SizedBox(height: V12Space.sm),
               Text(
                 reviews == 0
-                    ? 'لا توجد مؤشرات تستدعي قرارًا الآن.'
-                    : 'توفير محتمل ${fmtMoney(snapshot.potentialMonthlySavings, snapshot.currency)} شهريًا بعد المراجعة.',
+                    ? tr('ui_9cc5fd21d8ef')
+                    : tr('ui_0b3e0a219d7f', {'value0': fmtMoney(snapshot.potentialMonthlySavings, snapshot.currency)}),
                 style: TextStyle(
                   color: context.palette.textMuted,
-                  fontSize: V12Type.body,
+                  fontSize: V15Type.body,
                   height: 1.5,
                 ),
               ),
               if (snapshot.duplicateGroups.isNotEmpty) ...[
-                const SizedBox(height: V12Space.xs),
+                SizedBox(height: V12Space.xs),
                 Text(
-                  'منها ${snapshot.duplicateCandidateCount} اشتراك إضافي محتمل ضمن ${snapshot.duplicateGroups.length} خدمات.',
+                  tr('ui_45afc79a51a9', {'value0': snapshot.duplicateCandidateCount, 'value1': snapshot.duplicateGroups.length}),
                   style: TextStyle(
                     color: context.palette.text,
-                    fontSize: V12Type.caption,
+                    fontSize: V15Type.caption,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
               if (reviews > 0) ...[
-                const SizedBox(height: V12Space.md),
+                SizedBox(height: V12Space.md),
                 CupertinoButton.filled(
                   onPressed: onReview,
                   padding: const EdgeInsets.symmetric(
                     horizontal: V12Space.md,
                     vertical: V12Space.sm,
                   ),
-                  child: Text('مراجعة $reviews مؤشرات'),
+                  child: Text(tr('ui_cd7ce5a9fe89', {'value0': reviews})),
                 ),
               ],
             ],
@@ -515,7 +516,7 @@ class _SectionHeading extends StatelessWidget {
                   title,
                   style: TextStyle(
                     color: context.palette.text,
-                    fontSize: V12Type.title,
+                    fontSize: V15Type.title,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -523,7 +524,7 @@ class _SectionHeading extends StatelessWidget {
                   detail,
                   style: TextStyle(
                     color: context.palette.textMuted,
-                    fontSize: V12Type.caption,
+                    fontSize: V15Type.caption,
                   ),
                 ),
               ],
@@ -532,7 +533,7 @@ class _SectionHeading extends StatelessWidget {
           CupertinoButton(
             padding: const EdgeInsets.all(8),
             onPressed: onTap,
-            child: const Icon(CupertinoIcons.chevron_back),
+            child: Icon(CupertinoIcons.chevron_back),
           ),
         ],
       );
@@ -548,7 +549,7 @@ class _RenewalLine extends StatelessWidget {
     final days = subscription.daysUntilRenewal();
     return Semantics(
       button: true,
-      label: '${subscription.name} يتجدد بعد $days يوم',
+      label: tr('ui_a8ac629bd984', {'value0': subscription.name, 'value1': days}),
       child: CupertinoButton(
         onPressed: () => showSubscriptionDetails(context, subscription),
         padding: EdgeInsets.zero,
@@ -580,12 +581,12 @@ class _RenewalLine extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      days == 0 ? 'اليوم' : 'بعد $days يوم',
+                      localizedDaysAfter(days),
                       style: TextStyle(
                         color: days <= 3
                             ? context.palette.danger
                             : context.palette.textMuted,
-                        fontSize: V12Type.caption,
+                        fontSize: V15Type.caption,
                       ),
                     ),
                   ],
@@ -616,9 +617,9 @@ class _QuietLine extends StatelessWidget {
           children: [
             Icon(Icons.check_circle_outline_rounded,
                 color: context.palette.accent),
-            const SizedBox(width: V12Space.sm),
+            SizedBox(width: V12Space.sm),
             Text(
-              'الفترة القادمة هادئة',
+              tr('ui_f8fc79378323'),
               style: TextStyle(color: context.palette.textMuted),
             ),
           ],
@@ -637,26 +638,26 @@ class _EmptyPulse extends StatelessWidget {
         child: Column(
           children: [
             Icon(Icons.radar_rounded, size: 72, color: context.palette.accent),
-            const SizedBox(height: V12Space.lg),
+            SizedBox(height: V12Space.lg),
             Text(
-              'ابدأ بإضافة أول اشتراك',
+              tr('ui_a88ab7c3c0fb'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: context.palette.text,
-                fontSize: V12Type.title,
+                fontSize: V15Type.title,
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: V12Space.xs),
+            SizedBox(height: V12Space.xs),
             Text(
-              'أضف خدمة واحدة لنرتب موعدها وتكلفتها الحقيقية.',
+              tr('ui_3f6a0fb930be'),
               textAlign: TextAlign.center,
               style: TextStyle(color: context.palette.textMuted),
             ),
-            const SizedBox(height: V12Space.lg),
+            SizedBox(height: V12Space.lg),
             CupertinoButton.filled(
               onPressed: onAdd,
-              child: const Text('إضافة اشتراك'),
+              child: Text(tr('ui_7e7a0c30b825')),
             ),
           ],
         ),

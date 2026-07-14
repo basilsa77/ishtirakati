@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/app_localizations.dart';
 import '../data/presets.dart';
 import '../design/design_tokens.dart';
 import '../models/subscription.dart';
@@ -57,11 +58,11 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
 
   bool get isEditing => widget.existing != null;
 
-  static const Map<int, String> kReminderOptions = {
-    0: 'بدون تذكير',
-    1: 'قبل يوم',
-    3: 'قبل ٣ أيام',
-    7: 'قبل أسبوع',
+  Map<int, String> get kReminderOptions => {
+    0: tr('ui_3c7dc27f301d'),
+    1: tr('ui_71501f38cf67'),
+    3: tr('ui_0250e994d44a'),
+    7: tr('ui_80b2a5c01c23'),
   };
 
   @override
@@ -155,9 +156,9 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
                Text(
-                'خدمات شائعة',
+                tr('ui_b0ae1da4a56b'),
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: V15Type.titleSmall,
                   fontWeight: FontWeight.w900,
                   color: ctx.palette.text,
                 ),
@@ -195,7 +196,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                                   : '${r.emoji} ${r.name} • ${fmtMoney(r.priceHint!, 'SAR')}',
                                style: TextStyle(
                                 fontWeight: FontWeight.w700,
-                                fontSize: 13.5,
+                                fontSize: V15Type.label,
                                 color: ctx.palette.text,
                               ),
                             ),
@@ -224,7 +225,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                               '${p.emoji} ${p.name}',
                                style: TextStyle(
                                 fontWeight: FontWeight.w700,
-                                fontSize: 13.5,
+                                fontSize: V15Type.label,
                                 color: ctx.palette.text,
                               ),
                             ),
@@ -262,11 +263,11 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
             children: [
               Row(
                 children: [
-                  CupertinoButton(onPressed: () => Navigator.pop(sheetContext), child: const Text('إلغاء')),
-                  const Spacer(),
+                  CupertinoButton(onPressed: () => Navigator.pop(sheetContext), child: Text(tr('ui_9a30dc2a96b8'))),
+                  Spacer(),
                   CupertinoButton(
                     onPressed: () => Navigator.pop(sheetContext, selected),
-                    child: const Text('تم', style: TextStyle(fontWeight: FontWeight.w700)),
+                    child: Text(tr('ui_3ef541b90a31'), style: TextStyle(fontWeight: FontWeight.w700)),
                   ),
                 ],
               ),
@@ -289,18 +290,18 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   Future<void> _smartSearch() async {
     final term = _name.text.trim();
     if (term.isEmpty) {
-      setState(() => _formError = 'اكتب اسم الخدمة أولًا، ثم ابدأ البحث.');
+      setState(() => _formError = tr('ui_f2b90c5db000'));
       return;
     }
     setState(() => _searching = true);
-    List<AppSearchResult> results = const [];
+    List<AppSearchResult> results = [];
     try {
       results = await ItunesSearch.search(term);
     } catch (_) {}
     if (!mounted) return;
     setState(() => _searching = false);
     if (results.isEmpty) {
-      setState(() => _formError = 'لم نجد خدمة مطابقة. تحقق من الاسم والاتصال بالإنترنت.');
+      setState(() => _formError = tr('ui_df8ef893c3ac'));
       return;
     }
     await showCupertinoModalPopup<void>(
@@ -315,9 +316,9 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
                Text(
-                'اختر التطبيق الصحيح',
+                tr('ui_9c9b613d8fbc'),
                 style: TextStyle(
-                  fontSize: 17,
+                  fontSize: V15Type.titleSmall,
                   fontWeight: FontWeight.w900,
                   color: ctx.palette.text,
                 ),
@@ -352,10 +353,10 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(r.name, style: TextStyle(color: ctx.palette.text, fontWeight: FontWeight.w800, fontSize: 14.5)),
+                        Text(r.name, style: TextStyle(color: ctx.palette.text, fontWeight: FontWeight.w800, fontSize: V15Type.bodySmall)),
                         if (r.seller.isNotEmpty) ...[
                           const SizedBox(height: 3),
-                          Text(r.seller, style: TextStyle(color: ctx.palette.textMuted, fontSize: 12)),
+                          Text(r.seller, style: TextStyle(color: ctx.palette.textMuted, fontSize: V15Type.caption)),
                         ],
                       ],
                     ),
@@ -380,17 +381,17 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   Future<void> _save() async {
     final name = _name.text.trim();
     final price = double.tryParse(
-      _price.text.trim().replaceAll('،', '.').replaceAll(',', '.'),
+      _price.text.trim().replaceAll(tr('ui_bc4d631526af'), '.').replaceAll(',', '.'),
     );
     if (name.isEmpty || price == null || price <= 0) {
       setState(() => _formError = name.isEmpty
-          ? 'أدخل اسم الاشتراك.'
-          : 'أدخل سعرًا صحيحًا أكبر من صفر.');
+          ? tr('ui_b045235121d4')
+          : tr('ui_1a28a98d1b31'));
       return;
     }
     final manageUrl = _normalizedManageUrl(_url.text.trim());
     if (manageUrl == null) {
-      setState(() => _formError = 'استخدم رابط HTTPS صالحًا، أو اترك الرابط فارغًا.');
+      setState(() => _formError = tr('ui_36a69f5412dd'));
       return;
     }
     final sub = Subscription(
@@ -431,9 +432,9 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   Future<void> _delete() async {
     final ok = await showIosConfirmation(
       context: context,
-      title: 'حذف الاشتراك؟',
-      message: 'سيتم حذف «${widget.existing!.name}» نهائيًا.',
-      confirmLabel: 'حذف',
+      title: tr('ui_8a2f22ef602c'),
+      message: tr('ui_8c564d40c03f', {'value0': widget.existing!.name}),
+      confirmLabel: tr('ui_59ca629220a6'),
       destructive: true,
     );
     if (ok) {
@@ -443,13 +444,14 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   }
 
   String _paymentLabel(String value) => switch (value) {
-        'غير محدد' => 'لم أحدد وسيلة الدفع',
-        'بطاقة مدى' => 'بطاقة مدى',
-        'بطاقة ائتمانية' => 'بطاقة ائتمانية',
+        'غير محدد' => tr('ui_dd9f417e000b'),
+        'بطاقة مدى' => tr('ui_b5f0807ace71'),
+        'بطاقة ائتمانية' => tr('ui_eba8a86b7df5'),
         'Apple Pay' => 'Apple Pay',
-        'STC Pay' => 'stc pay',
+        'STC Pay' => 'STC Pay',
         'PayPal' => 'PayPal',
-        'رصيد المتجر' => 'رصيد متجر التطبيقات',
+        'رصيد المتجر' => tr('ui_71467661edb7'),
+        'أخرى' => tr('ui_46537a09b0bd'),
         _ => value,
       };
 
@@ -462,7 +464,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
       navigationBar: CupertinoNavigationBar(
         backgroundColor: p.canvas.withValues(alpha: .92),
         border: Border(bottom: BorderSide(color: p.stroke)),
-        middle: Text(isEditing ? 'تعديل الاشتراك' : 'اشتراك جديد'),
+        middle: Text(isEditing ? tr('ui_f6005bd9a851') : tr('ui_1d2163f7ccc0')),
       ),
       child: SafeArea(
         child: Form(
@@ -481,11 +483,11 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     kind: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Text(
-                        kind.labelAr,
+                        localizedPaymentKind(kind.name),
                         style: TextStyle(
                           color: _kind == kind ? Colors.white : p.textMuted,
                           fontWeight: FontWeight.w800,
-                          fontSize: 13,
+                          fontSize: V15Type.labelSmall,
                         ),
                       ),
                     ),
@@ -494,12 +496,12 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   if (value != null) setState(() => _kind = value);
                 },
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               if (!isEditing && _kind == PaymentKind.subscription)
                 CupertinoButton(
                   color: p.accentSoft,
                   onPressed: _openPresetPicker,
-                  child: const Text('اختيار خدمة معروفة'),
+                  child: Text(tr('ui_d44a8c5f24e0')),
                 ),
               const SizedBox(height: 14),
               Row(
@@ -516,25 +518,25 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                       size: 52,
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Expanded(
                     child: IosTextField(
                       controller: _name,
-                      label: 'اسم الاشتراك',
+                      label: tr('ui_acc6d15daf7d'),
                       textInputAction: TextInputAction.next,
-                      placeholder: 'مثال: شاهد VIP',
+                      placeholder: tr('ui_a9ad2049b6fc'),
                       suffix: CupertinoButton(
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           onPressed: _searching ? null : _smartSearch,
                           child: _searching
-                              ? const CupertinoActivityIndicator()
-                              : const Icon(CupertinoIcons.search, size: 20),
+                              ? CupertinoActivityIndicator()
+                              : Icon(CupertinoIcons.search, size: 20),
                         ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -542,7 +544,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     flex: 3,
                     child: IosTextField(
                       controller: _price,
-                      label: 'مبلغ التجديد',
+                      label: tr('ui_0d049d3998af'),
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
@@ -550,16 +552,16 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                       placeholder: '19.99',
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Expanded(
                     flex: 2,
                     child: IosPickerRow(
-                      label: 'العملة',
+                      label: tr('ui_30ce3a1dae2c'),
                       value: '${currencySymbols[_currency]}  $_currency',
                       onPressed: () async {
                         final selected = await showIosPicker<String>(
                           context: context,
-                          title: 'اختر العملة',
+                          title: tr('ui_7fa36bc2854c'),
                           selected: _currency,
                           values: currencySymbols.keys.toList(),
                           label: (value) => '${currencySymbols[value]}  $value',
@@ -570,9 +572,9 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Text(
-                'دورة التجديد',
+                tr('ui_d23a4e4bb3c4'),
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   color: p.text,
@@ -588,7 +590,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     for (final c in BillingCycle.values)
                       c: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-                        child: Text(c.labelAr, style: TextStyle(color: p.text, fontWeight: FontWeight.w700)),
+                        child: Text(localizedBillingCycle(c.name), style: TextStyle(color: p.text, fontWeight: FontWeight.w700)),
                       ),
                   },
                   onValueChanged: (value) {
@@ -597,47 +599,47 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 ),
               ),
               if (_kind == PaymentKind.installment) ...[
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 IosTextField(
                   controller: _installments,
-                  label: 'إجمالي عدد الأقساط',
+                  label: tr('ui_226fea1ea707'),
                   keyboardType: TextInputType.number,
                   textDirection: TextDirection.ltr,
-                  placeholder: 'مثال: 12، أو اتركه فارغًا',
+                  placeholder: tr('ui_c11c06b4e4a5'),
                 ),
               ],
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               IosPickerRow(
-                label: 'تاريخ آخر دفعة أو بداية الاشتراك',
+                label: tr('ui_6e11c8f926f4'),
                 value: fmtDate(d),
                 icon: CupertinoIcons.calendar,
                 onPressed: _pickDate,
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               IosPickerRow(
-                label: 'التصنيف',
-                value: _category,
+                label: tr('ui_3a7c87ed0100'),
+                value: localizedCategory(_category),
                 icon: CupertinoIcons.square_grid_2x2,
                 onPressed: () async {
                   final selected = await showIosPicker<String>(
                     context: context,
-                    title: 'اختر التصنيف',
+                    title: tr('ui_f1209a5d4e6e'),
                     selected: _category,
                     values: kCategories,
-                    label: (value) => value,
+                    label: localizedCategory,
                   );
                   if (selected != null) setState(() => _category = selected);
                 },
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               IosPickerRow(
-                label: 'وسيلة الدفع',
+                label: tr('ui_f3471840f9f9'),
                 value: _paymentLabel(_payMethod),
                 icon: CupertinoIcons.creditcard,
                 onPressed: () async {
                   final selected = await showIosPicker<String>(
                     context: context,
-                    title: 'اختر وسيلة الدفع',
+                    title: tr('ui_4efa54e360b7'),
                     selected: _payMethod,
                     values: kPaymentMethods,
                     label: _paymentLabel,
@@ -645,15 +647,15 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   if (selected != null) setState(() => _payMethod = selected);
                 },
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               IosPickerRow(
-                label: 'موعد تنبيه التجديد',
+                label: tr('ui_07e94be6ff36'),
                 value: kReminderOptions[_reminderDays]!,
                 icon: CupertinoIcons.bell,
                 onPressed: () async {
                   final selected = await showIosPicker<int>(
                     context: context,
-                    title: 'موعد تنبيه التجديد',
+                    title: tr('ui_07e94be6ff36'),
                     selected: _reminderDays,
                     values: kReminderOptions.keys.toList(),
                     label: (value) => kReminderOptions[value]!,
@@ -661,18 +663,18 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   if (selected != null) setState(() => _reminderDays = selected);
                 },
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               if (_kind == PaymentKind.subscription)
               _CupertinoSwitchRow(
-                key: const Key('trial-switch-row'),
+                key: Key('trial-switch-row'),
                 value: _trialOn,
                 onChanged: (v) => setState(() => _trialOn = v),
-                title: 'تجربة مجانية',
-                detail: 'سنحذرك قبل تحولها لاشتراك مدفوع بيومين',
+                title: tr('ui_b9cd5ab32273'),
+                detail: tr('ui_8388c8ca89cc'),
               ),
               if (_trialOn) ...[
                 IosPickerRow(
-                  label: 'تاريخ انتهاء التجربة المجانية',
+                  label: tr('ui_c8d22f8f1c31'),
                   value: fmtDate(_trialEnd),
                   icon: CupertinoIcons.time,
                   onPressed: () async {
@@ -682,24 +684,24 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     }
                   },
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
               ],
               _CupertinoSwitchRow(
-                key: const Key('family-switch-row'),
+                key: Key('family-switch-row'),
                 value: _isFamily,
                 onChanged: (v) => setState(() => _isFamily = v),
-                title: 'اشتراك عائلي / مشترك',
-                detail: 'يقسم التكلفة على المشاركين ويعرض نصيبك',
+                title: tr('ui_52e511325a9b'),
+                detail: tr('ui_d0825aa92603'),
               ),
               if (_isFamily)
                 Row(
                   children: [
                     Expanded(
                       child: Text(
-                        'عدد المشاركين (أنت منهم)',
+                        tr('ui_761a6a29fab7'),
                         style: TextStyle(
                           color: p.textMuted,
-                          fontSize: 13.5,
+                          fontSize: V15Type.label,
                         ),
                       ),
                     ),
@@ -717,7 +719,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                       '$_famCount',
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
-                        fontSize: 17,
+                        fontSize: V15Type.titleSmall,
                         color: p.text,
                       ),
                     ),
@@ -733,21 +735,21 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     ),
                   ],
                 ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               CupertinoFormSection.insetGrouped(
                 backgroundColor: Colors.transparent,
                 header: Text(
-                  'المتابعة المالية',
+                  tr('ui_52eb86ecb12d'),
                   style: TextStyle(color: p.textMuted),
                 ),
                 children: [
                   CupertinoFormRow(
                     prefix: _FinancialFormText(
-                      'يتجدد تلقائيًا',
+                      tr('ui_805776c9a492'),
                       color: p.text,
                     ),
                     helper: _FinancialFormText(
-                      'يظهر ضمن القرارات والتنبيهات قبل الخصم',
+                      tr('ui_d7b5a2799c4c'),
                       color: p.textMuted,
                       caption: true,
                     ),
@@ -760,11 +762,11 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   ),
                   CupertinoFormRow(
                     prefix: _FinancialFormText(
-                      'خدمة أساسية',
+                      tr('ui_8fb8496b5a8d'),
                       color: p.text,
                     ),
                     helper: _FinancialFormText(
-                      'لا يقترح التطبيق إلغاءها بسبب انخفاض الاستخدام',
+                      tr('ui_5bf69c56b1dd'),
                       color: p.textMuted,
                       caption: true,
                     ),
@@ -776,17 +778,17 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     ),
                   ),
                   CupertinoTextFormFieldRow(
-                    key: const Key('plan-name-field'),
+                    key: Key('plan-name-field'),
                     controller: _planName,
-                    placeholder: 'اسم الخطة (اختياري)',
+                    placeholder: tr('ui_94e61467b1ae'),
                     style: TextStyle(
                       color: p.text,
-                      fontSize: V12Type.body,
+                      fontSize: V15Type.body,
                       height: 1.35,
                     ),
                     placeholderStyle: TextStyle(
                       color: p.textMuted,
-                      fontSize: V12Type.body,
+                      fontSize: V15Type.body,
                       height: 1.35,
                     ),
                     textAlign: TextAlign.end,
@@ -802,47 +804,47 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                       ),
                     ),
                   ),
-                  child: const Text('مقارنة خطة بديلة'),
+                  child: Text(tr('ui_0cfaa1166988')),
                 ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               IosTextField(
                 controller: _url,
-                label: 'رابط إدارة الاشتراك (اختياري)',
+                label: tr('ui_1997ed35eb21'),
                 keyboardType: TextInputType.url,
                 textDirection: TextDirection.ltr,
                 placeholder: 'https://example.com/account',
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: 14),
               IosTextField(
                 controller: _notes,
-                label: 'ملاحظات (اختياري)',
+                label: tr('ui_651b7866185a'),
                 minLines: 2,
                 maxLines: 2,
-                placeholder: 'مثال: مشترك مع العائلة',
+                placeholder: tr('ui_732664c2662f'),
               ),
               if (isEditing) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 _CupertinoSwitchRow(
                   value: _paused,
                   onChanged: (v) => setState(() => _paused = v),
-                  title: 'إيقاف مؤقت',
-                  detail: 'لن يُحتسب في المصروف ولا في التجديدات',
+                  title: tr('ui_cb7f6fd46259'),
+                  detail: tr('ui_a9b01bde003e'),
                 ),
               ],
               if (_formError != null) ...[
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 IosStatusNotice(message: _formError!, error: true),
               ],
-              const SizedBox(height: 18),
+              SizedBox(height: 18),
               CupertinoButton.filled(
                 onPressed: _save,
-                child: Text(isEditing ? 'حفظ التعديلات' : 'إضافة الاشتراك'),
+                child: Text(isEditing ? tr('ui_6c03d6737c2f') : tr('ui_5c849a4aae0d')),
               ),
               if (isEditing) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 CupertinoButton(
                   onPressed: _delete,
-                  child: Text('حذف هذا الاشتراك', style: TextStyle(color: p.danger)),
+                  child: Text(tr('ui_8a56ced490fc'), style: TextStyle(color: p.danger)),
                 ),
               ],
             ],
@@ -884,7 +886,7 @@ class _CupertinoSwitchRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: p.text,
-                    fontSize: V12Type.body,
+                    fontSize: V15Type.body,
                     height: 1.3,
                     fontWeight: FontWeight.w800,
                   ),
@@ -896,7 +898,7 @@ class _CupertinoSwitchRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: p.textMuted,
-                    fontSize: V12Type.caption,
+                    fontSize: V15Type.caption,
                     height: 1.35,
                   ),
                 ),
@@ -933,7 +935,7 @@ class _FinancialFormText extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: color,
-          fontSize: caption ? V12Type.caption : V12Type.body,
+          fontSize: caption ? V15Type.caption : V15Type.body,
           height: 1.35,
           fontWeight: caption ? FontWeight.w500 : FontWeight.w700,
         ),

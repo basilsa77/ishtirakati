@@ -71,7 +71,7 @@ void main() {
       find.ancestor(of: text, matching: find.byType(Material)),
       findsWidgets,
     );
-    expect(inheritedStyle?.fontSize, V12Type.body);
+    expect(inheritedStyle?.fontSize, V15Type.body);
     expect(inheritedStyle?.decoration, isNot(TextDecoration.underline));
     expect(inheritedStyle?.decorationStyle, isNot(TextDecorationStyle.double));
 
@@ -83,7 +83,7 @@ void main() {
       find.ancestor(of: routeText, matching: find.byType(Material)),
       findsWidgets,
     );
-    expect(routeStyle?.fontSize, V12Type.body);
+    expect(routeStyle?.fontSize, V15Type.body);
     expect(routeStyle?.decoration, isNot(TextDecoration.underline));
     expect(routeStyle?.decorationStyle, isNot(TextDecorationStyle.double));
 
@@ -97,7 +97,7 @@ void main() {
       find.ancestor(of: overlayText, matching: find.byType(Material)),
       findsWidgets,
     );
-    expect(overlayStyle?.fontSize, V12Type.body);
+    expect(overlayStyle?.fontSize, V15Type.body);
     expect(overlayStyle?.decoration, isNot(TextDecoration.underline));
     expect(overlayStyle?.decorationStyle, isNot(TextDecorationStyle.double));
   });
@@ -231,7 +231,7 @@ void main() {
     final renewalCycleStyle = DefaultTextStyle.of(renewalCycleContext)
         .style
         .merge(renewalCycleText.style);
-    expect(renewalCycleStyle.fontSize, V12Type.body);
+    expect(renewalCycleStyle.fontSize, V15Type.body);
     expect(
       renewalCycleStyle.decoration,
       isNot(TextDecoration.underline),
@@ -248,7 +248,7 @@ void main() {
       scrollable: scrollable,
     );
     final trialTitle = tester.widget<Text>(find.text('تجربة مجانية'));
-    expect(trialTitle.style?.fontSize, V12Type.body);
+    expect(trialTitle.style?.fontSize, V15Type.body);
     expect(trialTitle.maxLines, 2);
 
     await tester.scrollUntilVisible(
@@ -257,7 +257,7 @@ void main() {
       scrollable: scrollable,
     );
     final familyTitle = tester.widget<Text>(find.text('اشتراك عائلي / مشترك'));
-    expect(familyTitle.style?.fontSize, V12Type.body);
+    expect(familyTitle.style?.fontSize, V15Type.body);
     expect(familyTitle.maxLines, 2);
 
     await tester.scrollUntilVisible(
@@ -271,7 +271,7 @@ void main() {
         matching: find.byType(EditableText),
       ),
     );
-    expect(planEditor.style.fontSize, V12Type.body);
+    expect(planEditor.style.fontSize, V15Type.body);
     expect(tester.takeException(), isNull);
   });
 }

@@ -10,6 +10,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:local_auth/local_auth.dart';
 
 import 'screens/calendar_screen.dart';
+import 'l10n/app_localizations.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/insights_screen.dart';
 import 'screens/command_palette.dart';
@@ -58,6 +59,12 @@ Future<void> main() async {
   } catch (_) {
     // لا نسمح لأي خطأ تخزين بمنع التطبيق من الفتح.
   }
+  final initialLocale = resolveStoredLocale(store.languageMode) ??
+      resolveSupportedLocale(
+        WidgetsBinding.instance.platformDispatcher.locale,
+      );
+  await AppLocalizations.load(initialLocale);
+  setDefaultFormattingLocale(initialLocale);
   await NotificationService.instance.init();
   await AuthService.init();
   SystemChrome.setSystemUIOverlayStyle(
@@ -108,15 +115,23 @@ class IshtirakatiApp extends StatelessWidget {
       listenable: store,
       builder: (context, _) {
         final mode = resolveAppThemeMode(store.themeMode);
+        final preferredLocale = resolveStoredLocale(store.languageMode);
+        final effectiveLocale = preferredLocale ?? resolveSupportedLocale(
+          WidgetsBinding.instance.platformDispatcher.locale,
+        );
+        setDefaultFormattingLocale(effectiveLocale);
         return MaterialApp(
-      title: 'اشتراكاتي',
+      onGenerateTitle: (context) => context.l10n.text('appTitle'),
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
       darkTheme: buildAppTheme(dark: true),
       themeMode: mode,
-      locale: const Locale('ar'),
-      supportedLocales: const [Locale('ar')],
+      locale: preferredLocale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localeResolutionCallback: (deviceLocale, _) =>
+          resolveSupportedLocale(deviceLocale),
       localizationsDelegates: const [
+        AppLocalizationsDelegate(),
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
@@ -151,7 +166,7 @@ class IshtirakatiApp extends StatelessWidget {
       },
       home: store.hasOnboarded
           ? const LockGate(child: RootShell())
-          : const OnboardingScreen(),
+          : OnboardingScreen(),
         );
       },
     );
@@ -177,19 +192,19 @@ class _RenderFailure extends StatelessWidget {
                 color: p.warning,
                 size: 36,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Text(
-                'تعذر عرض هذا الجزء',
+                tr('ui_b68f32e3329a'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: p.text,
-                  fontSize: 17,
+                  fontSize: V15Type.titleSmall,
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               Text(
-                'انتقل إلى تبويب آخر ثم عُد، وإذا استمرت المشكلة فأغلق التطبيق وافتحه مجددًا.',
+                tr('ui_af2167fbbff9'),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: p.textMuted, height: 1.5),
               ),
@@ -249,8 +264,8 @@ class _LockGateState extends State<LockGate>
     try {
       final auth = LocalAuthentication();
       final ok = await auth.authenticate(
-        localizedReason: 'افتح «اشتراكاتي» ببصمة الوجه',
-        options: const AuthenticationOptions(
+        localizedReason: tr('ui_f9a122088fe8'),
+        options: AuthenticationOptions(
           biometricOnly: true,
           stickyAuth: true,
         ),
@@ -261,12 +276,12 @@ class _LockGateState extends State<LockGate>
           _authError = null;
         });
       } else if (mounted) {
-        setState(() => _authError = 'لم تتم المصادقة. حاول مرة أخرى.');
+        setState(() => _authError = tr('ui_df7cc66a367d'));
       }
     } catch (_) {
       // لا نفتح التطبيق عند فشل المصادقة؛ القفل يحمي بيانات المستخدم.
       if (mounted) {
-        setState(() => _authError = 'تعذرت المصادقة على هذا الجهاز.');
+        setState(() => _authError = tr('ui_4f19bb952755'));
       }
     } finally {
       _authInProgress = false;
@@ -287,29 +302,29 @@ class _LockGateState extends State<LockGate>
               width: 92,
               height: 92,
               alignment: Alignment.center,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: AppColors.heroGradient,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 CupertinoIcons.lock_fill,
                 color: CupertinoColors.white,
                 size: 44,
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             Text(
-              'اشتراكاتي مقفلة',
+              tr('ui_c3c9617192c3'),
               style: TextStyle(
-                fontSize: 20,
+                fontSize: V15Type.title,
                 fontWeight: FontWeight.w900,
                 color: p.text,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             CupertinoButton.filled(
               onPressed: _unlock,
-              child: const Text('فتح باستخدام Face ID'),
+              child: Text(tr('ui_cef85563f6a5')),
             ),
             if (_authError != null) ...[
               const SizedBox(height: 14),
@@ -345,10 +360,10 @@ class _RootShellState extends State<RootShell> {
       onOpenLibrary: () => _select(V12Destination.subscriptions),
       onOpenRenewals: () => _select(V12Destination.calendar),
     ),
-    const SubscriptionsScreen(key: PageStorageKey('subscriptions')),
-    const InsightsScreen(key: PageStorageKey('insights')),
-    const CalendarScreen(key: PageStorageKey('calendar')),
-    const SettingsScreen(key: PageStorageKey('settings')),
+    SubscriptionsScreen(key: PageStorageKey('subscriptions')),
+    InsightsScreen(key: PageStorageKey('insights')),
+    CalendarScreen(key: PageStorageKey('calendar')),
+    SettingsScreen(key: PageStorageKey('settings')),
   ];
 
   void _select(V12Destination destination) {
@@ -367,7 +382,7 @@ class _RootShellState extends State<RootShell> {
     if (!store.storageHealthy) {
       return _StorageRecoveryGate(
         message: store.storageError ??
-            'تعذر فتح بياناتك المشفرة. لم نكتب فوق السجل الأصلي.',
+            tr('ui_fa44d20258ad'),
       );
     }
     return CupertinoPageScaffold(
@@ -405,7 +420,7 @@ class _StorageRecoveryGateState extends State<_StorageRecoveryGate> {
   @override
   Widget build(BuildContext context) {
     if (SubscriptionStore.instance.storageHealthy) {
-      return const RootShell();
+      return RootShell();
     }
     final p = context.palette;
     return CupertinoPageScaffold(
@@ -417,34 +432,34 @@ class _StorageRecoveryGateState extends State<_StorageRecoveryGate> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(CupertinoIcons.shield_fill, size: 64, color: p.accent),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               Text(
-                'حماية بياناتك مفعّلة',
+                tr('ui_ae57be0a15db'),
                 style: TextStyle(
                   color: p.text,
-                  fontSize: 22,
+                  fontSize: V15Type.title,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Text(
                 widget.message,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: p.textMuted, height: 1.7),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
-                'أغلق التطبيق وافتحه بعد إتاحة Keychain، أو أعد المحاولة. '
-                'لن تُحفظ تغييرات جديدة حتى تُستعاد البيانات.',
+                tr('ui_93a9463ad8dc') +
+                tr('ui_d38f17269b33'),
                 textAlign: TextAlign.center,
-                style: TextStyle(color: p.textMuted, fontSize: 12, height: 1.6),
+                style: TextStyle(color: p.textMuted, fontSize: V15Type.caption, height: 1.6),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               CupertinoButton.filled(
                 onPressed: _retrying ? null : _retry,
                 child: _retrying
-                    ? const CupertinoActivityIndicator(color: CupertinoColors.white)
-                    : const Text('إعادة محاولة الاستعادة'),
+                    ? CupertinoActivityIndicator(color: CupertinoColors.white)
+                    : Text(tr('ui_c73b9bc3f450')),
               ),
             ],
           ),

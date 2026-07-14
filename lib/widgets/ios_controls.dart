@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/app_localizations.dart';
 import '../theme.dart';
 
 Future<T?> showIosPicker<T>({
@@ -24,10 +25,10 @@ Future<T?> showIosPicker<T>({
                 SizedBox(
                   width: 24,
                   child: value == selected
-                      ? const Icon(CupertinoIcons.check_mark, size: 18)
+                      ? Icon(CupertinoIcons.check_mark, size: 18)
                       : null,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Expanded(child: Text(label(value), textAlign: TextAlign.start)),
               ],
             ),
@@ -35,7 +36,7 @@ Future<T?> showIosPicker<T>({
       ],
       cancelButton: CupertinoActionSheetAction(
         onPressed: () => Navigator.pop(sheetContext),
-        child: const Text('إلغاء'),
+        child: Text(tr('ui_9a30dc2a96b8')),
       ),
     ),
   );
@@ -45,7 +46,7 @@ Future<bool> showIosConfirmation({
   required BuildContext context,
   required String title,
   required String message,
-  String confirmLabel = 'تأكيد',
+  String confirmLabel = tr('ui_8f7d74ac0eac'),
   bool destructive = false,
 }) async {
   final result = await showCupertinoDialog<bool>(
@@ -56,7 +57,7 @@ Future<bool> showIosConfirmation({
       actions: [
         CupertinoDialogAction(
           onPressed: () => Navigator.pop(dialogContext, false),
-          child: const Text('إلغاء'),
+          child: Text(tr('ui_9a30dc2a96b8')),
         ),
         CupertinoDialogAction(
           isDestructiveAction: destructive,
@@ -88,7 +89,7 @@ class IosPickerRow extends StatelessWidget {
     final p = context.palette;
     return Semantics(
       button: true,
-      label: '$label، $value',
+      label: tr('ui_1e65e8441737', {'value0': label, 'value1': value}),
       child: CupertinoButton(
         padding: EdgeInsets.zero,
         onPressed: onPressed,
@@ -112,13 +113,13 @@ class IosPickerRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(label, style: TextStyle(color: p.textMuted, fontSize: 11.5)),
+                    Text(label, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
                     const SizedBox(height: 2),
                     Text(
                       value,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: p.text, fontSize: 15, fontWeight: FontWeight.w700),
+                      style: TextStyle(color: p.text, fontSize: V15Type.bodySmall, fontWeight: FontWeight.w700),
                     ),
                   ],
                 ),
@@ -173,7 +174,7 @@ class IosTextField extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsetsDirectional.only(start: 3, bottom: 6),
-          child: Text(label, style: TextStyle(color: p.textMuted, fontSize: 12.5, fontWeight: FontWeight.w600)),
+          child: Text(label, style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall, fontWeight: FontWeight.w600)),
         ),
         CupertinoTextField(
           controller: controller,
@@ -190,8 +191,8 @@ class IosTextField extends StatelessWidget {
           onSubmitted: onSubmitted,
           clearButtonMode: OverlayVisibilityMode.editing,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-          style: TextStyle(color: p.text, fontSize: 16),
-          placeholderStyle: TextStyle(color: p.textMuted, fontSize: 16),
+          style: TextStyle(color: p.text, fontSize: V15Type.body),
+          placeholderStyle: TextStyle(color: p.textMuted, fontSize: V15Type.body),
           decoration: BoxDecoration(
             color: p.surface,
             borderRadius: BorderRadius.circular(12),
@@ -227,14 +228,14 @@ class IosStatusNotice extends StatelessWidget {
       child: Row(
         children: [
           Icon(error ? CupertinoIcons.exclamationmark_circle : CupertinoIcons.check_mark_circled, color: color, size: 19),
-          const SizedBox(width: 9),
-          Expanded(child: Text(message, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w600))),
+          SizedBox(width: 9),
+          Expanded(child: Text(message, style: TextStyle(color: color, fontSize: V15Type.labelSmall, fontWeight: FontWeight.w600))),
           if (onRetry != null)
             CupertinoButton(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              minimumSize: const Size(32, 32),
+              minimumSize: Size(32, 32),
               onPressed: onRetry,
-              child: const Text('إعادة المحاولة', style: TextStyle(fontSize: 12.5)),
+              child: Text(tr('ui_14d5786f2e64'), style: TextStyle(fontSize: V15Type.labelSmall)),
             ),
         ],
       ),

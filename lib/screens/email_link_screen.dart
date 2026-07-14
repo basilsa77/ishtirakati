@@ -6,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/email_import_service.dart';
 import '../theme.dart';
 import '../widgets/ios_controls.dart';
@@ -81,7 +82,7 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
     final email = _email.text.trim();
     final password = _password.text.trim();
     if (email.isEmpty || password.isEmpty) {
-      setState(() => _error = 'أدخل البريد وكلمة مرور التطبيقات');
+      setState(() => _error = tr('ui_ca78e717a0a1'));
       return;
     }
     setState(() {
@@ -117,8 +118,8 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
       if (result.matched == 0) {
         setState(() {
           _busy = false;
-          _error = 'اتصلنا بنجاح وفحصنا ${result.scanned} رسالة، '
-              'لكن لم نجد إيصالات اشتراكات حديثة.';
+          _error = tr('ui_aad9d5636c67', {'value0': result.scanned}) +
+              tr('ui_24cd4330e1b3');
         });
         return;
       }
@@ -132,8 +133,8 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _error = 'فشل الاتصال: تأكد من البريد وكلمة مرور التطبيقات '
-            '(وليست كلمة مرورك العادية).';
+        _error = tr('ui_e57ba96aea6c') +
+            tr('ui_cd4f8be47460');
       });
     } finally {
       // لا تبقِ كلمة مرور التطبيقات في ذاكرة واجهة المستخدم.
@@ -149,28 +150,28 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
       navigationBar: CupertinoNavigationBar(
         backgroundColor: p.canvas.withValues(alpha: .92),
         border: Border(bottom: BorderSide(color: p.stroke)),
-        middle: const Text('استيراد من البريد'),
+        middle: Text(tr('ui_61b676130c36')),
       ),
       child: SafeArea(
         child: ListView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 34),
           children: [
-            Text('فحص إيصالات الاشتراكات', style: TextStyle(color: p.text, fontSize: 24, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 7),
+            Text(tr('ui_21c32e81995c'), style: TextStyle(color: p.text, fontSize: V15Type.headlineSmall, fontWeight: FontWeight.w800)),
+            SizedBox(height: 7),
             Text(
-              'يفحص التطبيق أحدث رسائل الفوترة على جهازك. لا تُحفظ كلمة مرور التطبيقات ولا تُرسل إلى الذكاء الاصطناعي.',
-              style: TextStyle(color: p.textMuted, fontSize: 13.5, height: 1.55),
+              tr('ui_fb60e2c3e823'),
+              style: TextStyle(color: p.textMuted, fontSize: V15Type.label, height: 1.55),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             IosPickerRow(
-              label: 'مزود البريد',
+              label: tr('ui_ca2b10b75a55'),
               value: _localizedProvider(_provider),
               icon: CupertinoIcons.mail,
               onPressed: () async {
                 final selected = await showIosPicker<EmailProvider>(
                   context: context,
-                  title: 'اختر مزود البريد',
+                  title: tr('ui_5faa00acc81d'),
                   selected: _provider,
                   values: kEmailProviders,
                   label: _localizedProvider,
@@ -178,18 +179,18 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
                 if (selected != null) setState(() => _provider = selected);
               },
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             IosTextField(
               controller: _email,
-              label: 'عنوان البريد الإلكتروني',
+              label: tr('ui_8a0b55ab8c62'),
               keyboardType: TextInputType.emailAddress,
               textDirection: TextDirection.ltr,
               placeholder: 'name@example.com',
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             IosTextField(
               controller: _password,
-              label: 'كلمة مرور التطبيقات',
+              label: tr('ui_20046a1fc591'),
               obscureText: true,
               textDirection: TextDirection.ltr,
               placeholder: 'xxxx-xxxx-xxxx-xxxx',
@@ -203,8 +204,8 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
                 mode: LaunchMode.externalApplication,
               ),
               child: Text(
-                'إنشاء كلمة مرور للتطبيقات في ${_localizedProvider(_provider)}',
-                style: const TextStyle(fontSize: 13.5),
+                tr('ui_626c22ee912c', {'value0': _localizedProvider(_provider)}),
+                style: TextStyle(fontSize: V15Type.label),
               ),
             )),
             Container(
@@ -216,9 +217,9 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('حفظ عنوان البريد', style: TextStyle(color: p.text, fontSize: 14.5, fontWeight: FontWeight.w700)),
-                        const SizedBox(height: 2),
-                        Text('يُحفظ في Keychain على هذا الجهاز فقط.', style: TextStyle(color: p.textMuted, fontSize: 11.5)),
+                        Text(tr('ui_ad702e6b4d70'), style: TextStyle(color: p.text, fontSize: V15Type.bodySmall, fontWeight: FontWeight.w700)),
+                        SizedBox(height: 2),
+                        Text(tr('ui_15f4d9231b10'), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
                       ],
                     ),
                   ),
@@ -231,29 +232,29 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
               ),
             ),
             if (_error != null) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               IosStatusNotice(message: _error!, error: true),
             ],
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: CupertinoButton.filled(
                 onPressed: _busy ? null : _fetch,
                 child: _busy
-                    ? const CupertinoActivityIndicator(color: CupertinoColors.white)
-                    : const Text('فحص البريد واستيراد الاشتراكات'),
+                    ? CupertinoActivityIndicator(color: CupertinoColors.white)
+                    : Text(tr('ui_7c9841249f12')),
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(CupertinoIcons.lock_shield, color: p.textMuted, size: 17),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'استخدم كلمة مرور للتطبيقات، وليس كلمة مرور حسابك. يمكنك إلغاؤها من إعدادات مزود البريد في أي وقت.',
-                    style: TextStyle(color: p.textMuted, fontSize: 12, height: 1.55),
+                    tr('ui_88d294591e54'),
+                    style: TextStyle(color: p.textMuted, fontSize: V15Type.caption, height: 1.55),
                   ),
                 ),
               ],
@@ -265,9 +266,9 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
   }
 
   String _localizedProvider(EmailProvider provider) => switch (provider.label) {
-        'iCloud Mail' => 'بريد iCloud',
-        'Gmail' => 'Gmail من Google',
-        'Outlook / Hotmail' => 'Outlook وHotmail',
+        'iCloud Mail' => tr('ui_ef748ad7f4c6'),
+        'Gmail' => tr('ui_78dda4e041a7'),
+        'Outlook / Hotmail' => tr('ui_8a15a0d445de'),
         _ => provider.label,
       };
 }

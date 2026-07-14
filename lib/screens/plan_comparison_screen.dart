@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/subscription.dart';
 import '../services/financial_assistant.dart';
 import '../theme.dart';
@@ -33,7 +34,7 @@ class _PlanComparisonScreenState extends State<PlanComparisonScreen> {
   Widget build(BuildContext context) {
     final p = context.palette;
     final value = double.tryParse(
-      _price.text.trim().replaceAll('،', '.').replaceAll(',', '.'),
+      _price.text.trim().replaceAll(tr('ui_bc4d631526af'), '.').replaceAll(',', '.'),
     );
     final comparison = value == null || value < 0
         ? null
@@ -47,7 +48,7 @@ class _PlanComparisonScreenState extends State<PlanComparisonScreen> {
       navigationBar: CupertinoNavigationBar(
         backgroundColor: p.canvas.withValues(alpha: .92),
         border: Border(bottom: BorderSide(color: p.stroke)),
-        middle: const Text('مقارنة خطة بديلة'),
+        middle: Text(tr('ui_0cfaa1166988')),
       ),
       child: SafeArea(
         child: ListView(
@@ -57,22 +58,22 @@ class _PlanComparisonScreenState extends State<PlanComparisonScreen> {
               widget.subscription.name,
               style: TextStyle(
                 color: p.text,
-                fontSize: 28,
+                fontSize: V15Type.headline,
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(
-              'التكلفة الحالية شهريًا: ${fmtMoney(widget.subscription.monthlyCost, widget.subscription.currency)}',
+              tr('ui_09a4a8360dc9', {'value0': fmtMoney(widget.subscription.monthlyCost, widget.subscription.currency)}),
               style: TextStyle(color: p.textMuted),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             CupertinoTextField(
               controller: _price,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
               textDirection: TextDirection.ltr,
-              placeholder: 'سعر الخطة البديلة',
+              placeholder: tr('ui_5bd41e8d6f02'),
               padding: const EdgeInsets.all(14),
               onChanged: (_) => setState(() {}),
             ),
@@ -85,7 +86,7 @@ class _PlanComparisonScreenState extends State<PlanComparisonScreen> {
                   for (final cycle in BillingCycle.values)
                     cycle: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                      child: Text(cycle.labelAr),
+                      child: Text(localizedBillingCycle(cycle.name)),
                     ),
                 },
                 onValueChanged: (value) {
@@ -93,10 +94,10 @@ class _PlanComparisonScreenState extends State<PlanComparisonScreen> {
                 },
               ),
             ),
-            const SizedBox(height: 28),
+            SizedBox(height: 28),
             if (comparison == null)
               Text(
-                'أدخل سعر الخطة البديلة لرؤية الفرق الشهري والسنوي.',
+                tr('ui_2932ce8e4973'),
                 style: TextStyle(color: p.textMuted, height: 1.6),
               )
             else
@@ -112,19 +113,19 @@ class _PlanComparisonScreenState extends State<PlanComparisonScreen> {
                   children: [
                     Text(
                       comparison.alternativeSavesMoney
-                          ? 'الخطة البديلة أوفر'
-                          : 'الخطة الحالية أوفر أو مساوية',
+                          ? tr('ui_b7a91942463f')
+                          : tr('ui_277e297accb2'),
                       style: TextStyle(
                         color: comparison.alternativeSavesMoney
                             ? p.accent
                             : p.text,
-                        fontSize: 18,
+                        fontSize: V15Type.titleSmall,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    SizedBox(height: 14),
                     _ComparisonLine(
-                      label: 'البديلة شهريًا',
+                      label: tr('ui_62f92392c4f3'),
                       value: fmtMoney(
                         comparison.alternativeMonthlyCost,
                         widget.subscription.currency,
@@ -132,8 +133,8 @@ class _PlanComparisonScreenState extends State<PlanComparisonScreen> {
                     ),
                     _ComparisonLine(
                       label: comparison.alternativeSavesMoney
-                          ? 'التوفير السنوي'
-                          : 'الزيادة السنوية',
+                          ? tr('ui_5dddf85ce95f')
+                          : tr('ui_7d0266e9df94'),
                       value: fmtMoney(
                         comparison.annualDifference.abs(),
                         widget.subscription.currency,

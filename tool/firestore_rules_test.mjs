@@ -6,8 +6,11 @@ import {
 } from '@firebase/rules-unit-testing';
 import {
   deleteDoc,
+  disableNetwork,
   doc,
+  enableNetwork,
   getDoc,
+  getDocFromServer,
   serverTimestamp,
   setDoc,
 } from 'firebase/firestore';
@@ -23,6 +26,7 @@ const validBackup = {
   backup: '{"subscriptions":[]}',
   updatedAt: serverTimestamp(),
   schemaVersion: 1,
+  revision: 1,
 };
 
 try {
@@ -33,6 +37,13 @@ try {
 
   await assertSucceeds(setDoc(ownerRef, validBackup));
   await assertSucceeds(getDoc(ownerRef));
+  await assertFails(setDoc(ownerRef, validBackup));
+  await assertSucceeds(
+    setDoc(ownerRef, { ...validBackup, revision: 2 }),
+  );
+  await assertFails(
+    setDoc(ownerRef, { ...validBackup, revision: 4 }),
+  );
   await assertFails(getDoc(doc(intruder, 'users/owner-user')));
   await assertFails(setDoc(doc(intruder, 'users/owner-user'), validBackup));
   await assertFails(getDoc(doc(anonymous, 'users/owner-user')));
@@ -48,11 +59,18 @@ try {
       backup: '',
       updatedAt: serverTimestamp(),
       schemaVersion: 1,
+      revision: 3,
     }),
   );
+  await disableNetwork(owner);
+  await assertFails(getDocFromServer(ownerRef));
+  await enableNetwork(owner);
+  const recovered = await assertSucceeds(getDocFromServer(ownerRef));
+  if (recovered.data()?.revision !== 2) {
+    throw new Error('Recovery returned an unexpected cloud revision.');
+  }
   await assertSucceeds(deleteDoc(ownerRef));
   console.log('Firestore rules isolation tests passed.');
 } finally {
   await environment.cleanup();
 }
-

@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/subscription.dart';
 import '../services/renewal_intelligence.dart';
 import '../services/device_greeting.dart';
@@ -54,17 +55,17 @@ class CommandCenterScreen extends StatelessWidget {
             const SizedBox(height: 14),
             _QuickLane(
               onAdd: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const EditSubscriptionScreen()),
+                MaterialPageRoute(builder: (_) => EditSubscriptionScreen()),
               ),
               onImport: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ImportScreen()),
+                MaterialPageRoute(builder: (_) => ImportScreen()),
               ),
               onCalendar: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const CalendarPage()),
+                MaterialPageRoute(builder: (_) => CalendarPage()),
               ),
             ),
             if (decisions.isNotEmpty) ...[
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               _DecisionPreview(
                 decisions: decisions.take(3).toList(),
                 total: decisions.length,
@@ -72,45 +73,45 @@ class CommandCenterScreen extends StatelessWidget {
             ],
             const SizedBox(height: 28),
             _V8SectionHeader(
-              title: 'القادم على حسابك',
+              title: tr('ui_00fb70720d38'),
               detail: upcoming.isEmpty
-                  ? 'الأيام الثلاثة القادمة هادئة'
-                  : '${upcoming.length} عمليات قريبة خلال 21 يومًا',
+                  ? tr('ui_917c39cede7a')
+                  : tr('ui_43d451ae8a86', {'value0': upcoming.length}),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             if (upcoming.isEmpty)
-              const _CalmState()
+              _CalmState()
             else
               _RenewalStrip(subscriptions: upcoming.take(5).toList()),
-            const SizedBox(height: 28),
-            const _V8SectionHeader(
-              title: 'ملخص مصروفك',
-              detail: 'لقطة سريعة تساعدك على المتابعة',
+            SizedBox(height: 28),
+            _V8SectionHeader(
+              title: tr('ui_e94b40c88d6b'),
+              detail: tr('ui_4a3de0e47517'),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _PulseGrid(
               upcoming: upcoming.length,
               unused: store.neverUsed.length,
               saved: store.savingsFor(currency),
               currency: currency,
             ),
-            const SizedBox(height: 28),
-            const _V8SectionHeader(
-              title: 'وجهة الإنفاق',
-              detail: 'أكبر التصنيفات هذا الشهر',
+            SizedBox(height: 28),
+            _V8SectionHeader(
+              title: tr('ui_a0ede2d09bfc'),
+              detail: tr('ui_01605c831d3c'),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _SpendingMap(
               entries: byCategory.take(5).toList(),
               total: monthly,
               currency: currency,
             ),
-            const SizedBox(height: 28),
-            const _V8SectionHeader(
-              title: 'متابعة الاستخدام',
-              detail: 'سجّل استخدام الخدمة لتتضح قيمتها',
+            SizedBox(height: 28),
+            _V8SectionHeader(
+              title: tr('ui_9f64477734ab'),
+              detail: tr('ui_dbea856e9958'),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             _UsageFocus(subscriptions: store.neverUsed.take(3).toList()),
           ],
         );
@@ -132,20 +133,20 @@ class _CashFlowRibbon extends StatelessWidget {
         final tiles = [
           _CashFlowTile(
             icon: Icons.bolt_rounded,
-            label: 'خلال 7 أيام',
+            label: tr('ui_3f506ba7c244'),
             value: snapshot.dueIn7Days == 0
-                ? 'لا خصومات'
+                ? tr('ui_4c6f78c0b2fd')
                 : fmtMoney(snapshot.amountIn7Days, snapshot.currency),
           ),
           _CashFlowTile(
             icon: Icons.calendar_view_month_rounded,
-            label: 'خلال 30 يومًا',
-            value: '${snapshot.dueIn30Days} دفعات',
+            label: tr('ui_bafefb4c4f56'),
+            value: tr('ui_6417e1b91d28', {'value0': snapshot.dueIn30Days}),
           ),
           if (snapshot.trialsEndingSoon > 0)
             _CashFlowTile(
               icon: Icons.hourglass_bottom_rounded,
-              label: 'تجارب تنتهي',
+              label: tr('ui_4a6f3033071e'),
               value: '${snapshot.trialsEndingSoon}',
               warning: true,
             ),
@@ -213,7 +214,7 @@ class _CashFlowTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: p.text,
-                    fontSize: 12,
+                    fontSize: V15Type.caption,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -222,7 +223,7 @@ class _CashFlowTile extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: p.textMuted, fontSize: 10),
+                  style: TextStyle(color: p.textMuted, fontSize: V15Type.captionSmall),
                 ),
               ],
             ),
@@ -263,28 +264,28 @@ class _DecisionPreview extends StatelessWidget {
                 ),
                 child: Icon(Icons.rule_rounded, color: p.accent, size: 21),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'مركز القرار',
+                      tr('ui_28960e5355cb'),
                       style: TextStyle(
                         color: p.text,
-                        fontSize: 15,
+                        fontSize: V15Type.bodySmall,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     Text(
-                      '$total مراجعات مرتبة حسب الأولوية',
-                      style: TextStyle(color: p.textMuted, fontSize: 11),
+                      tr('ui_1443ecd0c584', {'value0': total}),
+                      style: TextStyle(color: p.textMuted, fontSize: V15Type.caption),
                     ),
                   ],
                 ),
               ),
               IconButton(
-                tooltip: 'عرض مركز القرار',
+                tooltip: tr('ui_0e86b3ccc44c'),
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => const DecisionCenterScreen(),
@@ -315,7 +316,7 @@ class _DecisionPreview extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: p.text,
-                      fontSize: 12,
+                      fontSize: V15Type.caption,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -350,16 +351,16 @@ class _DashboardGreeting extends StatelessWidget {
                 salutation,
                 style: TextStyle(
                   color: p.textMuted,
-                  fontSize: 13,
+                  fontSize: V15Type.labelSmall,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Text(
-                'مساحتك المالية',
+                tr('ui_9314de11dc05'),
                 style: TextStyle(
                   color: p.text,
-                  fontSize: 27,
+                  fontSize: V15Type.headlineSmall,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -378,7 +379,7 @@ class _DashboardGreeting extends StatelessWidget {
             '$activeCount',
             style: TextStyle(
               color: p.accent,
-              fontSize: 17,
+              fontSize: V15Type.titleSmall,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -417,7 +418,7 @@ class _CommitmentHero extends StatelessWidget {
           BoxShadow(
             color: p.accentStrong.withValues(alpha: .30),
             blurRadius: 28,
-            offset: const Offset(0, 12),
+            offset: Offset(0, 12),
           ),
         ],
       ),
@@ -426,75 +427,75 @@ class _CommitmentHero extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.account_balance_wallet_rounded,
                 color: Color(0xD9FFFFFF),
                 size: 19,
               ),
-              const SizedBox(width: 8),
-              const Expanded(
+              SizedBox(width: 8),
+              Expanded(
                 child: Text(
-                  'التزامك لهذا الشهر',
+                  tr('ui_f4faade3e85a'),
                   style: TextStyle(
                     color: Color(0xD9FFFFFF),
-                    fontSize: 13,
+                    fontSize: V15Type.labelSmall,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
               ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 112),
+                constraints: BoxConstraints(maxWidth: 112),
                 child: Text(
-                  'سنويًا ${fmtMoney(yearly, currency)}',
+                  tr('ui_fe8fdc8766fe', {'value0': fmtMoney(yearly, currency)}),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.end,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Color(0xBFFFFFFF),
-                    fontSize: 11,
+                    fontSize: V15Type.caption,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           Text(
             fmtMoney(monthly, currency),
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 35,
+              fontSize: V15Type.headline,
               height: 1,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 22),
+          SizedBox(height: 22),
           if (budget <= 0)
-            const Text(
-              'أضف ميزانية شهرية من الإعدادات لتتابعها هنا.',
+            Text(
+              tr('ui_e42ad3b2abef'),
               style: TextStyle(
                 color: Color(0xBFFFFFFF),
-                fontSize: 12,
+                fontSize: V15Type.caption,
               ),
             )
           else ...[
             Row(
               children: [
                 Text(
-                  isOver ? 'تجاوزت الميزانية' : 'ضمن الميزانية',
+                  isOver ? tr('ui_400c5921601a') : tr('ui_710a964067c1'),
                   style: TextStyle(
-                    color: isOver ? const Color(0xFFFFC5CA) : const Color(0xCFFFFFFF),
+                    color: isOver ? Color(0xFFFFC5CA) : Color(0xCFFFFFFF),
                     fontWeight: FontWeight.w800,
-                    fontSize: 12,
+                    fontSize: V15Type.caption,
                   ),
                 ),
-                const Spacer(),
+                Spacer(),
                 Text(
-                  '${(ratio * 100).round()}٪',
+                  tr('ui_2a2f74d1bc3a', {'value0': (ratio * 100).round()}),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
-                    fontSize: 12,
+                    fontSize: V15Type.caption,
                   ),
                 ),
               ],
@@ -535,14 +536,14 @@ class _QuickLane extends StatelessWidget {
         return GridView.count(
           crossAxisCount: columns,
           shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
+          physics: NeverScrollableScrollPhysics(),
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
           childAspectRatio: columns == 2 ? 2.1 : 1.35,
           children: [
-            _QuickAction(icon: Icons.add_rounded, label: 'إضافة', onTap: onAdd),
-            _QuickAction(icon: Icons.document_scanner_rounded, label: 'استيراد', onTap: onImport),
-            _QuickAction(icon: Icons.calendar_today_rounded, label: 'التقويم', onTap: onCalendar),
+            _QuickAction(icon: Icons.add_rounded, label: tr('ui_d52453ac627d'), onTap: onAdd),
+            _QuickAction(icon: Icons.document_scanner_rounded, label: tr('ui_e8c12678c3b4'), onTap: onImport),
+            _QuickAction(icon: Icons.calendar_today_rounded, label: tr('ui_c6c25b9b516f'), onTap: onCalendar),
           ],
         );
       },
@@ -585,7 +586,7 @@ class _QuickAction extends StatelessWidget {
                 label,
                 style: TextStyle(
                   color: p.text,
-                  fontSize: 11.5,
+                  fontSize: V15Type.caption,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -613,14 +614,14 @@ class _V8SectionHeader extends StatelessWidget {
           title,
           style: TextStyle(
             color: p.text,
-            fontSize: 19,
+            fontSize: V15Type.titleSmall,
             fontWeight: FontWeight.w900,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           detail,
-          style: TextStyle(color: p.textMuted, fontSize: 12.5),
+          style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall),
         ),
       ],
     );
@@ -671,14 +672,14 @@ class _RenewalCard extends StatelessWidget {
                 tint: categoryColor(sub.category),
                 size: 42,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(sub.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: 14)),
-                    const SizedBox(height: 4),
-                    Text('بعد ${sub.daysUntilRenewal()} يوم', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.textMuted, fontSize: 11.5)),
+                    Text(sub.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: V15Type.label)),
+                    SizedBox(height: 4),
+                    Text(tr('ui_109022fb0f10', {'value0': sub.daysUntilRenewal()}), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
                   ],
                 ),
               ),
@@ -689,7 +690,7 @@ class _RenewalCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: p.accent,
-                  fontSize: 13,
+                  fontSize: V15Type.labelSmall,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -721,14 +722,14 @@ class _PulseGrid extends StatelessWidget {
         return GridView.count(
           crossAxisCount: columns,
           shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
+          physics: NeverScrollableScrollPhysics(),
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
           childAspectRatio: columns == 2 ? 1.85 : 1.05,
           children: [
-            _PulseTile(icon: Icons.notifications_active_outlined, label: 'قريب', value: '$upcoming'),
-            _PulseTile(icon: Icons.visibility_off_outlined, label: 'بلا استخدام', value: '$unused'),
-            _PulseTile(icon: Icons.savings_outlined, label: 'توفير', value: saved <= 0 ? '—' : fmtMoney(saved, currency)),
+            _PulseTile(icon: Icons.notifications_active_outlined, label: tr('ui_027ea1355212'), value: '$upcoming'),
+            _PulseTile(icon: Icons.visibility_off_outlined, label: tr('ui_fa5641bf64f8'), value: '$unused'),
+            _PulseTile(icon: Icons.savings_outlined, label: tr('ui_0c7813863463'), value: saved <= 0 ? '—' : fmtMoney(saved, currency)),
           ],
         );
       },
@@ -768,12 +769,12 @@ class _PulseTile extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: p.text,
-              fontSize: 14,
+              fontSize: V15Type.label,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 2),
-          Text(label, style: TextStyle(color: p.textMuted, fontSize: 10.5)),
+          SizedBox(height: 2),
+          Text(label, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
         ],
       ),
     );
@@ -795,7 +796,7 @@ class _SpendingMap extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.palette;
     if (entries.isEmpty) {
-      return const _CalmState(message: 'تحتاج بعض الاشتراكات لتظهر خريطة الإنفاق.');
+      return _CalmState(message: tr('ui_aacd60dcd544'));
     }
     return AppCard(
       padding: const EdgeInsets.all(16),
@@ -808,13 +809,13 @@ class _SpendingMap extends StatelessWidget {
               total: total,
               currency: currency,
             ),
-            if (i != entries.length - 1) const SizedBox(height: 16),
+            if (i != entries.length - 1) SizedBox(height: 16),
           ],
-          const SizedBox(height: 2),
+          SizedBox(height: 2),
           Divider(color: p.stroke, height: 22),
           Row(
             children: [
-              Text('إجمالي الشهر', style: TextStyle(color: p.textMuted, fontSize: 12)),
+              Text(tr('ui_9d0c449bb1ae'), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
               const Spacer(),
               Text(
                 fmtMoney(total, currency),
@@ -861,7 +862,7 @@ class _CategoryLine extends StatelessWidget {
                 name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: 12.5),
+                style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: V15Type.labelSmall),
               ),
             ),
             ConstrainedBox(
@@ -871,12 +872,12 @@ class _CategoryLine extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.end,
-                style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: 12),
+                style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: V15Type.caption),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         ClipRRect(
           borderRadius: BorderRadius.circular(99),
           child: LinearProgressIndicator(
@@ -900,7 +901,7 @@ class _UsageFocus extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.palette;
     if (subscriptions.isEmpty) {
-      return const _CalmState(message: 'لا توجد خدمات تحتاج متابعة الآن.');
+      return _CalmState(message: tr('ui_19439355cb74'));
     }
     final store = SubscriptionStore.instance;
     return AppCard(
@@ -920,14 +921,14 @@ class _UsageFocus extends StatelessWidget {
               ),
               title: Text(
                 subscriptions[i].name,
-                style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: 13),
+                style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: V15Type.labelSmall),
               ),
               subtitle: Text(
-                'لم يُسجل له استخدام بعد',
-                style: TextStyle(color: p.textMuted, fontSize: 11.5),
+                tr('ui_26ecf5ebf90c'),
+                style: TextStyle(color: p.textMuted, fontSize: V15Type.caption),
               ),
               trailing: IconButton(
-                tooltip: 'تسجيل استخدام',
+                tooltip: tr('ui_6a4c67c60827'),
                 onPressed: () => store.recordUsage(subscriptions[i].id),
                 icon: Icon(Icons.check_circle_outline_rounded, color: p.accent),
               ),
@@ -942,9 +943,9 @@ class _UsageFocus extends StatelessWidget {
 }
 
 class _CalmState extends StatelessWidget {
-  final String message;
+  final String? message;
 
-  const _CalmState({this.message = 'لا توجد دفعات قريبة تحتاج انتباهك.'});
+  const _CalmState({this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -962,8 +963,8 @@ class _CalmState extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              message,
-              style: TextStyle(color: p.text, fontSize: 12.5, fontWeight: FontWeight.w700),
+              message ?? tr('ui_6260753cde19'),
+              style: TextStyle(color: p.text, fontSize: V15Type.labelSmall, fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -991,25 +992,25 @@ class _DashboardEmpty extends StatelessWidget {
               decoration: BoxDecoration(color: p.accentSoft, shape: BoxShape.circle),
               child: Icon(Icons.space_dashboard_rounded, color: p.accent, size: 34),
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: 18),
             Text(
-              'ابدأ مساحة مالية خاصة بك',
+              tr('ui_748129d10111'),
               textAlign: TextAlign.center,
-              style: TextStyle(color: p.text, fontSize: 21, fontWeight: FontWeight.w900),
+              style: TextStyle(color: p.text, fontSize: V15Type.title, fontWeight: FontWeight.w900),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
-              'أضف أول اشتراك لتظهر لك الدفعات، الإنفاق، والتنبيهات في مكان واحد.',
+              tr('ui_53ee2424af3f'),
               textAlign: TextAlign.center,
               style: TextStyle(color: p.textMuted, height: 1.6),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             FilledButton.icon(
               onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const EditSubscriptionScreen()),
+                MaterialPageRoute(builder: (_) => EditSubscriptionScreen()),
               ),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('إضافة اشتراك'),
+              icon: Icon(Icons.add_rounded),
+              label: Text(tr('ui_7e7a0c30b825')),
             ),
           ],
         ),
