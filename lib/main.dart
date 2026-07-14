@@ -166,7 +166,7 @@ class IshtirakatiApp extends StatelessWidget {
       },
       home: store.hasOnboarded
           ? const LockGate(child: RootShell())
-          : OnboardingScreen(),
+          : const OnboardingScreen(),
         );
       },
     );
@@ -192,7 +192,7 @@ class _RenderFailure extends StatelessWidget {
                 color: p.warning,
                 size: 36,
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Text(
                 tr('ui_b68f32e3329a'),
                 textAlign: TextAlign.center,
@@ -202,7 +202,7 @@ class _RenderFailure extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              SizedBox(height: 6),
+              const SizedBox(height: 6),
               Text(
                 tr('ui_af2167fbbff9'),
                 textAlign: TextAlign.center,
@@ -265,7 +265,7 @@ class _LockGateState extends State<LockGate>
       final auth = LocalAuthentication();
       final ok = await auth.authenticate(
         localizedReason: tr('ui_f9a122088fe8'),
-        options: AuthenticationOptions(
+        options: const AuthenticationOptions(
           biometricOnly: true,
           stickyAuth: true,
         ),
@@ -302,17 +302,17 @@ class _LockGateState extends State<LockGate>
               width: 92,
               height: 92,
               alignment: Alignment.center,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: AppColors.heroGradient,
                 shape: BoxShape.circle,
               ),
-              child: Icon(
+              child: const Icon(
                 CupertinoIcons.lock_fill,
                 color: CupertinoColors.white,
                 size: 44,
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Text(
               tr('ui_c3c9617192c3'),
               style: TextStyle(
@@ -321,7 +321,7 @@ class _LockGateState extends State<LockGate>
                 color: p.text,
               ),
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             CupertinoButton.filled(
               onPressed: _unlock,
               child: Text(tr('ui_cef85563f6a5')),
@@ -360,10 +360,10 @@ class _RootShellState extends State<RootShell> {
       onOpenLibrary: () => _select(V12Destination.subscriptions),
       onOpenRenewals: () => _select(V12Destination.calendar),
     ),
-    SubscriptionsScreen(key: PageStorageKey('subscriptions')),
-    InsightsScreen(key: PageStorageKey('insights')),
-    CalendarScreen(key: PageStorageKey('calendar')),
-    SettingsScreen(key: PageStorageKey('settings')),
+    const SubscriptionsScreen(key: PageStorageKey('subscriptions')),
+    const InsightsScreen(key: PageStorageKey('insights')),
+    const CalendarScreen(key: PageStorageKey('calendar')),
+    const SettingsScreen(key: PageStorageKey('settings')),
   ];
 
   void _select(V12Destination destination) {
@@ -420,7 +420,7 @@ class _StorageRecoveryGateState extends State<_StorageRecoveryGate> {
   @override
   Widget build(BuildContext context) {
     if (SubscriptionStore.instance.storageHealthy) {
-      return RootShell();
+      return const RootShell();
     }
     final p = context.palette;
     return CupertinoPageScaffold(
@@ -432,7 +432,7 @@ class _StorageRecoveryGateState extends State<_StorageRecoveryGate> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(CupertinoIcons.shield_fill, size: 64, color: p.accent),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               Text(
                 tr('ui_ae57be0a15db'),
                 style: TextStyle(
@@ -441,24 +441,24 @@ class _StorageRecoveryGateState extends State<_StorageRecoveryGate> {
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Text(
                 widget.message,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: p.textMuted, height: 1.7),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 tr('ui_93a9463ad8dc') +
                 tr('ui_d38f17269b33'),
                 textAlign: TextAlign.center,
                 style: TextStyle(color: p.textMuted, fontSize: V15Type.caption, height: 1.6),
               ),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
               CupertinoButton.filled(
                 onPressed: _retrying ? null : _retry,
                 child: _retrying
-                    ? CupertinoActivityIndicator(color: CupertinoColors.white)
+                    ? const CupertinoActivityIndicator(color: CupertinoColors.white)
                     : Text(tr('ui_c73b9bc3f450')),
               ),
             ],

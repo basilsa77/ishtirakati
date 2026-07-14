@@ -62,12 +62,12 @@ class _PlanComparisonScreenState extends State<PlanComparisonScreen> {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            SizedBox(height: 6),
+            const SizedBox(height: 6),
             Text(
               tr('ui_09a4a8360dc9', {'value0': fmtMoney(widget.subscription.monthlyCost, widget.subscription.currency)}),
               style: TextStyle(color: p.textMuted),
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             CupertinoTextField(
               controller: _price,
               keyboardType:
@@ -94,7 +94,7 @@ class _PlanComparisonScreenState extends State<PlanComparisonScreen> {
                 },
               ),
             ),
-            SizedBox(height: 28),
+            const SizedBox(height: 28),
             if (comparison == null)
               Text(
                 tr('ui_2932ce8e4973'),
@@ -123,7 +123,7 @@ class _PlanComparisonScreenState extends State<PlanComparisonScreen> {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    SizedBox(height: 14),
+                    const SizedBox(height: 14),
                     _ComparisonLine(
                       label: tr('ui_62f92392c4f3'),
                       value: fmtMoney(

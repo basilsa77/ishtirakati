@@ -263,10 +263,10 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               Row(
                 children: [
                   CupertinoButton(onPressed: () => Navigator.pop(sheetContext), child: Text(tr('ui_9a30dc2a96b8'))),
-                  Spacer(),
+                  const Spacer(),
                   CupertinoButton(
                     onPressed: () => Navigator.pop(sheetContext, selected),
-                    child: Text(tr('ui_3ef541b90a31'), style: TextStyle(fontWeight: FontWeight.w700)),
+                    child: Text(tr('ui_3ef541b90a31'), style: const TextStyle(fontWeight: FontWeight.w700)),
                   ),
                 ],
               ),
@@ -495,7 +495,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   if (value != null) setState(() => _kind = value);
                 },
               ),
-              SizedBox(height: 14),
+              const SizedBox(height: 14),
               if (!isEditing && _kind == PaymentKind.subscription)
                 CupertinoButton(
                   color: p.accentSoft,
@@ -517,7 +517,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                       size: 52,
                     ),
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: IosTextField(
                       controller: _name,
@@ -528,14 +528,14 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           onPressed: _searching ? null : _smartSearch,
                           child: _searching
-                              ? CupertinoActivityIndicator()
-                              : Icon(CupertinoIcons.search, size: 20),
+                              ? const CupertinoActivityIndicator()
+                              : const Icon(CupertinoIcons.search, size: 20),
                         ),
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 14),
+              const SizedBox(height: 14),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -551,7 +551,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                       placeholder: '19.99',
                     ),
                   ),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Expanded(
                     flex: 2,
                     child: IosPickerRow(
@@ -571,7 +571,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   ),
                 ],
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Text(
                 tr('ui_d23a4e4bb3c4'),
                 style: TextStyle(
@@ -598,7 +598,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 ),
               ),
               if (_kind == PaymentKind.installment) ...[
-                SizedBox(height: 14),
+                const SizedBox(height: 14),
                 IosTextField(
                   controller: _installments,
                   label: tr('ui_226fea1ea707'),
@@ -607,14 +607,14 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   placeholder: tr('ui_c11c06b4e4a5'),
                 ),
               ],
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               IosPickerRow(
                 label: tr('ui_6e11c8f926f4'),
                 value: fmtDate(d),
                 icon: CupertinoIcons.calendar,
                 onPressed: _pickDate,
               ),
-              SizedBox(height: 14),
+              const SizedBox(height: 14),
               IosPickerRow(
                 label: tr('ui_3a7c87ed0100'),
                 value: localizedCategory(_category),
@@ -630,7 +630,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   if (selected != null) setState(() => _category = selected);
                 },
               ),
-              SizedBox(height: 14),
+              const SizedBox(height: 14),
               IosPickerRow(
                 label: tr('ui_f3471840f9f9'),
                 value: _paymentLabel(_payMethod),
@@ -646,7 +646,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   if (selected != null) setState(() => _payMethod = selected);
                 },
               ),
-              SizedBox(height: 14),
+              const SizedBox(height: 14),
               IosPickerRow(
                 label: tr('ui_07e94be6ff36'),
                 value: kReminderOptions[_reminderDays]!,
@@ -662,10 +662,10 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   if (selected != null) setState(() => _reminderDays = selected);
                 },
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               if (_kind == PaymentKind.subscription)
               _CupertinoSwitchRow(
-                key: Key('trial-switch-row'),
+                key: const Key('trial-switch-row'),
                 value: _trialOn,
                 onChanged: (v) => setState(() => _trialOn = v),
                 title: tr('ui_b9cd5ab32273'),
@@ -683,10 +683,10 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     }
                   },
                 ),
-                SizedBox(height: 6),
+                const SizedBox(height: 6),
               ],
               _CupertinoSwitchRow(
-                key: Key('family-switch-row'),
+                key: const Key('family-switch-row'),
                 value: _isFamily,
                 onChanged: (v) => setState(() => _isFamily = v),
                 title: tr('ui_52e511325a9b'),
@@ -734,7 +734,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     ),
                   ],
                 ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               CupertinoFormSection.insetGrouped(
                 backgroundColor: Colors.transparent,
                 header: Text(
@@ -777,7 +777,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     ),
                   ),
                   CupertinoTextFormFieldRow(
-                    key: Key('plan-name-field'),
+                    key: const Key('plan-name-field'),
                     controller: _planName,
                     placeholder: tr('ui_94e61467b1ae'),
                     style: TextStyle(
@@ -805,7 +805,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   ),
                   child: Text(tr('ui_0cfaa1166988')),
                 ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               IosTextField(
                 controller: _url,
                 label: tr('ui_1997ed35eb21'),
@@ -813,7 +813,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 textDirection: TextDirection.ltr,
                 placeholder: 'https://example.com/account',
               ),
-              SizedBox(height: 14),
+              const SizedBox(height: 14),
               IosTextField(
                 controller: _notes,
                 label: tr('ui_651b7866185a'),
@@ -822,7 +822,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 placeholder: tr('ui_732664c2662f'),
               ),
               if (isEditing) ...[
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 _CupertinoSwitchRow(
                   value: _paused,
                   onChanged: (v) => setState(() => _paused = v),
@@ -831,16 +831,16 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 ),
               ],
               if (_formError != null) ...[
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 IosStatusNotice(message: _formError!, error: true),
               ],
-              SizedBox(height: 18),
+              const SizedBox(height: 18),
               CupertinoButton.filled(
                 onPressed: _save,
                 child: Text(isEditing ? tr('ui_6c03d6737c2f') : tr('ui_5c849a4aae0d')),
               ),
               if (isEditing) ...[
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 CupertinoButton(
                   onPressed: _delete,
                   child: Text(tr('ui_8a56ced490fc'), style: TextStyle(color: p.danger)),

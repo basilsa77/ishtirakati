@@ -25,10 +25,10 @@ Future<T?> showIosPicker<T>({
                 SizedBox(
                   width: 24,
                   child: value == selected
-                      ? Icon(CupertinoIcons.check_mark, size: 18)
+                      ? const Icon(CupertinoIcons.check_mark, size: 18)
                       : null,
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(child: Text(label(value), textAlign: TextAlign.start)),
               ],
             ),
@@ -228,14 +228,14 @@ class IosStatusNotice extends StatelessWidget {
       child: Row(
         children: [
           Icon(error ? CupertinoIcons.exclamationmark_circle : CupertinoIcons.check_mark_circled, color: color, size: 19),
-          SizedBox(width: 9),
+          const SizedBox(width: 9),
           Expanded(child: Text(message, style: TextStyle(color: color, fontSize: V15Type.labelSmall, fontWeight: FontWeight.w600))),
           if (onRetry != null)
             CupertinoButton(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              minimumSize: Size(32, 32),
+              minimumSize: const Size(32, 32),
               onPressed: onRetry,
-              child: Text(tr('ui_14d5786f2e64'), style: TextStyle(fontSize: V15Type.labelSmall)),
+              child: Text(tr('ui_14d5786f2e64'), style: const TextStyle(fontSize: V15Type.labelSmall)),
             ),
         ],
       ),

@@ -59,9 +59,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context, _) => ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         children: [
-          _SettingsIntro(),
+          const _SettingsIntro(),
           if (!store.storageHealthy) ...[
-            SizedBox(height: 14),
+            const SizedBox(height: 14),
             AppCard(
               color: context.palette.dangerSoft,
               borderColor: context.palette.danger,
@@ -75,22 +75,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ],
-          SizedBox(height: 22),
+          const SizedBox(height: 22),
           _AccountCard(
             onChanged: () => setState(() {}),
             onDeleteAccount: _confirmDeleteAccount,
           ),
-          SizedBox(height: 26),
+          const SizedBox(height: 26),
           _SettingsLabel(context.l10n.text('settingsAppearance')),
-          SizedBox(height: 10),
-          _ThemeModeCard(),
+          const SizedBox(height: 10),
+          const _ThemeModeCard(),
           const SizedBox(height: 26),
           _SettingsLabel(context.l10n.text('language')),
           const SizedBox(height: 10),
           const _LanguageModeCard(),
           const SizedBox(height: 26),
            _SettingsLabel(tr('ui_f3e1723cfe33')),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           AppCard(
             padding: EdgeInsets.zero,
             child: Column(
@@ -128,9 +128,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
-          SizedBox(height: 26),
+          const SizedBox(height: 26),
           _SettingsLabel(tr('ui_976adf68f49a')),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           AppCard(
             padding: EdgeInsets.zero,
             child: Column(
@@ -145,13 +145,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
-          SizedBox(height: 26),
+          const SizedBox(height: 26),
           _SettingsLabel(tr('ui_2c0c0a6a3389')),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           _BudgetCard(controller: _budget, onSave: _saveBudget),
-          SizedBox(height: 26),
+          const SizedBox(height: 26),
           _SettingsLabel(tr('ui_70f79cf39f31')),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           AppCard(
             padding: EdgeInsets.zero,
             child: Column(
@@ -161,7 +161,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: tr('ui_4d5bbc8f3ce7'),
                   detail: tr('ui_3ad982d68db0'),
                   onTap: () => Navigator.of(context).push(
-                    CupertinoPageRoute(builder: (_) => ImportScreen()),
+                    CupertinoPageRoute(builder: (_) => const ImportScreen()),
                   ),
                 ),
                 Divider(height: 1, color: context.palette.stroke),
@@ -170,7 +170,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: tr('ui_c4d54697418a'),
                   detail: tr('ui_05c130b7df4a'),
                   onTap: () => Navigator.of(context).push(
-                    CupertinoPageRoute(builder: (_) => EmailLinkScreen()),
+                    CupertinoPageRoute(builder: (_) => const EmailLinkScreen()),
                   ),
                 ),
                 Divider(height: 1, color: context.palette.stroke),
@@ -179,21 +179,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: tr('ui_6ec927377748'),
                   detail: tr('ui_6e55c742696f'),
                   onTap: () => Navigator.of(context).push(
-                    CupertinoPageRoute(builder: (_) => AiToolsScreen()),
+                    CupertinoPageRoute(builder: (_) => const AiToolsScreen()),
                   ),
                 ),
               ],
             ),
           ),
-          SizedBox(height: 26),
+          const SizedBox(height: 26),
           _SettingsLabel(tr('ui_b4fba865ed46')),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           _DataCard(onDelete: _confirmWipe),
-          SizedBox(height: 26),
+          const SizedBox(height: 26),
           _SettingsLabel(tr('ui_db69cd4d6275')),
-          SizedBox(height: 10),
-          _AboutCard(),
-          SizedBox(height: 30),
+          const SizedBox(height: 10),
+          const _AboutCard(),
+          const SizedBox(height: 30),
           Center(
             child: Text(
               tr('ui_ed185d7957db'),
@@ -260,8 +260,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: CupertinoAlertDialog(
           content: Row(
             children: [
-              CupertinoActivityIndicator(),
-              SizedBox(width: 12),
+              const CupertinoActivityIndicator(),
+              const SizedBox(width: 12),
               Expanded(child: Text(tr('ui_2bdda9dc2f90'))),
             ],
           ),
@@ -273,7 +273,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
       Navigator.of(context).pushAndRemoveUntil(
-        CupertinoPageRoute(builder: (_) => OnboardingScreen()),
+        CupertinoPageRoute(builder: (_) => const OnboardingScreen()),
         (_) => false,
       );
     } catch (error) {
@@ -304,7 +304,7 @@ class _SettingsIntro extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(tr('ui_5fd9563e6846'), style: TextStyle(color: p.text, fontSize: V15Type.headline, fontWeight: FontWeight.w800)),
-        SizedBox(height: 5),
+        const SizedBox(height: 5),
         Text(tr('ui_58d077f29d61'), style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall)),
       ],
     );
@@ -343,13 +343,13 @@ class _AccountCard extends StatelessWidget {
                 decoration: BoxDecoration(color: p.accentSoft, borderRadius: BorderRadius.circular(12)),
                 child: Icon(CupertinoIcons.cloud, color: p.accent, size: 21),
               ),
-              SizedBox(width: 11),
+              const SizedBox(width: 11),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(tr('ui_0458a671e96c'), style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: V15Type.bodySmall)),
-                    SizedBox(height: 3),
+                    const SizedBox(height: 3),
                     Text(
                       !AuthService.isAvailable
                           ? tr('ui_0380d88f6407')
@@ -365,14 +365,14 @@ class _AccountCard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           if (!signedIn)
             CupertinoButton.filled(
               onPressed: !AuthService.isAvailable
                   ? null
                   : () async {
                       await Navigator.of(context).push(
-                        CupertinoPageRoute(builder: (_) => LoginScreen(fromSettings: true)),
+                        CupertinoPageRoute(builder: (_) => const LoginScreen(fromSettings: true)),
                       );
                       onChanged();
                     },
@@ -414,7 +414,7 @@ class _AccountCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 ValueListenableBuilder<CloudSyncStatus>(
                   valueListenable: CloudSync.status,
                   builder: (context, status, _) {
@@ -444,7 +444,7 @@ class _AccountCard extends StatelessWidget {
                     return Row(
                       children: [
                         Icon(icon, color: color, size: 17),
-                        SizedBox(width: 7),
+                        const SizedBox(width: 7),
                         Expanded(
                           child: Text(
                             text,
@@ -459,14 +459,14 @@ class _AccountCard extends StatelessWidget {
                     );
                   },
                 ),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 CupertinoButton(
                   onPressed: onDeleteAccount,
                   child: Text(tr('ui_70f341498d46'), style: TextStyle(color: p.danger)),
                 ),
               ],
             ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Text(
             tr('ui_87621ec0d18d'),
             style: TextStyle(color: p.textMuted, fontSize: V15Type.caption, height: 1.6),
@@ -628,11 +628,11 @@ class _BudgetCard extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.pie_chart_outline_rounded, color: p.accent),
-              SizedBox(width: 9),
+              const SizedBox(width: 9),
               Text(tr('ui_b6775a5543d9'), style: TextStyle(color: p.text, fontSize: V15Type.bodySmall, fontWeight: FontWeight.w900)),
             ],
           ),
-          SizedBox(height: 7),
+          const SizedBox(height: 7),
           Text(tr('ui_bf208c21fb03'), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
           const SizedBox(height: 15),
           Row(
@@ -651,12 +651,12 @@ class _BudgetCard extends StatelessWidget {
                   decoration: BoxDecoration(color: p.surfaceAlt, borderRadius: BorderRadius.circular(11), border: Border.all(color: p.stroke)),
                 ),
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               CupertinoButton(
                 padding: const EdgeInsets.all(11),
                 color: p.accent,
                 onPressed: onSave,
-                child: Icon(CupertinoIcons.check_mark, color: CupertinoColors.white),
+                child: const Icon(CupertinoIcons.check_mark, color: CupertinoColors.white),
               ),
             ],
           ),
@@ -922,13 +922,13 @@ class _DataCard extends StatelessWidget {
         child: Row(
           children: [
             Icon(CupertinoIcons.delete, color: p.danger, size: 20),
-            SizedBox(width: 12),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(tr('ui_e70886198cca'), style: TextStyle(color: p.danger, fontWeight: FontWeight.w800, fontSize: V15Type.label)),
-                  SizedBox(height: 3),
+                  const SizedBox(height: 3),
                   Text(tr('ui_a5571e3ecfb5'), style: TextStyle(color: p.danger.withValues(alpha: .75), fontSize: V15Type.caption)),
                 ],
               ),

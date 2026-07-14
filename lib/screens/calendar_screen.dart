@@ -27,7 +27,7 @@ class CalendarPage extends StatelessWidget {
           style: TextStyle(color: p.text, fontSize: V15Type.titleSmall, fontWeight: FontWeight.w900),
         ),
       ),
-      child: SafeArea(top: false, child: CalendarScreen()),
+      child: const SafeArea(top: false, child: CalendarScreen()),
     );
   }
 }
@@ -78,7 +78,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
           children: [
             _CalendarHeader(total: total, currency: currency, itemCount: byDay.values.expand((items) => items).length),
-            SizedBox(height: 18),
+            const SizedBox(height: 18),
             Semantics(
               label: tr('ui_30e4cbf695ec'),
               child: CupertinoSlidingSegmentedControl<bool>(
@@ -87,13 +87,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 thumbColor: context.palette.accent,
                 children: {
                   false: _CalendarViewOption(
-                    key: Key('renewals-timeline-option'),
+                    key: const Key('renewals-timeline-option'),
                     label: tr('ui_ff0c5210ac46'),
                     icon: CupertinoIcons.list_bullet,
                     selected: !_calendarView,
                   ),
                   true: _CalendarViewOption(
-                    key: Key('renewals-calendar-option'),
+                    key: const Key('renewals-calendar-option'),
                     label: tr('ui_c6c25b9b516f'),
                     icon: CupertinoIcons.calendar,
                     selected: _calendarView,
@@ -115,20 +115,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
               },
             ),
             if (_calendarView) ...[
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               _CalendarGrid(
-                key: Key('renewals-calendar-grid'),
+                key: const Key('renewals-calendar-grid'),
                 month: _month,
                 weekdays: _weekdays,
                 entries: byDay,
                 onOpen: (day, subscriptions) =>
                     _openDay(context, day, subscriptions),
               ),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
             ] else
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
             Text(tr('ui_fd07cb92b0fe'), style: TextStyle(color: context.palette.text, fontSize: V15Type.titleSmall, fontWeight: FontWeight.w900)),
-            SizedBox(height: 5),
+            const SizedBox(height: 5),
             Text(byDay.isEmpty ? tr('ui_cfe0939cd3d2') : tr('ui_221f5f83bb44'), style: TextStyle(color: context.palette.textMuted, fontSize: V15Type.labelSmall)),
             const SizedBox(height: 12),
             if (byDay.isEmpty)
@@ -163,14 +163,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 controller: controller,
                 padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
                 itemCount: subscriptions.length + 1,
-                separatorBuilder: (_, index) => index == 0 ? SizedBox(height: 14) : Divider(color: p.stroke, height: 1),
+                separatorBuilder: (_, index) => index == 0 ? const SizedBox(height: 14) : Divider(color: p.stroke, height: 1),
                 itemBuilder: (context, index) {
                   if (index == 0) {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Center(child: Container(width: 38, height: 4, decoration: BoxDecoration(color: p.stroke, borderRadius: BorderRadius.circular(99)))),
-                        SizedBox(height: 18),
+                        const SizedBox(height: 18),
                         Text(tr('ui_122244edc329', {'value0': day}), style: TextStyle(color: p.text, fontSize: V15Type.titleSmall, fontWeight: FontWeight.w900)),
                       ],
                     );
@@ -262,16 +262,16 @@ class _CalendarHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(tr('ui_43268af638e5'), style: TextStyle(color: p.text, fontSize: V15Type.headlineSmall, fontWeight: FontWeight.w900)),
-        SizedBox(height: 5),
+        const SizedBox(height: 5),
         Text(tr('ui_dfba2e3d71cb'), style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall)),
-        SizedBox(height: 16),
+        const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(17),
           decoration: BoxDecoration(color: p.surfaceAlt, borderRadius: BorderRadius.circular(21)),
           child: Row(
             children: [
               Icon(Icons.event_available_rounded, color: p.accent),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Expanded(child: Text(tr('ui_c594d3d42dde', {'value0': itemCount}), style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: V15Type.labelSmall))),
               Text(fmtMoney(total, currency), style: TextStyle(color: p.accent, fontWeight: FontWeight.w900)),
             ],
@@ -439,7 +439,7 @@ class _CalendarEmpty extends StatelessWidget {
       child: Row(
         children: [
           Icon(CupertinoIcons.calendar_badge_minus, color: p.textMuted),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           Expanded(child: Text(tr('ui_d880c697cfa5'), style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall))),
         ],
       ),

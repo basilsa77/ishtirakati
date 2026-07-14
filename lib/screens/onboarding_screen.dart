@@ -93,7 +93,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await SubscriptionStore.instance.setOnboarded();
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => LoginScreen()),
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
     );
   }
 
@@ -112,7 +112,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   vertical: 4,
                 ),
                 child: isLast
-                    ? SizedBox(height: 40)
+                    ? const SizedBox(height: 40)
                     : TextButton(
                         onPressed: _finish,
                         child: Text(
@@ -206,7 +206,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     _finish();
                   } else {
                     _controller.nextPage(
-                      duration: Duration(milliseconds: 320),
+                      duration: const Duration(milliseconds: 320),
                       curve: Curves.easeOutCubic,
                     );
                   }

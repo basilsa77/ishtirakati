@@ -42,31 +42,31 @@ class InsightsScreen extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
           children: [
-            _InsightsHeader(),
-            SizedBox(height: 22),
+            const _InsightsHeader(),
+            const SizedBox(height: 22),
             if (top.isEmpty)
-              _InsightsEmpty()
+              const _InsightsEmpty()
             else ...[
               _InsightHero(total: total, currency: currency, categories: entries.length),
-              SizedBox(height: 14),
+              const SizedBox(height: 14),
               _ForecastCard(snapshot: assistant),
-              SizedBox(height: 14),
+              const SizedBox(height: 14),
               Row(
                 children: [
                   Expanded(child: _MiniMetric(label: tr('ui_d734d8e10283'), value: fmtMoney(average, currency), icon: CupertinoIcons.money_dollar_circle)),
-                  SizedBox(width: 10),
+                  const SizedBox(width: 10),
                   Expanded(child: _MiniMetric(label: tr('ui_2bf7132fc74f'), value: tr('ui_81b71fad9298', {'value0': upcoming}), icon: CupertinoIcons.timer)),
                 ],
               ),
-              SizedBox(height: 28),
+              const SizedBox(height: 28),
               _InsightsLabel(tr('ui_5721f95a7e69')),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               _DistributionCard(entries: entries, total: total, currency: currency),
-              SizedBox(height: 28),
+              const SizedBox(height: 28),
               _InsightsLabel(tr('ui_12e08f28e326')),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               _TrendCard(history: history, currency: currency),
-              SizedBox(height: 28),
+              const SizedBox(height: 28),
               _InsightsLabel(tr('ui_38304db9f15d')),
               const SizedBox(height: 10),
               for (var index = 0; index < top.take(4).length; index++) ...[
@@ -108,7 +108,7 @@ class _ForecastCard extends StatelessWidget {
           Row(
             children: [
               Icon(CupertinoIcons.calendar_badge_plus, color: p.accent, size: 20),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(tr('ui_8798d8c93a04'), style: TextStyle(color: p.text, fontSize: V15Type.body, fontWeight: FontWeight.w800)),
               ),
@@ -118,7 +118,7 @@ class _ForecastCard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(tr('ui_d572be94e17f'), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
           const SizedBox(height: 18),
           SizedBox(
@@ -158,7 +158,7 @@ class _ForecastCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(6),
                         ),
                       ),
-                      SizedBox(height: 5),
+                      const SizedBox(height: 5),
                       Text(
                         _monthName(item.month.month),
                         style: TextStyle(color: p.textMuted, fontSize: V15Type.captionSmall),
@@ -190,7 +190,7 @@ class _InsightsHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(tr('ui_0ccf6fbe1b40'), style: TextStyle(color: p.text, fontSize: V15Type.headlineSmall, fontWeight: FontWeight.w900)),
-        SizedBox(height: 5),
+        const SizedBox(height: 5),
         Text(tr('ui_b1c64046bb33'), style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall)),
       ],
     );
@@ -223,13 +223,13 @@ class _InsightHero extends StatelessWidget {
             decoration: BoxDecoration(color: p.accentSoft, borderRadius: BorderRadius.circular(16)),
             child: Icon(Icons.insights_rounded, color: p.accent),
           ),
-          SizedBox(width: 13),
+          const SizedBox(width: 13),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(tr('ui_d7c496f31754'), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(fmtMoney(total, currency), style: TextStyle(color: p.text, fontSize: V15Type.title, fontWeight: FontWeight.w900)),
               ],
             ),
@@ -319,7 +319,7 @@ class _DistributionCard extends StatelessWidget {
                   child: Row(
                     children: [
                       Container(width: 8, height: 8, decoration: BoxDecoration(color: categoryColor(entry.key), shape: BoxShape.circle)),
-                      SizedBox(width: 7),
+                      const SizedBox(width: 7),
                       Expanded(child: Text(localizedCategory(entry.key), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: V15Type.caption, fontWeight: FontWeight.w700))),
                       Text(tr('ui_bb234490a0b0', {'value0': total <= 0 ? 0 : (entry.value / total * 100).round()}), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption, fontWeight: FontWeight.w800)),
                     ],
@@ -530,9 +530,9 @@ class _AdvisorPanelState extends State<_AdvisorPanel> {
                   '${tr('advisorFields')}.\n\n'
                   '${tr('ui_9b1aedeb7ba4')}'
                   '${tr('ui_30aec583e95d')}',
-                  style: TextStyle(height: 1.6),
+                  style: const TextStyle(height: 1.6),
                 ),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 CheckboxListTile(
                   value: remember,
                   contentPadding: EdgeInsets.zero,
@@ -582,9 +582,9 @@ class _AdvisorPanelState extends State<_AdvisorPanel> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: sheetContext.palette.stroke, borderRadius: BorderRadius.circular(99)))),
-                  SizedBox(height: 18),
+                  const SizedBox(height: 18),
                   Text(tr('ui_8f0829c0c27c'), style: TextStyle(color: sheetContext.palette.text, fontSize: V15Type.titleSmall, fontWeight: FontWeight.w900)),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   Text(answer, style: TextStyle(color: sheetContext.palette.text, height: 1.8, fontSize: V15Type.label)),
                 ],
               ),
@@ -613,15 +613,15 @@ class _AdvisorPanelState extends State<_AdvisorPanel> {
       decoration: BoxDecoration(color: p.accentStrong, borderRadius: BorderRadius.circular(22)),
       child: Row(
         children: [
-          Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 25),
-          SizedBox(width: 11),
+          const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 25),
+          const SizedBox(width: 11),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(tr('ui_4e0cddfd6647'), style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: V15Type.bodySmall)),
-                SizedBox(height: 3),
-                Text(tr('ui_592f4ddb5b3a'), style: TextStyle(color: Color(0xCCFFFFFF), fontSize: V15Type.caption)),
+                Text(tr('ui_4e0cddfd6647'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: V15Type.bodySmall)),
+                const SizedBox(height: 3),
+                Text(tr('ui_592f4ddb5b3a'), style: const TextStyle(color: Color(0xCCFFFFFF), fontSize: V15Type.caption)),
               ],
             ),
           ),
@@ -631,7 +631,7 @@ class _AdvisorPanelState extends State<_AdvisorPanel> {
             onPressed: _loading ? null : _advise,
             icon: _loading
                 ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: p.accentStrong))
-                : Icon(Icons.arrow_back_rounded),
+                : const Icon(Icons.arrow_back_rounded),
           ),
         ],
       ),
@@ -650,7 +650,7 @@ class _InsightsEmpty extends StatelessWidget {
       child: Column(
         children: [
           Icon(Icons.query_stats_rounded, size: 44, color: p.textMuted),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Text(tr('ui_4b58101a9f82'), style: TextStyle(color: p.text, fontWeight: FontWeight.w800)),
         ],
       ),

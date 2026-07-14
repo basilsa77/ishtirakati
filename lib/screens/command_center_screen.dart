@@ -55,17 +55,17 @@ class CommandCenterScreen extends StatelessWidget {
             const SizedBox(height: 14),
             _QuickLane(
               onAdd: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => EditSubscriptionScreen()),
+                MaterialPageRoute(builder: (_) => const EditSubscriptionScreen()),
               ),
               onImport: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => ImportScreen()),
+                MaterialPageRoute(builder: (_) => const ImportScreen()),
               ),
               onCalendar: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => CalendarPage()),
+                MaterialPageRoute(builder: (_) => const CalendarPage()),
               ),
             ),
             if (decisions.isNotEmpty) ...[
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
               _DecisionPreview(
                 decisions: decisions.take(3).toList(),
                 total: decisions.length,
@@ -78,40 +78,40 @@ class CommandCenterScreen extends StatelessWidget {
                   ? tr('ui_917c39cede7a')
                   : tr('ui_43d451ae8a86', {'value0': upcoming.length}),
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             if (upcoming.isEmpty)
-              _CalmState()
+              const _CalmState()
             else
               _RenewalStrip(subscriptions: upcoming.take(5).toList()),
-            SizedBox(height: 28),
+            const SizedBox(height: 28),
             _V8SectionHeader(
               title: tr('ui_e94b40c88d6b'),
               detail: tr('ui_4a3de0e47517'),
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             _PulseGrid(
               upcoming: upcoming.length,
               unused: store.neverUsed.length,
               saved: store.savingsFor(currency),
               currency: currency,
             ),
-            SizedBox(height: 28),
+            const SizedBox(height: 28),
             _V8SectionHeader(
               title: tr('ui_a0ede2d09bfc'),
               detail: tr('ui_01605c831d3c'),
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             _SpendingMap(
               entries: byCategory.take(5).toList(),
               total: monthly,
               currency: currency,
             ),
-            SizedBox(height: 28),
+            const SizedBox(height: 28),
             _V8SectionHeader(
               title: tr('ui_9f64477734ab'),
               detail: tr('ui_dbea856e9958'),
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             _UsageFocus(subscriptions: store.neverUsed.take(3).toList()),
           ],
         );
@@ -264,7 +264,7 @@ class _DecisionPreview extends StatelessWidget {
                 ),
                 child: Icon(Icons.rule_rounded, color: p.accent, size: 21),
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -355,7 +355,7 @@ class _DashboardGreeting extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
                 tr('ui_9314de11dc05'),
                 style: TextStyle(
@@ -418,7 +418,7 @@ class _CommitmentHero extends StatelessWidget {
           BoxShadow(
             color: p.accentStrong.withValues(alpha: .30),
             blurRadius: 28,
-            offset: Offset(0, 12),
+            offset: const Offset(0, 12),
           ),
         ],
       ),
@@ -427,16 +427,16 @@ class _CommitmentHero extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.account_balance_wallet_rounded,
                 color: Color(0xD9FFFFFF),
                 size: 19,
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   tr('ui_f4faade3e85a'),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Color(0xD9FFFFFF),
                     fontSize: V15Type.labelSmall,
                     fontWeight: FontWeight.w800,
@@ -444,13 +444,13 @@ class _CommitmentHero extends StatelessWidget {
                 ),
               ),
               ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: 112),
+                constraints: const BoxConstraints(maxWidth: 112),
                 child: Text(
                   tr('ui_fe8fdc8766fe', {'value0': fmtMoney(yearly, currency)}),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.end,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Color(0xBFFFFFFF),
                     fontSize: V15Type.caption,
                     fontWeight: FontWeight.w700,
@@ -459,21 +459,21 @@ class _CommitmentHero extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 18),
+          const SizedBox(height: 18),
           Text(
             fmtMoney(monthly, currency),
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: V15Type.headline,
               height: 1,
               fontWeight: FontWeight.w900,
             ),
           ),
-          SizedBox(height: 22),
+          const SizedBox(height: 22),
           if (budget <= 0)
             Text(
               tr('ui_e42ad3b2abef'),
-              style: TextStyle(
+              style: const TextStyle(
                 color: Color(0xBFFFFFFF),
                 fontSize: V15Type.caption,
               ),
@@ -484,12 +484,12 @@ class _CommitmentHero extends StatelessWidget {
                 Text(
                   isOver ? tr('ui_400c5921601a') : tr('ui_710a964067c1'),
                   style: TextStyle(
-                    color: isOver ? Color(0xFFFFC5CA) : Color(0xCFFFFFFF),
+                    color: isOver ? const Color(0xFFFFC5CA) : const Color(0xCFFFFFFF),
                     fontWeight: FontWeight.w800,
                     fontSize: V15Type.caption,
                   ),
                 ),
-                Spacer(),
+                const Spacer(),
                 Text(
                   tr('ui_2a2f74d1bc3a', {'value0': (ratio * 100).round()}),
                   style: const TextStyle(
@@ -536,7 +536,7 @@ class _QuickLane extends StatelessWidget {
         return GridView.count(
           crossAxisCount: columns,
           shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
+          physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
           childAspectRatio: columns == 2 ? 2.1 : 1.35,
@@ -672,13 +672,13 @@ class _RenewalCard extends StatelessWidget {
                 tint: categoryColor(sub.category),
                 size: 42,
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(sub.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: V15Type.label)),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(tr('ui_109022fb0f10', {'value0': sub.daysUntilRenewal()}), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
                   ],
                 ),
@@ -722,7 +722,7 @@ class _PulseGrid extends StatelessWidget {
         return GridView.count(
           crossAxisCount: columns,
           shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
+          physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
           childAspectRatio: columns == 2 ? 1.85 : 1.05,
@@ -773,7 +773,7 @@ class _PulseTile extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          SizedBox(height: 2),
+          const SizedBox(height: 2),
           Text(label, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
         ],
       ),
@@ -809,9 +809,9 @@ class _SpendingMap extends StatelessWidget {
               total: total,
               currency: currency,
             ),
-            if (i != entries.length - 1) SizedBox(height: 16),
+            if (i != entries.length - 1) const SizedBox(height: 16),
           ],
-          SizedBox(height: 2),
+          const SizedBox(height: 2),
           Divider(color: p.stroke, height: 22),
           Row(
             children: [
@@ -877,7 +877,7 @@ class _CategoryLine extends StatelessWidget {
             ),
           ],
         ),
-        SizedBox(height: 8),
+        const SizedBox(height: 8),
         ClipRRect(
           borderRadius: BorderRadius.circular(99),
           child: LinearProgressIndicator(
@@ -992,24 +992,24 @@ class _DashboardEmpty extends StatelessWidget {
               decoration: BoxDecoration(color: p.accentSoft, shape: BoxShape.circle),
               child: Icon(Icons.space_dashboard_rounded, color: p.accent, size: 34),
             ),
-            SizedBox(height: 18),
+            const SizedBox(height: 18),
             Text(
               tr('ui_748129d10111'),
               textAlign: TextAlign.center,
               style: TextStyle(color: p.text, fontSize: V15Type.title, fontWeight: FontWeight.w900),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               tr('ui_53ee2424af3f'),
               textAlign: TextAlign.center,
               style: TextStyle(color: p.textMuted, height: 1.6),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             FilledButton.icon(
               onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => EditSubscriptionScreen()),
+                MaterialPageRoute(builder: (_) => const EditSubscriptionScreen()),
               ),
-              icon: Icon(Icons.add_rounded),
+              icon: const Icon(Icons.add_rounded),
               label: Text(tr('ui_7e7a0c30b825')),
             ),
           ],

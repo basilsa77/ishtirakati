@@ -73,16 +73,16 @@ class DashboardScreen extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.system_update_alt_rounded,
                               color: AppColors.gold,
                               size: 20,
                             ),
-                            SizedBox(width: 10),
+                            const SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 tr('ui_a19013d189fa', {'value0': v}),
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: AppColors.ink,
                                   fontSize: V15Type.labelSmall,
                                   fontWeight: FontWeight.w700,
@@ -112,7 +112,7 @@ class DashboardScreen extends StatelessWidget {
                 currency: currency,
               ),
             ),
-            SizedBox(height: 14),
+            const SizedBox(height: 14),
             FadeSlideIn(
               delayMs: 60,
               child: Row(
@@ -122,7 +122,7 @@ class DashboardScreen extends StatelessWidget {
                     label: tr('ui_d52453ac627d'),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => EditSubscriptionScreen(),
+                        builder: (_) => const EditSubscriptionScreen(),
                       ),
                     ),
                   ),
@@ -131,7 +131,7 @@ class DashboardScreen extends StatelessWidget {
                     label: tr('ui_e8c12678c3b4'),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => ImportScreen(),
+                        builder: (_) => const ImportScreen(),
                       ),
                     ),
                   ),
@@ -140,7 +140,7 @@ class DashboardScreen extends StatelessWidget {
                     label: tr('ui_cb572218fea7'),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => EmailLinkScreen(),
+                        builder: (_) => const EmailLinkScreen(),
                       ),
                     ),
                   ),
@@ -149,7 +149,7 @@ class DashboardScreen extends StatelessWidget {
                     label: tr('ui_c6c25b9b516f'),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => CalendarScreen(),
+                        builder: (_) => const CalendarScreen(),
                       ),
                     ),
                   ),
@@ -157,7 +157,7 @@ class DashboardScreen extends StatelessWidget {
               ),
             ),
             if (trials.isNotEmpty) ...[
-              SizedBox(height: 14),
+              const SizedBox(height: 14),
               FadeSlideIn(
                 delayMs: 80,
                 child: _NoticeCard(
@@ -174,7 +174,7 @@ class DashboardScreen extends StatelessWidget {
               ),
             ],
             if (priceAlerts.isNotEmpty) ...[
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               FadeSlideIn(
                 delayMs: 100,
                 child: _NoticeCard(
@@ -191,7 +191,7 @@ class DashboardScreen extends StatelessWidget {
               ),
             ],
             if (budget > 0) ...[
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               FadeSlideIn(
                 delayMs: 120,
                 child: _BudgetCard(
@@ -202,7 +202,7 @@ class DashboardScreen extends StatelessWidget {
               ),
             ],
             if (neverUsed.isNotEmpty) ...[
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               FadeSlideIn(
                 delayMs: 130,
                 child: _NoticeCard(
@@ -219,7 +219,7 @@ class DashboardScreen extends StatelessWidget {
               ),
             ],
             if (savings.isNotEmpty || lifetime.isNotEmpty) ...[
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               FadeSlideIn(
                 delayMs: 140,
                 child: Row(
@@ -236,7 +236,7 @@ class DashboardScreen extends StatelessWidget {
                         ),
                       ),
                     if (savings.isNotEmpty && lifetime.isNotEmpty)
-                      SizedBox(width: 10),
+                      const SizedBox(width: 10),
                     if (savings.isNotEmpty)
                       Expanded(
                         child: _MiniStat(
@@ -252,7 +252,7 @@ class DashboardScreen extends StatelessWidget {
                 ),
               ),
             ],
-            SizedBox(height: 22),
+            const SizedBox(height: 22),
             Row(
               children: [
                 Expanded(
@@ -261,10 +261,10 @@ class DashboardScreen extends StatelessWidget {
                 TextButton.icon(
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => CalendarScreen(),
+                      builder: (_) => const CalendarScreen(),
                     ),
                   ),
-                  icon: Icon(Icons.calendar_month_rounded, size: 18),
+                  icon: const Icon(Icons.calendar_month_rounded, size: 18),
                   label: Text(tr('ui_c6c25b9b516f')),
                 ),
               ],
@@ -273,16 +273,16 @@ class DashboardScreen extends StatelessWidget {
               AppCard(
                 child: Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.nightlight_round,
                       color: AppColors.muted,
                       size: 22,
                     ),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         tr('ui_9b53e3fd945f'),
-                        style: TextStyle(color: AppColors.muted),
+                        style: const TextStyle(color: AppColors.muted),
                       ),
                     ),
                   ],
@@ -338,32 +338,32 @@ class _HeroCard extends StatelessWidget {
         children: [
           Text(
             tr('ui_6cb053a373e8'),
-            style: TextStyle(
+            style: const TextStyle(
               color: Color(0xCC06231A),
               fontSize: V15Type.label,
               fontWeight: FontWeight.w800,
             ),
           ),
-          SizedBox(height: 6),
+          const SizedBox(height: 6),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               AnimatedMoney(
                 value: monthly,
                 currency: currency,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: V15Type.display,
                   fontWeight: FontWeight.w900,
                   height: 1.05,
                 ),
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Padding(
-                padding: EdgeInsets.only(bottom: 7),
+                padding: const EdgeInsets.only(bottom: 7),
                 child: Text(
                   tr('ui_b4999a258992'),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Color(0xB306231A),
                     fontSize: V15Type.labelSmall,
                     fontWeight: FontWeight.w800,
@@ -372,14 +372,14 @@ class _HeroCard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 14),
+          const SizedBox(height: 14),
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 14,
               vertical: 9,
             ),
             decoration: BoxDecoration(
-              color: Color(0x2E062318),
+              color: const Color(0x2E062318),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -632,7 +632,7 @@ class _BudgetCard extends StatelessWidget {
             children: [
               Text(
                 tr('ui_51839e830ce5'),
-                style: TextStyle(
+                style: const TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: V15Type.label,
                   color: AppColors.ink,
@@ -658,7 +658,7 @@ class _BudgetCard extends StatelessWidget {
               alignment: AlignmentDirectional.centerStart,
               child: TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0, end: ratio),
-                duration: Duration(milliseconds: 800),
+                duration: const Duration(milliseconds: 800),
                 curve: Curves.easeOutCubic,
                 builder: (context, t, _) => FractionallySizedBox(
                   widthFactor: t <= 0 ? 0.01 : t,
@@ -667,7 +667,7 @@ class _BudgetCard extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(height: 7),
+          const SizedBox(height: 7),
           Text(
             over
                 ? tr('ui_020e7b265152', {'value0': fmtMoney(spent - budget, currency)})
@@ -834,7 +834,7 @@ class _TimelineCard extends StatelessWidget {
                           Text(
                             sub.name,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: V15Type.label,
                               color: AppColors.ink,
@@ -891,43 +891,43 @@ class _EmptyState extends StatelessWidget {
               width: 110,
               height: 110,
               alignment: Alignment.center,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: AppColors.heroGradient,
                 shape: BoxShape.circle,
-                boxShadow: const [
+                boxShadow: [
                   BoxShadow(
                     color: Color(0x5514B886),
                     blurRadius: 30,
                   ),
                 ],
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.credit_card_rounded,
                 color: Colors.white,
                 size: 52,
               ),
             ),
-            SizedBox(height: 22),
+            const SizedBox(height: 22),
             Text(
               tr('ui_24951fbd4c50'),
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: V15Type.title,
                 fontWeight: FontWeight.w900,
                 color: AppColors.ink,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               tr('ui_d00120a9a84f') +
               tr('ui_f59f967ab825'),
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.muted, height: 1.6),
+              style: const TextStyle(color: AppColors.muted, height: 1.6),
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: onAdd,
-              icon: Icon(Icons.add_rounded),
+              icon: const Icon(Icons.add_rounded),
               label: Text(tr('ui_4c0420fa98b8')),
             ),
           ],

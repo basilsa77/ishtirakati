@@ -99,7 +99,7 @@ class _CommandPaletteState extends State<_CommandPalette> {
         onTap: () {
           Navigator.pop(context);
           Navigator.of(context).push(
-            CupertinoPageRoute(builder: (_) => EditSubscriptionScreen()),
+            CupertinoPageRoute(builder: (_) => const EditSubscriptionScreen()),
           );
         },
       ),
@@ -151,7 +151,7 @@ class _CommandPaletteState extends State<_CommandPalette> {
                   ),
                 ),
               ),
-              SizedBox(height: V12Space.lg),
+              const SizedBox(height: V12Space.lg),
               Text(
                 tr('ui_5b053ac2ac48'),
                 style: TextStyle(
@@ -160,7 +160,7 @@ class _CommandPaletteState extends State<_CommandPalette> {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              SizedBox(height: V12Space.sm),
+              const SizedBox(height: V12Space.sm),
               CupertinoSearchTextField(
                 controller: _controller,
                 autofocus: true,
@@ -168,7 +168,7 @@ class _CommandPaletteState extends State<_CommandPalette> {
                 placeholder: tr('ui_53b5e1ce2c0d'),
                 backgroundColor: context.palette.surfaceAlt,
               ),
-              SizedBox(height: V12Space.md),
+              const SizedBox(height: V12Space.md),
               Expanded(
                 child: visible.isEmpty
                     ? Center(

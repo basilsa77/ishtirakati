@@ -155,7 +155,7 @@ class _PulseHeader extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        SizedBox(height: V12Space.xxs),
+        const SizedBox(height: V12Space.xxs),
         Text(
           tr('ui_e33b470d27ac'),
           style: TextStyle(
@@ -295,7 +295,7 @@ class _RenewalSummary extends StatelessWidget {
                         child: Icon(Icons.event_repeat_rounded,
                             color: context.palette.accent),
                       ),
-                      SizedBox(width: V12Space.sm),
+                      const SizedBox(width: V12Space.sm),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,10 +318,10 @@ class _RenewalSummary extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Icon(Icons.arrow_back_rounded),
+                      const Icon(Icons.arrow_back_rounded),
                     ],
                   ),
-                  SizedBox(height: V12Space.lg),
+                  const SizedBox(height: V12Space.lg),
                   Text(tr('ui_08965782a0af'),
                       style: TextStyle(color: context.palette.textMuted)),
                   Text(
@@ -335,7 +335,7 @@ class _RenewalSummary extends StatelessWidget {
                   if (upcoming.isNotEmpty) ...[
                     const SizedBox(height: V12Space.md),
                     Divider(color: context.palette.stroke, height: 1),
-                    SizedBox(height: V12Space.sm),
+                    const SizedBox(height: V12Space.sm),
                     for (final item in upcoming.take(3))
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: V12Space.xs),
@@ -385,7 +385,7 @@ class _DecisionColumn extends StatelessWidget {
             snapshot: assistant,
             onReview: onOpenReviews,
           ),
-          SizedBox(height: V12Space.xl),
+          const SizedBox(height: V12Space.xl),
           _SectionHeading(
             title: tr('ui_de80197a70d0'),
             detail: upcoming.isEmpty
@@ -393,9 +393,9 @@ class _DecisionColumn extends StatelessWidget {
                 : tr('ui_04f46fabefa1', {'value0': upcoming.length}),
             onTap: onOpenLibrary,
           ),
-          SizedBox(height: V12Space.sm),
+          const SizedBox(height: V12Space.sm),
           if (upcoming.isEmpty)
-            _QuietLine()
+            const _QuietLine()
           else
             for (final item in upcoming.take(4))
               _RenewalLine(subscription: item),
@@ -433,7 +433,7 @@ class _LeakageBand extends StatelessWidget {
                 children: [
                   Icon(CupertinoIcons.chart_bar_alt_fill,
                       color: context.palette.danger, size: 20),
-                  SizedBox(width: V12Space.xs),
+                  const SizedBox(width: V12Space.xs),
                   Expanded(
                     child: Text(
                       tr('ui_6e9931c44667'),
@@ -453,7 +453,7 @@ class _LeakageBand extends StatelessWidget {
                   ),
                 ],
               ),
-              SizedBox(height: V12Space.sm),
+              const SizedBox(height: V12Space.sm),
               Text(
                 reviews == 0
                     ? tr('ui_9cc5fd21d8ef')
@@ -465,7 +465,7 @@ class _LeakageBand extends StatelessWidget {
                 ),
               ),
               if (snapshot.duplicateGroups.isNotEmpty) ...[
-                SizedBox(height: V12Space.xs),
+                const SizedBox(height: V12Space.xs),
                 Text(
                   tr('ui_45afc79a51a9', {'value0': snapshot.duplicateCandidateCount, 'value1': snapshot.duplicateGroups.length}),
                   style: TextStyle(
@@ -476,7 +476,7 @@ class _LeakageBand extends StatelessWidget {
                 ),
               ],
               if (reviews > 0) ...[
-                SizedBox(height: V12Space.md),
+                const SizedBox(height: V12Space.md),
                 CupertinoButton.filled(
                   onPressed: onReview,
                   padding: const EdgeInsets.symmetric(
@@ -533,7 +533,7 @@ class _SectionHeading extends StatelessWidget {
           CupertinoButton(
             padding: const EdgeInsets.all(8),
             onPressed: onTap,
-            child: Icon(CupertinoIcons.chevron_back),
+            child: const Icon(CupertinoIcons.chevron_back),
           ),
         ],
       );
@@ -617,7 +617,7 @@ class _QuietLine extends StatelessWidget {
           children: [
             Icon(Icons.check_circle_outline_rounded,
                 color: context.palette.accent),
-            SizedBox(width: V12Space.sm),
+            const SizedBox(width: V12Space.sm),
             Text(
               tr('ui_f8fc79378323'),
               style: TextStyle(color: context.palette.textMuted),
@@ -638,7 +638,7 @@ class _EmptyPulse extends StatelessWidget {
         child: Column(
           children: [
             Icon(Icons.radar_rounded, size: 72, color: context.palette.accent),
-            SizedBox(height: V12Space.lg),
+            const SizedBox(height: V12Space.lg),
             Text(
               tr('ui_a88ab7c3c0fb'),
               textAlign: TextAlign.center,
@@ -648,13 +648,13 @@ class _EmptyPulse extends StatelessWidget {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            SizedBox(height: V12Space.xs),
+            const SizedBox(height: V12Space.xs),
             Text(
               tr('ui_3f6a0fb930be'),
               textAlign: TextAlign.center,
               style: TextStyle(color: context.palette.textMuted),
             ),
-            SizedBox(height: V12Space.lg),
+            const SizedBox(height: V12Space.lg),
             CupertinoButton.filled(
               onPressed: onAdd,
               child: Text(tr('ui_7e7a0c30b825')),

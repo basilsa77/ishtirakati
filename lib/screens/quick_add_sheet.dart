@@ -11,7 +11,7 @@ import 'edit_subscription_screen.dart';
 Future<void> showQuickAddSheet(BuildContext context) =>
     showCupertinoModalPopup<void>(
       context: context,
-      builder: (_) => _QuickAddSheet(),
+      builder: (_) => const _QuickAddSheet(),
     );
 
 class _QuickAddSheet extends StatefulWidget {
@@ -113,11 +113,11 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                     decoration: BoxDecoration(color: p.stroke, borderRadius: BorderRadius.circular(3)),
                   ),
                 ),
-                SizedBox(height: 18),
+                const SizedBox(height: 18),
                  Text(tr('ui_7e7a0c30b825'), style: TextStyle(color: p.text, fontSize: V15Type.title, fontWeight: FontWeight.w800)),
-                 SizedBox(height: 5),
+                 const SizedBox(height: 5),
                  Text(tr('ui_a6b46f7b0864'), style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall)),
-                 SizedBox(height: 16),
+                 const SizedBox(height: 16),
                  IosTextField(
                    controller: _name,
                    label: tr('ui_8999278851b9'),
@@ -125,7 +125,7 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                    textInputAction: TextInputAction.next,
                    placeholder: tr('ui_c964408c2817'),
                  ),
-                 SizedBox(height: 12),
+                 const SizedBox(height: 12),
                  IosTextField(
                    controller: _price,
                    label: tr('ui_0d049d3998af'),
@@ -141,17 +141,17 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                    ),
                    onSubmitted: (_) => _save(),
                  ),
-                 SizedBox(height: 12),
+                 const SizedBox(height: 12),
                  Text(tr('ui_d23a4e4bb3c4'), style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall, fontWeight: FontWeight.w600)),
-                 SizedBox(height: 7),
+                 const SizedBox(height: 7),
                  SizedBox(
                    width: double.infinity,
                    child: CupertinoSlidingSegmentedControl<BillingCycle>(
                      groupValue: _cycle,
                      children:  {
-                       BillingCycle.weekly: Padding(padding: EdgeInsets.symmetric(vertical: 7), child: Text(tr('ui_e16e5870ecd8'))),
-                       BillingCycle.monthly: Padding(padding: EdgeInsets.symmetric(vertical: 7), child: Text(tr('ui_9c677bb93912'))),
-                       BillingCycle.yearly: Padding(padding: EdgeInsets.symmetric(vertical: 7), child: Text(tr('ui_1beeff0b0fec'))),
+                       BillingCycle.weekly: Padding(padding: const EdgeInsets.symmetric(vertical: 7), child: Text(tr('ui_e16e5870ecd8'))),
+                       BillingCycle.monthly: Padding(padding: const EdgeInsets.symmetric(vertical: 7), child: Text(tr('ui_9c677bb93912'))),
+                       BillingCycle.yearly: Padding(padding: const EdgeInsets.symmetric(vertical: 7), child: Text(tr('ui_1beeff0b0fec'))),
                      },
                      onValueChanged: (value) {
                        if (value != null) setState(() => _cycle = value);
@@ -159,10 +159,10 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                    ),
                  ),
                  if (_validationMessage != null) ...[
-                   SizedBox(height: 10),
+                   const SizedBox(height: 10),
                    IosStatusNotice(message: _validationMessage!, error: true),
                  ],
-                 SizedBox(height: 14),
+                 const SizedBox(height: 14),
                 SizedBox(
                   width: double.infinity,
                   child: CupertinoButton.filled(

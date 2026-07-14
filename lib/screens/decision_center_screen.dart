@@ -38,7 +38,7 @@ class _DecisionCenterScreenState extends State<DecisionCenterScreen> {
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 36),
             children: [
               _DecisionHero(total: all.length, urgent: urgent),
-              SizedBox(height: 18),
+              const SizedBox(height: 18),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
@@ -48,7 +48,7 @@ class _DecisionCenterScreenState extends State<DecisionCenterScreen> {
                       selected: _filter == null,
                       onTap: () => setState(() => _filter = null),
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     _FilterChip(
                       label: tr('ui_5858bf88ec0b'),
                       selected: _filter == DecisionPriority.urgent,
@@ -56,7 +56,7 @@ class _DecisionCenterScreenState extends State<DecisionCenterScreen> {
                         () => _filter = DecisionPriority.urgent,
                       ),
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     _FilterChip(
                       label: tr('ui_d0ac893de481'),
                       selected: _filter == DecisionPriority.high,
@@ -64,7 +64,7 @@ class _DecisionCenterScreenState extends State<DecisionCenterScreen> {
                         () => _filter = DecisionPriority.high,
                       ),
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     _FilterChip(
                       label: tr('ui_573fb812710c'),
                       selected: _filter == DecisionPriority.normal,
@@ -113,28 +113,28 @@ class _DecisionHero extends StatelessWidget {
             height: 48,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Color(0x24FFFFFF),
+              color: const Color(0x24FFFFFF),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: Icon(
+            child: const Icon(
               Icons.rule_folder_rounded,
               color: Colors.white,
             ),
           ),
-          SizedBox(width: 13),
+          const SizedBox(width: 13),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   tr('ui_2374a9a65ea0'),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: V15Type.body,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   total == 0
                       ? tr('ui_92a21744db1f')
@@ -252,22 +252,22 @@ class _DecisionCard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Row(
             children: [
               RenewalBadge(days: item.daysUntilRenewal()),
-              Spacer(),
+              const Spacer(),
               if (insight.kind == DecisionKind.neverUsed ||
                   insight.kind == DecisionKind.renewalSoon)
                 IconButton(
                   tooltip: tr('ui_6a4c67c60827'),
                   onPressed: () => _recordUsage(context),
-                  icon: Icon(Icons.add_task_rounded),
+                  icon: const Icon(Icons.add_task_rounded),
                 ),
               IconButton(
                 tooltip: tr('ui_7605930f1ed9'),
                 onPressed: () => showSubscriptionDetails(context, item),
-                icon: Icon(Icons.arrow_back_rounded),
+                icon: const Icon(Icons.arrow_back_rounded),
               ),
             ],
           ),
@@ -288,7 +288,7 @@ class _DecisionEmpty extends StatelessWidget {
       child: Column(
         children: [
           Icon(Icons.verified_rounded, color: p.accent, size: 46),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Text(
             tr('ui_462367b2ae1a'),
             style: TextStyle(
@@ -297,7 +297,7 @@ class _DecisionEmpty extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          SizedBox(height: 5),
+          const SizedBox(height: 5),
           Text(
             tr('ui_a5f497bfa756'),
             textAlign: TextAlign.center,

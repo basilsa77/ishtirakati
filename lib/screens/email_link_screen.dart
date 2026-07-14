@@ -158,12 +158,12 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 34),
           children: [
             Text(tr('ui_21c32e81995c'), style: TextStyle(color: p.text, fontSize: V15Type.headlineSmall, fontWeight: FontWeight.w800)),
-            SizedBox(height: 7),
+            const SizedBox(height: 7),
             Text(
               tr('ui_fb60e2c3e823'),
               style: TextStyle(color: p.textMuted, fontSize: V15Type.label, height: 1.55),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             IosPickerRow(
               label: tr('ui_ca2b10b75a55'),
               value: _localizedProvider(_provider),
@@ -179,7 +179,7 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
                 if (selected != null) setState(() => _provider = selected);
               },
             ),
-            SizedBox(height: 14),
+            const SizedBox(height: 14),
             IosTextField(
               controller: _email,
               label: tr('ui_8a0b55ab8c62'),
@@ -187,7 +187,7 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
               textDirection: TextDirection.ltr,
               placeholder: 'name@example.com',
             ),
-            SizedBox(height: 14),
+            const SizedBox(height: 14),
             IosTextField(
               controller: _password,
               label: tr('ui_20046a1fc591'),
@@ -205,7 +205,7 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
               ),
               child: Text(
                 tr('ui_626c22ee912c', {'value0': _localizedProvider(_provider)}),
-                style: TextStyle(fontSize: V15Type.label),
+                style: const TextStyle(fontSize: V15Type.label),
               ),
             )),
             Container(
@@ -218,7 +218,7 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(tr('ui_ad702e6b4d70'), style: TextStyle(color: p.text, fontSize: V15Type.bodySmall, fontWeight: FontWeight.w700)),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(tr('ui_15f4d9231b10'), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
                       ],
                     ),
@@ -232,25 +232,25 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
               ),
             ),
             if (_error != null) ...[
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               IosStatusNotice(message: _error!, error: true),
             ],
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: CupertinoButton.filled(
                 onPressed: _busy ? null : _fetch,
                 child: _busy
-                    ? CupertinoActivityIndicator(color: CupertinoColors.white)
+                    ? const CupertinoActivityIndicator(color: CupertinoColors.white)
                     : Text(tr('ui_7c9841249f12')),
               ),
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(CupertinoIcons.lock_shield, color: p.textMuted, size: 17),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     tr('ui_88d294591e54'),

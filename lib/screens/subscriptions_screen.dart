@@ -158,7 +158,7 @@ class _LibraryHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(tr('ui_17cbe710ffe6'), style: TextStyle(color: p.text, fontSize: V15Type.headline, fontWeight: FontWeight.w800)),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(tr('ui_82171abee2e6', {'value0': total}), style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall)),
               ],
             ),
@@ -171,7 +171,7 @@ class _LibraryHeader extends StatelessWidget {
           CupertinoButton(
             padding: const EdgeInsets.all(10),
             onPressed: onAdd,
-            child: Icon(CupertinoIcons.add_circled_solid, size: 27),
+            child: const Icon(CupertinoIcons.add_circled_solid, size: 27),
           ),
         ]),
       ],
@@ -206,7 +206,7 @@ class _SearchLine extends StatelessWidget {
             backgroundColor: p.surface,
           ),
         ),
-        SizedBox(width: 9),
+        const SizedBox(width: 9),
         CupertinoButton(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
           color: p.surface,
@@ -224,7 +224,7 @@ class _SearchLine extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(CupertinoIcons.arrow_up_arrow_down, color: p.accent, size: 18),
-              SizedBox(width: 5),
+              const SizedBox(width: 5),
               Text(_sortLabel(sort), style: TextStyle(color: p.text, fontSize: V15Type.caption)),
             ],
           ),
@@ -273,7 +273,7 @@ class _FilterRail extends StatelessWidget {
           children: [
           _FilterChip(label: tr('ui_65f276da33cf'), selected: selectedKind == null && selectedCategory == null, onTap: onAll),
           for (final kind in PaymentKind.values) ...[
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             _FilterChip(
               label: localizedPaymentKind(kind.name),
               selected: selectedKind == kind,
@@ -283,7 +283,7 @@ class _FilterRail extends StatelessWidget {
           ],
         )),
         if (usedCategories.isNotEmpty) ...[
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(tr('ui_3a7c87ed0100'), style: TextStyle(color: context.palette.textMuted, fontSize: V15Type.caption, fontWeight: FontWeight.w700)),
@@ -383,7 +383,7 @@ class _SubscriptionRow extends StatelessWidget {
                 tint: categoryColor(subscription.category),
                 size: 50,
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,9 +410,9 @@ class _SubscriptionRow extends StatelessWidget {
                   ],
                 ),
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: 92),
+                constraints: const BoxConstraints(maxWidth: 92),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -422,7 +422,7 @@ class _SubscriptionRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: p.accent, fontWeight: FontWeight.w900, fontSize: V15Type.label),
                   ),
-                  SizedBox(height: 6),
+                  const SizedBox(height: 6),
                   Text(
                     subscription.isPaused ? tr('ui_0494e50b7138') : _renewalText(subscription.daysUntilRenewal()),
                     style: TextStyle(color: p.textMuted, fontSize: V15Type.caption, fontWeight: FontWeight.w700),
@@ -475,7 +475,7 @@ class _LibraryEmpty extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(CupertinoIcons.search, color: p.textMuted, size: 32),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Text(tr('ui_c19b06bfe3c2'), style: TextStyle(color: p.text, fontWeight: FontWeight.w800)),
         ],
       ),
@@ -535,21 +535,21 @@ Future<void> showSubscriptionDetails(BuildContext context, Subscription sub) asy
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(sub.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: V15Type.titleSmall, fontWeight: FontWeight.w900)),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text('${localizedCategory(sub.category)} · ${localizedBillingCycle(sub.cycle.name)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
                         ],
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 18),
+                const SizedBox(height: 18),
                 Text(fmtMoneyWithCurrency(sub.price, sub.currency), style: TextStyle(color: p.accent, fontWeight: FontWeight.w900, fontSize: V15Type.title)),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 _DetailMetric(icon: Icons.event_repeat_rounded, label: tr('ui_b4f5658d61f3'), value: _renewalText(sub.daysUntilRenewal())),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 _DetailMetric(icon: Icons.payments_outlined, label: tr('ui_118b84c4c576'), value: fmtMoneyWithCurrency(sub.monthlyCost, sub.currency)),
                 if (sub.notes.trim().isNotEmpty) ...[
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   _DetailMetric(icon: Icons.notes_rounded, label: tr('ui_0be7afd7e65f'), value: sub.notes),
                 ],
                 const SizedBox(height: 18),
@@ -572,7 +572,7 @@ Future<void> showSubscriptionDetails(BuildContext context, Subscription sub) asy
                         ),
                 ),
                 if (sub.manageUrl.trim().isNotEmpty) ...[
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   CupertinoButton(
                     color: p.surfaceAlt,
                     onPressed: () async {
@@ -598,7 +598,7 @@ Future<void> showSubscriptionDetails(BuildContext context, Subscription sub) asy
                     child: Text(tr('ui_62501bf71e29')),
                   ),
                 ],
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 CupertinoButton(
                   onPressed: () async {
                     await store.recordUsage(sub.id);

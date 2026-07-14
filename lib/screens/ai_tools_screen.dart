@@ -119,13 +119,13 @@ class _AiToolsScreenState extends State<AiToolsScreen> {
                   Row(
                     children: [
                       Icon(Icons.auto_awesome_rounded, color: p.accent),
-                      SizedBox(width: 9),
+                      const SizedBox(width: 9),
                       Text(tr('ui_973e33017592'), style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: V15Type.bodySmall)),
                     ],
                   ),
-                  SizedBox(height: 7),
+                  const SizedBox(height: 7),
                   Text(tr('ui_19cfaabab144'), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
-                  SizedBox(height: 14),
+                  const SizedBox(height: 14),
                   DropdownButtonFormField<String>(
                     initialValue: store.aiProvider,
                     dropdownColor: p.surface,
@@ -138,7 +138,7 @@ class _AiToolsScreenState extends State<AiToolsScreen> {
                       if (value != null) store.setAiProvider(value);
                     },
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   TextField(
                     controller: _aiKey,
                     obscureText: !_showKey,
@@ -153,7 +153,7 @@ class _AiToolsScreenState extends State<AiToolsScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
@@ -162,23 +162,23 @@ class _AiToolsScreenState extends State<AiToolsScreen> {
                             Uri.parse(aiProviderById(store.aiProvider).keyUrl),
                             mode: LaunchMode.externalApplication,
                           ),
-                          icon: Icon(Icons.open_in_new_rounded, size: 18),
+                          icon: const Icon(Icons.open_in_new_rounded, size: 18),
                           label: Text(tr('ui_7d7b50eb8777')),
                         ),
                       ),
-                      SizedBox(width: 10),
+                      const SizedBox(width: 10),
                       IconButton.filled(
                         tooltip: tr('ui_2157a38aeffc'),
                         onPressed: _saveAiKey,
-                        icon: Icon(Icons.check_rounded),
+                        icon: const Icon(Icons.check_rounded),
                       ),
                     ],
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(46)),
                     onPressed: store.aiApiKey.trim().isEmpty ? null : _classifyUnknowns,
-                    icon: Icon(Icons.category_rounded, size: 18),
+                    icon: const Icon(Icons.category_rounded, size: 18),
                     label: Text(tr('ui_6e9a9b882540')),
                   ),
                 ],

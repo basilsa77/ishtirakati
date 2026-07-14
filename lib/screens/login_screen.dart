@@ -49,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     Navigator.of(context).pushReplacement(
       CupertinoPageRoute(
-        builder: (_) => LockGate(child: RootShell()),
+        builder: (_) => const LockGate(child: RootShell()),
       ),
     );
   }
@@ -110,25 +110,25 @@ class _LoginScreenState extends State<LoginScreen> {
                 hasScrollBody: false,
                 child: Column(
             children: [
-              Spacer(),
+              const Spacer(),
               Container(
                 width: 104,
                 height: 104,
                 alignment: Alignment.center,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   gradient: AppColors.heroGradient,
                   shape: BoxShape.circle,
-                  boxShadow: const [
+                  boxShadow: [
                     BoxShadow(color: Color(0x5514B886), blurRadius: 30),
                   ],
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.cloud_sync_rounded,
                   color: Colors.white,
                   size: 48,
                 ),
               ),
-              SizedBox(height: 28),
+              const SizedBox(height: 28),
               Text(
                 tr('ui_3502ec3b7f9b'),
                 textAlign: TextAlign.center,
@@ -138,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: p.text,
                 ),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Text(
                 configured
                     ? tr('ui_4bffc5821b60') +
@@ -156,14 +156,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   height: 1.8,
                 ),
               ),
-              SizedBox(height: 32),
+              const SizedBox(height: 32),
               _AuthButton(
                 backgroundColor: CupertinoColors.white,
                 foregroundColor: CupertinoColors.black,
                 onPressed: (!configured || _busy || signedIn)
                     ? null
                     : () => _signIn(AuthService.signInWithApple),
-                icon: Icon(Icons.apple_rounded, size: 26),
+                icon: const Icon(Icons.apple_rounded, size: 26),
                 label: Text(
                   tr('ui_99e77aefca64'),
                 ),
@@ -178,14 +178,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         ? _retrySync
                         : () => _signIn(AuthService.signInWithGoogle),
                 icon: _busy
-                    ? SizedBox(
+                    ? const SizedBox(
                         width: 20,
                         height: 20,
                         child: CupertinoActivityIndicator(
                           color: CupertinoColors.white,
                         ),
                       )
-                    : Text(
+                    : const Text(
                         'G',
                         style: TextStyle(
                           fontSize: V15Type.title,
@@ -199,7 +199,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               if (_error != null) ...[
-                SizedBox(height: 14),
+                const SizedBox(height: 14),
                 Text(
                   _error!,
                   textAlign: TextAlign.center,
@@ -211,7 +211,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ],
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               CupertinoButton(
                 onPressed: _busy ? null : _continueToApp,
                 child: Text(
@@ -222,7 +222,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              Spacer(),
+              const Spacer(),
               Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: Text(

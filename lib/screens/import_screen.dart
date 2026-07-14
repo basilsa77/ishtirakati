@@ -204,7 +204,7 @@ class _ImportScreenState extends State<ImportScreen> {
                       color: p.text,
                     ),
                   ),
-                  SizedBox(height: 6),
+                  const SizedBox(height: 6),
                   Text(
                     tr('ui_889c860bee20') +
                     tr('ui_cca10b08f6ad') +
@@ -222,15 +222,15 @@ class _ImportScreenState extends State<ImportScreen> {
                 ],
               ),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             FilledButton.icon(
               onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => EmailLinkScreen()),
+                MaterialPageRoute(builder: (_) => const EmailLinkScreen()),
               ),
-              icon: Icon(Icons.alternate_email_rounded),
+              icon: const Icon(Icons.alternate_email_rounded),
               label: Text(tr('ui_3caf822da7ef')),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             AppCard(
               padding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -271,7 +271,7 @@ class _ImportScreenState extends State<ImportScreen> {
                 ),
               ),
             ),
-            SizedBox(height: 14),
+            const SizedBox(height: 14),
             TextField(
               controller: _text,
               maxLines: 6,
@@ -281,7 +281,7 @@ class _ImportScreenState extends State<ImportScreen> {
                 alignLabelWithHint: true,
               ),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
@@ -290,7 +290,7 @@ class _ImportScreenState extends State<ImportScreen> {
                       minimumSize: const Size.fromHeight(50),
                     ),
                     onPressed: _pasteFromClipboard,
-                    icon: Icon(Icons.content_paste_rounded, size: 20),
+                    icon: const Icon(Icons.content_paste_rounded, size: 20),
                     label: Text(tr('ui_91aa1adaf1ca')),
                   ),
                 ),
@@ -302,7 +302,7 @@ class _ImportScreenState extends State<ImportScreen> {
                     ),
                     onPressed: _aiBusy ? null : _analyzeWithAi,
                     icon: _aiBusy
-                        ? SizedBox(
+                        ? const SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
@@ -310,14 +310,14 @@ class _ImportScreenState extends State<ImportScreen> {
                               color: Colors.white,
                             ),
                           )
-                        : Icon(Icons.auto_awesome_rounded, size: 20),
+                        : const Icon(Icons.auto_awesome_rounded, size: 20),
                     label: Text(_aiBusy ? tr('ui_8c53372aebc9') : tr('ui_bcace51b5ecb')),
                   ),
                 ),
               ],
             ),
             if (_aiNote != null) ...[
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               Text(
                 _aiNote!,
                 style: TextStyle(
@@ -327,13 +327,13 @@ class _ImportScreenState extends State<ImportScreen> {
                 ),
               ),
             ],
-            SizedBox(height: 18),
+            const SizedBox(height: 18),
             if (_analyzed && !_aiBusy && _candidates.isEmpty)
               AppCard(
                 child: Row(
                   children: [
                     Icon(Icons.search_off_rounded, color: p.textMuted, size: 26),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         tr('ui_fb5c2bdd515a') +
@@ -366,10 +366,10 @@ class _ImportScreenState extends State<ImportScreen> {
                     }),
                   ),
                 ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               FilledButton.icon(
                 onPressed: _selected.isEmpty ? null : _addSelected,
-                icon: Icon(Icons.playlist_add_check_rounded),
+                icon: const Icon(Icons.playlist_add_check_rounded),
                 label: Text(tr('ui_a0357a01193b', {'value0': _selected.length})),
               ),
             ],
@@ -448,7 +448,7 @@ class _CandidateTile extends StatelessWidget {
                         ),
                       ),
                       if (alreadyExists) ...[
-                        SizedBox(width: 6),
+                        const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 7,

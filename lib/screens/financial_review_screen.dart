@@ -108,7 +108,7 @@ class _ReviewSummary extends StatelessWidget {
       child: Row(
         children: [
           Icon(CupertinoIcons.chart_bar_alt_fill, color: p.accent, size: 28),
-          SizedBox(width: 12),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,7 +117,7 @@ class _ReviewSummary extends StatelessWidget {
                   tr('ui_1ae481061748', {'value0': analysis.reviewItems.length}),
                   style: TextStyle(color: p.text, fontSize: V15Type.body, fontWeight: FontWeight.w800),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   tr('ui_c7ca26cba27e', {'value0': fmtMoney(analysis.potentialMonthlySavings, currency)}),
                   style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall),
@@ -166,7 +166,7 @@ class _ReviewRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(item.subscription.name, style: TextStyle(color: p.text, fontSize: V15Type.bodySmall, fontWeight: FontWeight.w800)),
-                  SizedBox(height: 3),
+                  const SizedBox(height: 3),
                   Text(_labelFor(item.reason), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
                 ],
               ),
@@ -176,7 +176,7 @@ class _ReviewRow extends StatelessWidget {
                 fmtMoney(_monthlySaving(item), currency),
                 style: TextStyle(color: p.accent, fontSize: V15Type.caption, fontWeight: FontWeight.w800),
               ),
-            SizedBox(width: 6),
+            const SizedBox(width: 6),
             Icon(CupertinoIcons.chevron_left, color: p.textMuted, size: 16),
           ],
         ),
@@ -219,9 +219,9 @@ class _ReviewEmpty extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(CupertinoIcons.checkmark_shield_fill, color: p.accent, size: 48),
-            SizedBox(height: 14),
+            const SizedBox(height: 14),
             Text(tr('ui_84180a00b479'), style: TextStyle(color: p.text, fontSize: V15Type.title, fontWeight: FontWeight.w800)),
-            SizedBox(height: 6),
+            const SizedBox(height: 6),
             Text(tr('ui_cc941d2bd31f'), textAlign: TextAlign.center, style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall)),
           ],
         ),
