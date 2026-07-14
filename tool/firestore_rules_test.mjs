@@ -63,7 +63,18 @@ try {
     }),
   );
   await disableNetwork(owner);
-  await assertFails(getDocFromServer(ownerRef));
+  let offlineFailureObserved = false;
+  try {
+    await getDocFromServer(ownerRef);
+  } catch (error) {
+    if (error?.code !== 'unavailable' && error?.code !== 'failed-precondition') {
+      throw error;
+    }
+    offlineFailureObserved = true;
+  }
+  if (!offlineFailureObserved) {
+    throw new Error('A server read unexpectedly succeeded while offline.');
+  }
   await enableNetwork(owner);
   const recovered = await assertSucceeds(getDocFromServer(ownerRef));
   if (recovered.data()?.revision !== 2) {
