@@ -203,8 +203,9 @@ class _LockGateState extends State<LockGate>
   Widget build(BuildContext context) {
     if (!_locked) return widget.child;
     final p = context.palette;
-    return Scaffold(
-      body: Center(
+    return CupertinoPageScaffold(
+      backgroundColor: p.canvas,
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -217,8 +218,8 @@ class _LockGateState extends State<LockGate>
                 shape: BoxShape.circle,
               ),
               child: const Icon(
-                Icons.lock_rounded,
-                color: Colors.white,
+                CupertinoIcons.lock_fill,
+                color: CupertinoColors.white,
                 size: 44,
               ),
             ),
@@ -232,13 +233,9 @@ class _LockGateState extends State<LockGate>
               ),
             ),
             const SizedBox(height: 24),
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(220, 54),
-              ),
+            CupertinoButton.filled(
               onPressed: _unlock,
-              icon: const Icon(Icons.face_rounded),
-              label: const Text('فتح ببصمة الوجه'),
+              child: const Text('فتح باستخدام Face ID'),
             ),
             if (_authError != null) ...[
               const SizedBox(height: 14),
@@ -299,8 +296,9 @@ class _RootShellState extends State<RootShell> {
             'تعذر فتح بياناتك المشفرة. لم نكتب فوق السجل الأصلي.',
       );
     }
-    return Scaffold(
-      body: SafeArea(
+    return CupertinoPageScaffold(
+      backgroundColor: context.palette.canvas,
+      child: SafeArea(
         bottom: false,
         child: AdaptiveCycleShell(
           destination: _destination,
@@ -336,14 +334,15 @@ class _StorageRecoveryGateState extends State<_StorageRecoveryGate> {
       return const RootShell();
     }
     final p = context.palette;
-    return Scaffold(
-      body: SafeArea(
+    return CupertinoPageScaffold(
+      backgroundColor: p.canvas,
+      child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.shield_rounded, size: 64, color: p.accent),
+              Icon(CupertinoIcons.shield_fill, size: 64, color: p.accent),
               const SizedBox(height: 20),
               Text(
                 'حماية بياناتك مفعّلة',
@@ -367,19 +366,11 @@ class _StorageRecoveryGateState extends State<_StorageRecoveryGate> {
                 style: TextStyle(color: p.textMuted, fontSize: 12, height: 1.6),
               ),
               const SizedBox(height: 24),
-              FilledButton.icon(
+              CupertinoButton.filled(
                 onPressed: _retrying ? null : _retry,
-                icon: _retrying
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.refresh_rounded),
-                label: const Text('إعادة محاولة الاستعادة'),
+                child: _retrying
+                    ? const CupertinoActivityIndicator(color: CupertinoColors.white)
+                    : const Text('إعادة محاولة الاستعادة'),
               ),
             ],
           ),

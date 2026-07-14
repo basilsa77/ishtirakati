@@ -10,6 +10,7 @@ import '../models/subscription.dart';
 import '../services/subscription_store.dart';
 import '../services/safe_url.dart';
 import '../theme.dart';
+import '../widgets/ios_controls.dart';
 import 'edit_subscription_screen.dart';
 import 'import_screen.dart';
 import 'quick_add_sheet.dart';
@@ -70,7 +71,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 12),
+                  padding: const EdgeInsets.only(top: 14),
                   child: _FilterRail(
                     selectedKind: _kind,
                     selectedCategory: _category,
@@ -98,7 +99,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 44),
                   sliver: SliverList.separated(
                     itemCount: subscriptions.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
@@ -147,46 +148,32 @@ class _LibraryHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    return Row(
-        children: [
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('اشتراكاتك', style: TextStyle(color: p.text, fontSize: 27, fontWeight: FontWeight.w900)),
+                Text('الاشتراكات', style: TextStyle(color: p.text, fontSize: 30, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 4),
-                Text('مكتبتك الخاصة للدفعات والخدمات.', style: TextStyle(color: p.textMuted, fontSize: 12.5)),
+                Text('$total اشتراكًا نشطًا', style: TextStyle(color: p.textMuted, fontSize: 13)),
               ],
             ),
           ),
-          Container(
-            constraints: const BoxConstraints(minWidth: 42),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            decoration: BoxDecoration(color: p.accentSoft, borderRadius: BorderRadius.circular(14)),
-            child: Text('$total', textAlign: TextAlign.center, style: TextStyle(color: p.accent, fontSize: 13, fontWeight: FontWeight.w900)),
+          CupertinoButton(
+            padding: const EdgeInsets.all(10),
+            onPressed: onImport,
+            child: const Icon(CupertinoIcons.doc_text_viewfinder, size: 23),
           ),
-          const SizedBox(width: 8),
-          Tooltip(
-            message: 'استيراد ذكي',
-            child: IconButton(
-              onPressed: onImport,
-              style: IconButton.styleFrom(
-                backgroundColor: p.surface,
-                foregroundColor: p.accent,
-                side: BorderSide(color: p.stroke),
-              ),
-              icon: const Icon(Icons.document_scanner_outlined),
-            ),
+          CupertinoButton(
+            padding: const EdgeInsets.all(10),
+            onPressed: onAdd,
+            child: const Icon(CupertinoIcons.add_circled_solid, size: 27),
           ),
-          const SizedBox(width: 6),
-          Tooltip(
-            message: 'إضافة اشتراك',
-            child: IconButton.filled(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add_rounded),
-            ),
-          ),
-        ],
+        ]),
+      ],
     );
   }
 }
@@ -207,43 +194,49 @@ class _SearchLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    return TextField(
+    return Row(
+      children: [
+        Expanded(
+          child: CupertinoSearchTextField(
             controller: controller,
+            placeholder: 'ابحث باسم الخدمة',
             onChanged: (_) => onChanged(),
-            decoration: InputDecoration(
-              hintText: 'ابحث عن خدمة أو دفعة',
-              prefixIcon: Icon(Icons.search_rounded, color: p.textMuted),
-              suffixIcon: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (controller.text.isNotEmpty)
-                    IconButton(
-                      tooltip: 'مسح البحث',
-                      onPressed: () {
-                        controller.clear();
-                        onChanged();
-                      },
-                      icon: Icon(Icons.close_rounded, color: p.textMuted),
-                    ),
-                  PopupMenuButton<_SortOrder>(
-                    tooltip: 'ترتيب القائمة',
-                    color: p.surface,
-                    onSelected: onSort,
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: _SortOrder.renewal, child: Text('الأقرب تجديدًا')),
-                      PopupMenuItem(value: _SortOrder.cost, child: Text('الأعلى تكلفة')),
-                      PopupMenuItem(value: _SortOrder.name, child: Text('حسب الاسم')),
-                    ],
-                    icon: Icon(
-                      Icons.tune_rounded,
-                      color: sort == _SortOrder.renewal ? p.textMuted : p.accent,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            style: TextStyle(color: p.text, fontSize: 15),
+            backgroundColor: p.surface,
+          ),
+        ),
+        const SizedBox(width: 9),
+        CupertinoButton(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          color: p.surface,
+          onPressed: () async {
+            final selected = await showIosPicker<_SortOrder>(
+              context: context,
+              title: 'ترتيب الاشتراكات',
+              selected: sort,
+              values: _SortOrder.values,
+              label: _sortLabel,
+            );
+            if (selected != null) onSort(selected);
+          },
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(CupertinoIcons.arrow_up_arrow_down, color: p.accent, size: 18),
+              const SizedBox(width: 5),
+              Text(_sortLabel(sort), style: TextStyle(color: p.text, fontSize: 11.5)),
+            ],
+          ),
+        ),
+      ],
     );
   }
+
+  String _sortLabel(_SortOrder value) => switch (value) {
+        _SortOrder.renewal => 'الأقرب',
+        _SortOrder.cost => 'الأعلى',
+        _SortOrder.name => 'الاسم',
+      };
 }
 
 class _FilterRail extends StatelessWidget {
@@ -265,12 +258,18 @@ class _FilterRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 39,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        children: [
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text('نوع الدفعة', style: TextStyle(color: context.palette.textMuted, fontSize: 11.5, fontWeight: FontWeight.w700)),
+        ),
+        const SizedBox(height: 7),
+        SizedBox(height: 37, child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          children: [
           _FilterChip(label: 'الكل', selected: selectedKind == null && selectedCategory == null, onTap: onAll),
           for (final kind in PaymentKind.values) ...[
             const SizedBox(width: 8),
@@ -280,17 +279,32 @@ class _FilterRail extends StatelessWidget {
               onTap: () => onKind(selectedKind == kind ? null : kind),
             ),
           ],
+          ],
+        )),
+        if (usedCategories.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text('التصنيف', style: TextStyle(color: context.palette.textMuted, fontSize: 11.5, fontWeight: FontWeight.w700)),
+          ),
+          const SizedBox(height: 7),
+          SizedBox(height: 37, child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            children: [
           for (final category in kCategories)
             if (usedCategories.contains(category)) ...[
-              const SizedBox(width: 8),
               _FilterChip(
                 label: category,
                 selected: selectedCategory == category,
                 onTap: () => onCategory(selectedCategory == category ? null : category),
               ),
+              const SizedBox(width: 8),
             ],
+            ],
+          )),
         ],
-      ),
+      ],
     );
   }
 }
@@ -305,9 +319,10 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(99),
+    return CupertinoButton(
+      padding: const EdgeInsetsDirectional.only(end: 8),
+      minSize: 0,
+      onPressed: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -319,7 +334,7 @@ class _FilterChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: TextStyle(color: selected ? Colors.white : p.text, fontSize: 12, fontWeight: FontWeight.w800),
+          style: TextStyle(color: selected ? CupertinoColors.white : p.text, fontSize: 12, fontWeight: FontWeight.w700),
         ),
       ),
     );
@@ -400,7 +415,7 @@ class _SubscriptionRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                   Text(
-                    fmtMoney(subscription.price, subscription.currency),
+                    fmtMoneyWithCurrency(subscription.price, subscription.currency),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: p.accent, fontWeight: FontWeight.w900, fontSize: 14),
@@ -421,22 +436,13 @@ class _SubscriptionRow extends StatelessWidget {
   }
 
   Future<bool> _confirmDelete(BuildContext context, String name) async {
-    return await showDialog<bool>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('حذف الاشتراك؟'),
-            content: Text('سيُحذف «$name» من قائمتك.'),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('إلغاء')),
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, true),
-                style: TextButton.styleFrom(foregroundColor: context.palette.danger),
-                child: const Text('حذف'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
+    return showIosConfirmation(
+      context: context,
+      title: 'حذف الاشتراك؟',
+      message: 'سيُحذف «$name» من قائمتك نهائيًا.',
+      confirmLabel: 'حذف',
+      destructive: true,
+    );
   }
 }
 
@@ -483,10 +489,8 @@ String _renewalText(int days) {
 
 Future<void> showSubscriptionDetails(BuildContext context, Subscription sub) async {
   final store = SubscriptionStore.instance;
-  await showModalBottomSheet<void>(
+  await showCupertinoModalPopup<void>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
     builder: (sheetContext) {
       final p = sheetContext.palette;
       return DraggableScrollableSheet(
@@ -537,11 +541,11 @@ Future<void> showSubscriptionDetails(BuildContext context, Subscription sub) asy
                   ],
                 ),
                 const SizedBox(height: 18),
-                Text(fmtMoney(sub.price, sub.currency), style: TextStyle(color: p.accent, fontWeight: FontWeight.w900, fontSize: 22)),
+                Text(fmtMoneyWithCurrency(sub.price, sub.currency), style: TextStyle(color: p.accent, fontWeight: FontWeight.w900, fontSize: 22)),
                 const SizedBox(height: 16),
                 _DetailMetric(icon: Icons.event_repeat_rounded, label: 'التجديد القادم', value: _renewalText(sub.daysUntilRenewal())),
                 const SizedBox(height: 10),
-                _DetailMetric(icon: Icons.payments_outlined, label: 'التكلفة الشهرية', value: fmtMoney(sub.monthlyCost, sub.currency)),
+                _DetailMetric(icon: Icons.payments_outlined, label: 'التكلفة الشهرية', value: fmtMoneyWithCurrency(sub.monthlyCost, sub.currency)),
                 if (sub.notes.trim().isNotEmpty) ...[
                   const SizedBox(height: 10),
                   _DetailMetric(icon: Icons.notes_rounded, label: 'ملاحظة', value: sub.notes),
@@ -567,15 +571,18 @@ Future<void> showSubscriptionDetails(BuildContext context, Subscription sub) asy
                 ),
                 if (sub.manageUrl.trim().isNotEmpty) ...[
                   const SizedBox(height: 10),
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                  CupertinoButton(
+                    color: p.surfaceAlt,
                     onPressed: () async {
                       final uri = normalizedHttpsUri(sub.manageUrl);
                       if (uri == null) {
                         if (sheetContext.mounted) {
-                          ScaffoldMessenger.of(sheetContext).showSnackBar(
-                            const SnackBar(
-                              content: Text('الرابط غير آمن ولن يتم فتحه.'),
+                          await showCupertinoDialog<void>(
+                            context: sheetContext,
+                            builder: (dialogContext) => CupertinoAlertDialog(
+                              title: const Text('تعذر فتح الرابط'),
+                              content: const Text('الرابط غير آمن. استخدم رابط HTTPS من شاشة التعديل.'),
+                              actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: const Text('حسنًا'))],
                             ),
                           );
                         }
@@ -586,18 +593,16 @@ Future<void> showSubscriptionDetails(BuildContext context, Subscription sub) asy
                         mode: LaunchMode.externalApplication,
                       );
                     },
-                    icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                    label: const Text('إدارة الاشتراك'),
+                    child: const Text('فتح صفحة إدارة الاشتراك'),
                   ),
                 ],
                 const SizedBox(height: 4),
-                TextButton.icon(
+                CupertinoButton(
                   onPressed: () async {
                     await store.recordUsage(sub.id);
                     if (sheetContext.mounted) Navigator.pop(sheetContext);
                   },
-                  icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
-                  label: const Text('تسجيل استخدام'),
+                  child: const Text('تسجيل استخدام الخدمة'),
                 ),
               ],
             ),
@@ -614,21 +619,20 @@ List<Widget> _actionButtons(
   SubscriptionStore store,
   Subscription sub,
 ) => [
-      OutlinedButton.icon(
+      CupertinoButton(
+        color: context.palette.surfaceAlt,
         onPressed: () {
           Navigator.pop(sheetContext);
           Navigator.of(context).push(CupertinoPageRoute(builder: (_) => EditSubscriptionScreen(existing: sub)));
         },
-        icon: const Icon(Icons.edit_outlined, size: 18),
-        label: const Text('تعديل'),
+        child: const Text('تعديل'),
       ),
-      FilledButton.icon(
+      CupertinoButton.filled(
         onPressed: () async {
           await store.togglePause(sub.id);
           if (sheetContext.mounted) Navigator.pop(sheetContext);
         },
-        icon: Icon(sub.isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded, size: 18),
-        label: Text(sub.isPaused ? 'استئناف' : 'إيقاف'),
+        child: Text(sub.isPaused ? 'استئناف المتابعة' : 'إيقاف مؤقت'),
       ),
     ];
 

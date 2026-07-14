@@ -110,6 +110,12 @@ String fmtMoney(double v, String currency) {
       : rounded.toStringAsFixed(2);
 }
 
+/// صياغة واضحة للقوائم التي يجب أن تبيّن العملة بجانب المبلغ.
+String fmtMoneyWithCurrency(double value, String currency) {
+  final symbol = currencySymbols[currency] ?? currency;
+  return '${fmtMoney(value, currency)} $symbol'.trim();
+}
+
 class Subscription {
   final String id;
   String name;

@@ -1,13 +1,14 @@
 /// ربط البريد: جلب إيصالات الاشتراكات من الإيميل تلقائيًا عبر IMAP.
 library;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../services/email_import_service.dart';
 import '../theme.dart';
+import '../widgets/ios_controls.dart';
 import 'import_screen.dart';
 
 class EmailLinkScreen extends StatefulWidget {
@@ -123,7 +124,7 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
       }
       setState(() => _busy = false);
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
+        CupertinoPageRoute(
           builder: (_) => ImportScreen(initialText: result.combinedText),
         ),
       );
@@ -143,144 +144,130 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    return Scaffold(
-      appBar: AppBar(title: const Text('ربط البريد الإلكتروني')),
-      body: SafeArea(
+    return CupertinoPageScaffold(
+      backgroundColor: p.canvas,
+      navigationBar: CupertinoNavigationBar(
+        backgroundColor: p.canvas.withValues(alpha: .92),
+        border: Border(bottom: BorderSide(color: p.stroke)),
+        middle: const Text('استيراد من البريد'),
+      ),
+      child: SafeArea(
         child: ListView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 34),
           children: [
-            AppCard(
-              color: p.accentSoft,
-              borderColor: p.accentStrong,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'كيف يعمل؟',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 15,
-                      color: p.text,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'نتصل ببريدك مباشرة من جهازك، نفحص أحدث الرسائل بحثًا عن '
-                    'إيصالات الاشتراكات (Apple، نتفلكس وغيرها)، ثم نستخرج '
-                    'الاشتراكات تلقائيًا. كلمة المرور تبقى على جهازك '
-                    'ولا تُخزّن أو تُرسل إلى الذكاء الاصطناعي.',
-                    style: TextStyle(
-                      color: p.textMuted,
-                      fontSize: 13,
-                      height: 1.7,
-                    ),
-                  ),
-                ],
-              ),
+            Text('فحص إيصالات الاشتراكات', style: TextStyle(color: p.text, fontSize: 24, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 7),
+            Text(
+              'يفحص التطبيق أحدث رسائل الفوترة على جهازك. لا تُحفظ كلمة مرور التطبيقات ولا تُرسل إلى الذكاء الاصطناعي.',
+              style: TextStyle(color: p.textMuted, fontSize: 13.5, height: 1.55),
+            ),
+            const SizedBox(height: 20),
+            IosPickerRow(
+              label: 'مزود البريد',
+              value: _localizedProvider(_provider),
+              icon: CupertinoIcons.mail,
+              onPressed: () async {
+                final selected = await showIosPicker<EmailProvider>(
+                  context: context,
+                  title: 'اختر مزود البريد',
+                  selected: _provider,
+                  values: kEmailProviders,
+                  label: _localizedProvider,
+                );
+                if (selected != null) setState(() => _provider = selected);
+              },
             ),
             const SizedBox(height: 14),
-            DropdownButtonFormField<EmailProvider>(
-              initialValue: _provider,
-                dropdownColor: p.surfaceAlt,
-              decoration: const InputDecoration(labelText: 'مزوّد البريد'),
-              items: [
-                for (final p in kEmailProviders)
-                  DropdownMenuItem(value: p, child: Text(p.label)),
-              ],
-              onChanged: (v) => setState(() => _provider = v ?? _provider),
-            ),
-            const SizedBox(height: 14),
-            TextField(
+            IosTextField(
               controller: _email,
+              label: 'عنوان البريد الإلكتروني',
               keyboardType: TextInputType.emailAddress,
               textDirection: TextDirection.ltr,
-              decoration: const InputDecoration(
-                labelText: 'البريد الإلكتروني',
-                hintText: 'name@icloud.com',
-              ),
+              placeholder: 'name@example.com',
             ),
             const SizedBox(height: 14),
-            TextField(
+            IosTextField(
               controller: _password,
+              label: 'كلمة مرور التطبيقات',
               obscureText: true,
               textDirection: TextDirection.ltr,
-              decoration: const InputDecoration(
-                labelText: 'كلمة مرور خاصة بالتطبيقات',
-                hintText: 'xxxx-xxxx-xxxx-xxxx',
-              ),
+              placeholder: 'xxxx-xxxx-xxxx-xxxx',
             ),
-            const SizedBox(height: 6),
-            TextButton.icon(
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: CupertinoButton(
+              padding: const EdgeInsets.symmetric(vertical: 9),
               onPressed: () => launchUrl(
                 Uri.parse(_provider.helpUrl),
                 mode: LaunchMode.externalApplication,
               ),
-              icon: const Icon(Icons.help_outline_rounded, size: 18),
-              label: Text(
-                'كيف أنشئ كلمة مرور للتطبيقات في ${_provider.label}؟',
-                style: const TextStyle(fontSize: 13),
+              child: Text(
+                'إنشاء كلمة مرور للتطبيقات في ${_localizedProvider(_provider)}',
+                style: const TextStyle(fontSize: 13.5),
               ),
-            ),
-            SwitchListTile(
-              value: _remember,
-              onChanged: (v) => setState(() => _remember = v),
-              title: Text(
-                'تذكّر بريدي',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: p.text,
-                  fontSize: 14,
-                ),
+            )),
+            Container(
+              padding: const EdgeInsetsDirectional.fromSTEB(14, 8, 10, 8),
+              decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: p.stroke)),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('حفظ عنوان البريد', style: TextStyle(color: p.text, fontSize: 14.5, fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 2),
+                        Text('يُحفظ في Keychain على هذا الجهاز فقط.', style: TextStyle(color: p.textMuted, fontSize: 11.5)),
+                      ],
+                    ),
+                  ),
+                  CupertinoSwitch(
+                    value: _remember,
+                    activeTrackColor: p.accent,
+                    onChanged: (value) => setState(() => _remember = value),
+                  ),
+                ],
               ),
-              activeThumbColor: p.accent,
-              contentPadding: EdgeInsets.zero,
             ),
             if (_error != null) ...[
-              const SizedBox(height: 4),
-              AppCard(
-                color: p.dangerSoft,
-                borderColor: p.danger,
-                padding: const EdgeInsets.all(12),
-                child: Text(
-                  _error!,
-                  style: TextStyle(
-                    color: p.danger,
-                    fontSize: 13,
-                    height: 1.6,
+              const SizedBox(height: 12),
+              IosStatusNotice(message: _error!, error: true),
+            ],
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: CupertinoButton.filled(
+                onPressed: _busy ? null : _fetch,
+                child: _busy
+                    ? const CupertinoActivityIndicator(color: CupertinoColors.white)
+                    : const Text('فحص البريد واستيراد الاشتراكات'),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(CupertinoIcons.lock_shield, color: p.textMuted, size: 17),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'استخدم كلمة مرور للتطبيقات، وليس كلمة مرور حسابك. يمكنك إلغاؤها من إعدادات مزود البريد في أي وقت.',
+                    style: TextStyle(color: p.textMuted, fontSize: 12, height: 1.55),
                   ),
                 ),
-              ),
-            ],
-            const SizedBox(height: 14),
-            FilledButton.icon(
-              onPressed: _busy ? null : _fetch,
-              icon: _busy
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.mark_email_read_rounded),
-              label: Text(_busy ? 'نفحص بريدك...' : 'جلب الاشتراكات من بريدي'),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'ملاحظة أمان: استخدم دائمًا «كلمة مرور خاصة بالتطبيقات» — '
-              'وهي كلمة مرور محدودة يمكنك إلغاؤها في أي وقت، '
-              'ولا تعطي وصولًا لحسابك الكامل.',
-              style: TextStyle(
-                color: p.textMuted,
-                fontSize: 12,
-                height: 1.7,
-              ),
+              ],
             ),
           ],
         ),
       ),
     );
   }
+
+  String _localizedProvider(EmailProvider provider) => switch (provider.label) {
+        'iCloud Mail' => 'بريد iCloud',
+        'Gmail' => 'Gmail من Google',
+        'Outlook / Hotmail' => 'Outlook وHotmail',
+        _ => provider.label,
+      };
 }

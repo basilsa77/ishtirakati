@@ -12,6 +12,7 @@ import '../services/remote_catalog.dart';
 import '../services/subscription_store.dart';
 import '../services/safe_url.dart';
 import '../theme.dart';
+import '../widgets/ios_controls.dart';
 import 'plan_comparison_screen.dart';
 
 class EditSubscriptionScreen extends StatefulWidget {
@@ -49,6 +50,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   late final TextEditingController _planName;
   String _iconUrl = '';
   bool _searching = false;
+  String? _formError;
   PaymentKind _kind = PaymentKind.subscription;
   late final TextEditingController _installments;
 
@@ -140,13 +142,8 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   }
 
   Future<void> _openPresetPicker() async {
-    await showModalBottomSheet<void>(
+    await showCupertinoModalPopup<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.palette.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
       builder: (ctx) => SafeArea(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(ctx).height * .78),
@@ -245,24 +242,53 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   }
 
   Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _anchor,
-      firstDate: DateTime(2015),
-      lastDate: DateTime(2100),
-      helpText: 'تاريخ بداية الاشتراك أو آخر تجديد',
-    );
+    final picked = await _showIosDatePicker(_anchor);
     if (picked != null) {
       setState(() => _anchor = picked);
     }
   }
 
+  Future<DateTime?> _showIosDatePicker(DateTime initial) {
+    var selected = initial;
+    return showCupertinoModalPopup<DateTime>(
+      context: context,
+      builder: (sheetContext) => Container(
+        height: 330,
+        color: sheetContext.palette.surface,
+        child: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  CupertinoButton(onPressed: () => Navigator.pop(sheetContext), child: const Text('إلغاء')),
+                  const Spacer(),
+                  CupertinoButton(
+                    onPressed: () => Navigator.pop(sheetContext, selected),
+                    child: const Text('تم', style: TextStyle(fontWeight: FontWeight.w700)),
+                  ),
+                ],
+              ),
+              Expanded(
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  initialDateTime: initial,
+                  minimumDate: DateTime(2015),
+                  maximumDate: DateTime(2100),
+                  onDateTimeChanged: (value) => selected = value,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _smartSearch() async {
     final term = _name.text.trim();
     if (term.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('اكتب اسم الخدمة أولًا ثم اضغط البحث')),
-      );
+      setState(() => _formError = 'اكتب اسم الخدمة أولًا، ثم ابدأ البحث.');
       return;
     }
     setState(() => _searching = true);
@@ -273,20 +299,11 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     if (!mounted) return;
     setState(() => _searching = false);
     if (results.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('لم نجد نتائج — تأكد من الاسم أو الإنترنت'),
-        ),
-      );
+      setState(() => _formError = 'لم نجد خدمة مطابقة. تحقق من الاسم والاتصال بالإنترنت.');
       return;
     }
-    await showModalBottomSheet<void>(
+    await showCupertinoModalPopup<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.palette.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
       builder: (ctx) => SafeArea(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(ctx).height * .78),
@@ -306,44 +323,45 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               ),
               const SizedBox(height: 12),
               for (final r in results.take(5))
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: r.iconUrl.isEmpty
-                        ? const SizedBox(width: 44, height: 44)
-                        : Image.network(
-                            r.iconUrl,
-                            width: 44,
-                            height: 44,
-                            errorBuilder: (_, __, ___) =>
-                                const SizedBox(width: 44, height: 44),
-                          ),
-                  ),
-                  title: Text(
-                    r.name,
-                     style: TextStyle(
-                      color: ctx.palette.text,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14.5,
-                    ),
-                  ),
-                  subtitle: r.seller.isEmpty
-                      ? null
-                      : Text(
-                          r.seller,
-                           style: TextStyle(
-                            color: ctx.palette.textMuted,
-                            fontSize: 12,
-                          ),
-                        ),
-                  onTap: () {
+                CupertinoButton(
+                  padding: const EdgeInsets.symmetric(vertical: 7),
+                  onPressed: () {
                     setState(() {
                       _name.text = r.name;
                       _iconUrl = r.iconUrl;
                     });
                     Navigator.pop(ctx);
                   },
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: r.iconUrl.isEmpty
+                            ? const SizedBox(width: 44, height: 44)
+                            : Image.network(
+                                r.iconUrl,
+                                width: 44,
+                                height: 44,
+                                errorBuilder: (_, __, ___) =>
+                                    const SizedBox(width: 44, height: 44),
+                              ),
+                      ),
+                      const SizedBox(width: 11),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(r.name, style: TextStyle(color: ctx.palette.text, fontWeight: FontWeight.w800, fontSize: 14.5)),
+                        if (r.seller.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(r.seller, style: TextStyle(color: ctx.palette.textMuted, fontSize: 12)),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Icon(CupertinoIcons.chevron_left, color: ctx.palette.textMuted, size: 17),
+                    ],
+                  ),
                 ),
             ],
           ),
@@ -359,16 +377,21 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   }
 
   Future<void> _save() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    final manageUrl = _normalizedManageUrl(_url.text.trim());
-    if (manageUrl == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('استخدم رابط HTTPS صالحًا أو اتركه فارغًا.')),
-      );
+    final name = _name.text.trim();
+    final price = double.tryParse(
+      _price.text.trim().replaceAll('،', '.').replaceAll(',', '.'),
+    );
+    if (name.isEmpty || price == null || price <= 0) {
+      setState(() => _formError = name.isEmpty
+          ? 'أدخل اسم الاشتراك.'
+          : 'أدخل سعرًا صحيحًا أكبر من صفر.');
       return;
     }
-    final price =
-        double.parse(_price.text.trim().replaceAll('،', '.').replaceAll(',', '.'));
+    final manageUrl = _normalizedManageUrl(_url.text.trim());
+    if (manageUrl == null) {
+      setState(() => _formError = 'استخدم رابط HTTPS صالحًا، أو اترك الرابط فارغًا.');
+      return;
+    }
     final sub = Subscription(
       id: widget.existing?.id ??
           DateTime.now().microsecondsSinceEpoch.toString(),
@@ -402,47 +425,45 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     HapticFeedback.mediumImpact();
     if (!mounted) return;
     Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(isEditing ? 'تم حفظ التعديلات' : 'تمت إضافة «${sub.name}»')),
-    );
   }
 
   Future<void> _delete() async {
-    final ok = await showDialog<bool>(
+    final ok = await showIosConfirmation(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('حذف الاشتراك؟'),
-        content: Text('سيتم حذف «${widget.existing!.name}» نهائيًا.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('إلغاء'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: context.palette.danger),
-            child: const Text('حذف'),
-          ),
-        ],
-      ),
+      title: 'حذف الاشتراك؟',
+      message: 'سيتم حذف «${widget.existing!.name}» نهائيًا.',
+      confirmLabel: 'حذف',
+      destructive: true,
     );
-    if (ok == true) {
+    if (ok) {
       await SubscriptionStore.instance.remove(widget.existing!.id);
       if (mounted) Navigator.of(context).pop();
     }
   }
 
+  String _paymentLabel(String value) => switch (value) {
+        'غير محدد' => 'لم أحدد وسيلة الدفع',
+        'بطاقة مدى' => 'بطاقة مدى',
+        'بطاقة ائتمانية' => 'بطاقة ائتمانية',
+        'Apple Pay' => 'Apple Pay',
+        'STC Pay' => 'stc pay',
+        'PayPal' => 'PayPal',
+        'رصيد المتجر' => 'رصيد متجر التطبيقات',
+        _ => value,
+      };
+
   @override
   Widget build(BuildContext context) {
     final d = _anchor;
     final p = context.palette;
-    return Scaffold(
-      appBar: CupertinoNavigationBar(
+    return CupertinoPageScaffold(
+      backgroundColor: p.canvas,
+      navigationBar: CupertinoNavigationBar(
         backgroundColor: p.canvas.withValues(alpha: .92),
         border: Border(bottom: BorderSide(color: p.stroke)),
         middle: Text(isEditing ? 'تعديل الاشتراك' : 'اشتراك جديد'),
       ),
-      body: SafeArea(
+      child: SafeArea(
         child: Form(
           key: _formKey,
           child: ListView(
@@ -474,58 +495,39 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               ),
               const SizedBox(height: 14),
               if (!isEditing && _kind == PaymentKind.subscription)
-                OutlinedButton.icon(
+                CupertinoButton(
+                  color: p.accentSoft,
                   onPressed: _openPresetPicker,
-                  icon: const Icon(Icons.flash_on_rounded),
-                  label: const Text('اختر من الخدمات الشائعة'),
+                  child: const Text('اختيار خدمة معروفة'),
                 ),
               const SizedBox(height: 14),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(
-                    width: 74,
-                    child: TextFormField(
-                      initialValue: _emoji,
-                      textAlign: TextAlign.center,
-                      maxLength: 2,
-                      style: const TextStyle(fontSize: 24),
-                      decoration: const InputDecoration(
-                        counterText: '',
-                        labelText: 'رمز',
-                      ),
-                      onChanged: (v) => _emoji = v,
+                  Padding(
+                    padding: const EdgeInsets.only(top: 21),
+                    child: ServiceAvatar(
+                      name: _name.text,
+                      emoji: _emoji,
+                      iconUrl: _iconUrl,
+                      tint: categoryColor(_category),
+                      size: 52,
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: TextFormField(
+                    child: IosTextField(
                       controller: _name,
+                      label: 'اسم الاشتراك',
                       textInputAction: TextInputAction.next,
-                      decoration: InputDecoration(
-                        labelText: 'اسم الاشتراك *',
-                        hintText: 'مثال: شاهد VIP',
-                        suffixIcon: IconButton(
-                          tooltip: 'بحث ذكي عن التطبيق وشعاره',
+                      placeholder: 'مثال: شاهد VIP',
+                      suffix: CupertinoButton(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
                           onPressed: _searching ? null : _smartSearch,
-                          icon: _searching
-                              ? SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: p.accent,
-                                  ),
-                                )
-                              : Icon(
-                                  Icons.travel_explore_rounded,
-                                  color: p.accent,
-                                ),
+                          child: _searching
+                              ? const CupertinoActivityIndicator()
+                              : const Icon(CupertinoIcons.search, size: 20),
                         ),
-                      ),
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'أدخل اسم الاشتراك'
-                          : null,
                     ),
                   ),
                 ],
@@ -536,47 +538,32 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 children: [
                   Expanded(
                     flex: 3,
-                    child: TextFormField(
+                    child: IosTextField(
                       controller: _price,
+                      label: 'مبلغ التجديد',
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
                       textDirection: TextDirection.ltr,
-                      decoration: const InputDecoration(
-                        labelText: 'السعر *',
-                        hintText: '19.99',
-                      ),
-                      validator: (v) {
-                        final parsed = double.tryParse(
-                          (v ?? '')
-                              .trim()
-                              .replaceAll('،', '.')
-                              .replaceAll(',', '.'),
-                        );
-                        if (parsed == null || parsed <= 0) {
-                          return 'أدخل سعرًا صحيحًا';
-                        }
-                        return null;
-                      },
+                      placeholder: '19.99',
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     flex: 2,
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _currency,
-                      dropdownColor: p.surfaceAlt,
-                      decoration:
-                          const InputDecoration(labelText: 'العملة'),
-                      items: [
-                        for (final c in currencySymbols.keys)
-                          DropdownMenuItem(
-                            value: c,
-                            child: Text('${currencySymbols[c]} ($c)'),
-                          ),
-                      ],
-                      onChanged: (v) =>
-                          setState(() => _currency = v ?? _currency),
+                    child: IosPickerRow(
+                      label: 'العملة',
+                      value: '${currencySymbols[_currency]}  $_currency',
+                      onPressed: () async {
+                        final selected = await showIosPicker<String>(
+                          context: context,
+                          title: 'اختر العملة',
+                          selected: _currency,
+                          values: currencySymbols.keys.toList(),
+                          label: (value) => '${currencySymbols[value]}  $value',
+                        );
+                        if (selected != null) setState(() => _currency = selected);
+                      },
                     ),
                   ),
                 ],
@@ -609,77 +596,68 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               ),
               if (_kind == PaymentKind.installment) ...[
                 const SizedBox(height: 14),
-                TextFormField(
+                IosTextField(
                   controller: _installments,
+                  label: 'إجمالي عدد الأقساط',
                   keyboardType: TextInputType.number,
                   textDirection: TextDirection.ltr,
-                  decoration: const InputDecoration(
-                    labelText: 'عدد الأقساط الكلي',
-                    hintText: 'مثال: 12 — اتركه فارغًا إن كان مفتوحًا',
-                  ),
+                  placeholder: 'مثال: 12، أو اتركه فارغًا',
                 ),
               ],
               const SizedBox(height: 16),
-              InkWell(
-                onTap: _pickDate,
-                borderRadius: BorderRadius.circular(14),
-                child: InputDecorator(
-                  decoration: InputDecoration(
-                    labelText: 'تاريخ البداية / آخر تجديد',
-                    suffixIcon: Icon(
-                      Icons.calendar_month_rounded,
-                      color: p.textMuted,
-                    ),
-                  ),
-                  child: Text(
-                    fmtDate(d),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: p.text,
-                    ),
-                  ),
-                ),
+              IosPickerRow(
+                label: 'تاريخ آخر دفعة أو بداية الاشتراك',
+                value: fmtDate(d),
+                icon: CupertinoIcons.calendar,
+                onPressed: _pickDate,
               ),
               const SizedBox(height: 14),
-              DropdownButtonFormField<String>(
-                initialValue: _category,
-                dropdownColor: p.surfaceAlt,
-                decoration: const InputDecoration(labelText: 'التصنيف'),
-                items: [
-                  for (final c in kCategories)
-                    DropdownMenuItem(
-                      value: c,
-                      child: Text('${kCategoryEmoji[c] ?? ''} $c'),
-                    ),
-                ],
-                onChanged: (v) => setState(() => _category = v ?? _category),
+              IosPickerRow(
+                label: 'التصنيف',
+                value: _category,
+                icon: CupertinoIcons.square_grid_2x2,
+                onPressed: () async {
+                  final selected = await showIosPicker<String>(
+                    context: context,
+                    title: 'اختر التصنيف',
+                    selected: _category,
+                    values: kCategories,
+                    label: (value) => value,
+                  );
+                  if (selected != null) setState(() => _category = selected);
+                },
               ),
               const SizedBox(height: 14),
-              DropdownButtonFormField<String>(
-                initialValue: _payMethod,
-                dropdownColor: p.surfaceAlt,
-                decoration:
-                    const InputDecoration(labelText: 'طريقة الدفع'),
-                items: [
-                  for (final m in kPaymentMethods)
-                    DropdownMenuItem(value: m, child: Text(m)),
-                ],
-                onChanged: (v) =>
-                    setState(() => _payMethod = v ?? _payMethod),
+              IosPickerRow(
+                label: 'وسيلة الدفع',
+                value: _paymentLabel(_payMethod),
+                icon: CupertinoIcons.creditcard,
+                onPressed: () async {
+                  final selected = await showIosPicker<String>(
+                    context: context,
+                    title: 'اختر وسيلة الدفع',
+                    selected: _payMethod,
+                    values: kPaymentMethods,
+                    label: _paymentLabel,
+                  );
+                  if (selected != null) setState(() => _payMethod = selected);
+                },
               ),
               const SizedBox(height: 14),
-              DropdownButtonFormField<int>(
-                initialValue: _reminderDays,
-                dropdownColor: p.surfaceAlt,
-                decoration: const InputDecoration(
-                  labelText: 'إشعار التذكير قبل التجديد',
-                ),
-                items: [
-                  for (final e in kReminderOptions.entries)
-                    DropdownMenuItem(value: e.key, child: Text(e.value)),
-                ],
-                onChanged: (v) =>
-                    setState(() => _reminderDays = v ?? _reminderDays),
+              IosPickerRow(
+                label: 'موعد تنبيه التجديد',
+                value: kReminderOptions[_reminderDays]!,
+                icon: CupertinoIcons.bell,
+                onPressed: () async {
+                  final selected = await showIosPicker<int>(
+                    context: context,
+                    title: 'موعد تنبيه التجديد',
+                    selected: _reminderDays,
+                    values: kReminderOptions.keys.toList(),
+                    label: (value) => kReminderOptions[value]!,
+                  );
+                  if (selected != null) setState(() => _reminderDays = selected);
+                },
               ),
               const SizedBox(height: 8),
               if (_kind == PaymentKind.subscription)
@@ -690,36 +668,16 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 detail: 'سنحذرك قبل تحولها لاشتراك مدفوع بيومين',
               ),
               if (_trialOn) ...[
-                InkWell(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _trialEnd,
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime(2100),
-                      helpText: 'متى تنتهي التجربة المجانية؟',
-                    );
+                IosPickerRow(
+                  label: 'تاريخ انتهاء التجربة المجانية',
+                  value: fmtDate(_trialEnd),
+                  icon: CupertinoIcons.time,
+                  onPressed: () async {
+                    final picked = await _showIosDatePicker(_trialEnd);
                     if (picked != null) {
                       setState(() => _trialEnd = picked);
                     }
                   },
-                  borderRadius: BorderRadius.circular(14),
-                  child: InputDecorator(
-                    decoration: InputDecoration(
-                      labelText: 'تاريخ انتهاء التجربة',
-                      suffixIcon: Icon(
-                        Icons.hourglass_bottom_rounded,
-                        color: p.textMuted,
-                      ),
-                    ),
-                    child: Text(
-                      fmtDate(_trialEnd),
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: p.text,
-                      ),
-                    ),
-                  ),
                 ),
                 const SizedBox(height: 6),
               ],
@@ -741,12 +699,13 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                         ),
                       ),
                     ),
-                    IconButton(
+                    CupertinoButton(
+                      padding: const EdgeInsets.all(8),
                       onPressed: _famCount <= 2
                           ? null
                           : () => setState(() => _famCount--),
-                      icon: Icon(
-                        Icons.remove_circle_outline_rounded,
+                      child: Icon(
+                        CupertinoIcons.minus_circle,
                         color: p.accent,
                       ),
                     ),
@@ -758,12 +717,13 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                         color: p.text,
                       ),
                     ),
-                    IconButton(
+                    CupertinoButton(
+                      padding: const EdgeInsets.all(8),
                       onPressed: _famCount >= 20
                           ? null
                           : () => setState(() => _famCount++),
-                      icon: Icon(
-                        Icons.add_circle_outline_rounded,
+                      child: Icon(
+                        CupertinoIcons.plus_circle,
                         color: p.accent,
                       ),
                     ),
@@ -816,23 +776,20 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   child: const Text('مقارنة خطة بديلة'),
                 ),
               const SizedBox(height: 8),
-              TextFormField(
+              IosTextField(
                 controller: _url,
+                label: 'رابط إدارة الاشتراك (اختياري)',
                 keyboardType: TextInputType.url,
                 textDirection: TextDirection.ltr,
-                decoration: const InputDecoration(
-                  labelText: 'رابط إدارة الاشتراك (اختياري)',
-                  hintText: 'netflix.com/account',
-                ),
+                placeholder: 'https://example.com/account',
               ),
               const SizedBox(height: 14),
-              TextFormField(
+              IosTextField(
                 controller: _notes,
+                label: 'ملاحظات (اختياري)',
+                minLines: 2,
                 maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'ملاحظات (اختياري)',
-                  hintText: 'مثال: مشترك مع العائلة / يُلغى قبل رمضان',
-                ),
+                placeholder: 'مثال: مشترك مع العائلة',
               ),
               if (isEditing) ...[
                 const SizedBox(height: 8),
@@ -842,6 +799,10 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   title: 'إيقاف مؤقت',
                   detail: 'لن يُحتسب في المصروف ولا في التجديدات',
                 ),
+              ],
+              if (_formError != null) ...[
+                const SizedBox(height: 12),
+                IosStatusNotice(message: _formError!, error: true),
               ],
               const SizedBox(height: 18),
               CupertinoButton.filled(
