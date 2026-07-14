@@ -87,7 +87,7 @@ void main() {
     expect(routeStyle?.decoration, isNot(TextDecoration.underline));
     expect(routeStyle?.decorationStyle, isNot(TextDecorationStyle.double));
 
-    await tester.pageBack();
+    Navigator.of(tester.element(routeText)).pop();
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('open-overlay')));
     await tester.pumpAndSettle();
