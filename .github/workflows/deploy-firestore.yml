@@ -1,0 +1,50 @@
+name: Deploy Firestore Rules
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-firestore:
+    name: Deploy rules and indexes to ishtirakati-260f7
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: '24'
+
+      - name: Install pinned Firebase CLI
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Configure production service account
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ISHTIRAKATI_260F7 }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::Missing FIREBASE_SERVICE_ACCOUNT_ISHTIRAKATI_260F7."
+            exit 1
+          fi
+          CREDENTIALS="$RUNNER_TEMP/firebase-service-account.json"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$CREDENTIALS"
+          chmod 600 "$CREDENTIALS"
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync(process.argv[1],'utf8')).project_id;if(p!=='ishtirakati-260f7')throw new Error('Service account belongs to a different Firebase project.');" "$CREDENTIALS"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$CREDENTIALS" >> "$GITHUB_ENV"
+
+      - name: Select verified Firebase project
+        run: npx firebase-tools use ishtirakati-260f7
+
+      - name: Deploy Firestore rules and indexes
+        run: |
+          npx firebase-tools deploy \
+            --only firestore:rules,firestore:indexes \
+            --project ishtirakati-260f7 \
+            --non-interactive

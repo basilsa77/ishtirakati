@@ -39,12 +39,34 @@ class CloudSyncStatus {
   final DateTime? updatedAt;
   final CloudSyncFailure failure;
   final String? message;
+  final String? operation;
+  final String? firebaseCode;
+  final bool? documentExisted;
+  final int? revision;
 
   const CloudSyncStatus(
     this.phase, {
     this.updatedAt,
     this.failure = CloudSyncFailure.none,
     this.message,
+    this.operation,
+    this.firebaseCode,
+    this.documentExisted,
+    this.revision,
+  });
+}
+
+enum CloudSyncWriteOperation { firstCreate, transactionUpdate }
+
+class CloudSyncWriteOutcome {
+  final CloudSyncWriteOperation operation;
+  final bool documentExisted;
+  final int revision;
+
+  const CloudSyncWriteOutcome({
+    required this.operation,
+    required this.documentExisted,
+    required this.revision,
   });
 }
 
@@ -69,6 +91,10 @@ class CloudSyncResult {
 class CloudSync {
   CloudSync._();
 
+  static const internalDiagnosticsEnabled = bool.fromEnvironment(
+    'INTERNAL_BUILD',
+    defaultValue: kDebugMode,
+  );
   static bool _pushQueued = false;
   static const _schemaVersion = 2;
   static const _legacySchemaVersion = 1;
@@ -100,6 +126,10 @@ class CloudSync {
       updatedAt: status.value.updatedAt,
       failure: failure,
       message: message,
+      operation: status.value.operation,
+      firebaseCode: status.value.firebaseCode,
+      documentExisted: status.value.documentExisted,
+      revision: status.value.revision,
     );
     return false;
   }
@@ -108,6 +138,20 @@ class CloudSync {
     status.value = CloudSyncStatus(
       CloudSyncPhase.syncing,
       updatedAt: status.value.updatedAt,
+    );
+  }
+
+  static void _setWriteDiagnostics({
+    required String operation,
+    required bool? documentExisted,
+    required int revision,
+  }) {
+    status.value = CloudSyncStatus(
+      CloudSyncPhase.syncing,
+      updatedAt: status.value.updatedAt,
+      operation: operation,
+      documentExisted: documentExisted,
+      revision: revision,
     );
   }
 
@@ -172,6 +216,16 @@ class CloudSync {
   }
 
   @visibleForTesting
+  static bool isMissingFirestoreDocumentException(
+    FirebaseException error,
+  ) {
+    if (error.code != 'not-found') return false;
+    final message = error.message ?? '';
+    return !isFirestoreDatabaseMissingMessage(message) &&
+        isFirestoreDocumentMissingMessage(message);
+  }
+
+  @visibleForTesting
   static CloudSyncFailure failureForFirebaseCode(String code) {
     final normalized = code.replaceFirst('storage/', '');
     return switch (normalized) {
@@ -227,6 +281,16 @@ class CloudSync {
     StackTrace stackTrace, {
     required String operation,
   }) {
+    status.value = CloudSyncStatus(
+      status.value.phase,
+      updatedAt: status.value.updatedAt,
+      failure: status.value.failure,
+      message: status.value.message,
+      operation: status.value.operation,
+      firebaseCode: error.code,
+      documentExisted: status.value.documentExisted,
+      revision: status.value.revision,
+    );
     final uid = AuthService.currentUser?.uid;
     var safeMessage = error.message ?? '';
     if (uid != null && uid.isNotEmpty) {
@@ -338,15 +402,23 @@ class CloudSync {
       final localRevision = await _localRevision(uid);
       firebaseOperation = 'firestore.sync-transaction';
       _logFirebaseOperation(firebaseOperation);
-      final nextRevision = await _writeCloudDocument(
+      final outcome = await _writeCloudDocument(
         doc,
         backup,
         localRevision,
       );
-      await _saveLocalRevision(uid, nextRevision);
+      await _saveLocalRevision(uid, outcome.revision);
       status.value = CloudSyncStatus(
         CloudSyncPhase.success,
         updatedAt: DateTime.now(),
+        message: outcome.operation == CloudSyncWriteOperation.firstCreate
+            ? tr('cloudFirstCreateSuccess')
+            : tr('cloudUpdateSuccess'),
+        operation: outcome.operation == CloudSyncWriteOperation.firstCreate
+            ? 'first-create'
+            : 'transaction-update',
+        documentExisted: outcome.documentExisted,
+        revision: outcome.revision,
       );
       return true;
     } on _CloudRevisionConflict {
@@ -363,7 +435,7 @@ class CloudSync {
       return _failFirebase(
         error,
         stackTrace,
-        operation: firebaseOperation,
+        operation: status.value.operation ?? firebaseOperation,
       );
     } on SecureDataException catch (_) {
       return _fail(
@@ -391,31 +463,112 @@ class CloudSync {
         'encryption': _encryption,
       };
 
-  static Future<int> _writeCloudDocument(
+  static Future<CloudSyncWriteOutcome> _writeCloudDocument(
     DocumentReference<Map<String, dynamic>> doc,
     String backup,
     int localRevision,
-  ) async {
-    _logFirebaseOperation('firestore.sync-transaction');
-    return _runFirestoreOperation(
-      () => FirebaseFirestore.instance.runTransaction<int>(
-        (transaction) async {
-          final snapshot = await transaction.get(doc);
-          final remoteRevision =
-              (snapshot.data()?['revision'] as num?)?.toInt() ?? 0;
-          if (!canPushRevision(
-            localRevision: localRevision,
-            remoteRevision: remoteRevision,
-            remoteExists: snapshot.exists,
-          )) {
-            throw const _CloudRevisionConflict();
-          }
-          final next = remoteRevision + 1;
-          transaction.set(doc, _encryptedBackupPayload(backup, next));
-          return next;
+  ) =>
+      writeWithFirstCreateFallback(
+        localRevision: localRevision,
+        documentExists: () async {
+          _setWriteDiagnostics(
+            operation: 'first-create',
+            documentExisted: null,
+            revision: 1,
+          );
+          _logFirebaseOperation('firestore.first-create-check');
+          final snapshot = await _runFirestoreOperation(
+            () => doc.get(const GetOptions(source: Source.server)),
+          );
+          return snapshot.exists;
         },
-      ),
-    );
+        firstCreate: () async {
+          _setWriteDiagnostics(
+            operation: 'first-create',
+            documentExisted: false,
+            revision: 1,
+          );
+          _logFirebaseOperation('firestore.first-create');
+          await _runFirestoreOperation(
+            () => doc.set(
+              _encryptedBackupPayload(backup, 1),
+              SetOptions(merge: false),
+            ),
+          );
+        },
+        transactionUpdate: () async {
+          _setWriteDiagnostics(
+            operation: 'transaction-update',
+            documentExisted: true,
+            revision: localRevision + 1,
+          );
+          _logFirebaseOperation('firestore.transaction-update');
+          return _runFirestoreOperation(
+            () => FirebaseFirestore.instance.runTransaction<int>(
+              (transaction) async {
+                final snapshot = await transaction.get(doc);
+                final remoteRevision =
+                    (snapshot.data()?['revision'] as num?)?.toInt() ?? 0;
+                if (!canPushRevision(
+                  localRevision: localRevision,
+                  remoteRevision: remoteRevision,
+                  remoteExists: snapshot.exists,
+                )) {
+                  throw const _CloudRevisionConflict();
+                }
+                final next = remoteRevision + 1;
+                transaction.set(doc, _encryptedBackupPayload(backup, next));
+                return next;
+              },
+            ),
+          );
+        },
+      );
+
+  @visibleForTesting
+  static Future<CloudSyncWriteOutcome> writeWithFirstCreateFallback({
+    required int localRevision,
+    required Future<bool> Function() documentExists,
+    required Future<void> Function() firstCreate,
+    required Future<int> Function() transactionUpdate,
+  }) async {
+    if (localRevision == 0) {
+      bool exists;
+      try {
+        exists = await documentExists();
+      } on FirebaseException catch (error) {
+        if (!isMissingFirestoreDocumentException(error)) rethrow;
+        exists = false;
+      }
+      if (!exists) {
+        await firstCreate();
+        return const CloudSyncWriteOutcome(
+          operation: CloudSyncWriteOperation.firstCreate,
+          documentExisted: false,
+          revision: 1,
+        );
+      }
+    }
+
+    try {
+      final revision = await transactionUpdate();
+      return CloudSyncWriteOutcome(
+        operation: CloudSyncWriteOperation.transactionUpdate,
+        documentExisted: true,
+        revision: revision,
+      );
+    } on FirebaseException catch (error) {
+      if (localRevision != 0 ||
+          !isMissingFirestoreDocumentException(error)) {
+        rethrow;
+      }
+      await firstCreate();
+      return const CloudSyncWriteOutcome(
+        operation: CloudSyncWriteOperation.firstCreate,
+        documentExisted: false,
+        revision: 1,
+      );
+    }
   }
 
   /// جلب النسخة السحابية ودمجها مع المحلي.

@@ -52,16 +52,12 @@ try {
   const versionedLegacyRef =
     doc(versionedLegacyOwner, 'users/versioned-legacy-user');
 
+  const missingCloudCopy = await assertSucceeds(getDocFromServer(ownerRef));
+  if (missingCloudCopy.exists()) {
+    throw new Error('The first synchronization document already exists.');
+  }
   await assertSucceeds(
-    runTransaction(owner, async (transaction) => {
-      const firstRevision = 1;
-      const snapshot = await transaction.get(ownerRef);
-      if (snapshot.exists()) {
-        throw new Error('The first synchronization document already exists.');
-      }
-      transaction.set(ownerRef, { ...validBackup, revision: firstRevision });
-      return firstRevision;
-    }),
+    setDoc(ownerRef, { ...validBackup, revision: 1 }, { merge: false }),
   );
   if (validBackup.backup.includes('subscriptions')) {
     throw new Error('The cloud payload contains plaintext subscription data.');
@@ -159,7 +155,7 @@ try {
   await assertSucceeds(deleteDoc(unversionedRef));
   await assertSucceeds(deleteDoc(versionedLegacyRef));
   console.log(
-    'Firestore transaction sync passed: missing document created, existing document updated, encrypted payload enforced, and failed writes preserved revision 2.',
+    'Firestore sync passed: first-create set revision 1, transaction-update revision 2, encrypted payload enforced, and failed writes preserved revision 2.',
   );
 } finally {
   await environment.cleanup();

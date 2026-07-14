@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=15.2.4"
-set "COMMIT_MESSAGE=v15.2.4+39: make encrypted Firestore sync transactional"
+set "RELEASE_VERSION=15.2.5"
+set "COMMIT_MESSAGE=v15.2.5+40: create first encrypted Firestore backup"
 
 git init
 git config user.name "basilsa77"

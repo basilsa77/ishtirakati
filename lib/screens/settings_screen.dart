@@ -426,7 +426,7 @@ class _AccountCard extends StatelessWidget {
                         ),
                       CloudSyncPhase.success => (
                            CupertinoIcons.check_mark_circled,
-                          _syncSuccessText(status.updatedAt),
+                          status.message ?? _syncSuccessText(status.updatedAt),
                           p.accent,
                         ),
                       CloudSyncPhase.failure => (
@@ -441,20 +441,43 @@ class _AccountCard extends StatelessWidget {
                           p.textMuted,
                         ),
                     };
-                    return Row(
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(icon, color: color, size: 17),
-                        const SizedBox(width: 7),
-                        Expanded(
-                          child: Text(
-                            text,
+                        Row(
+                          children: [
+                            Icon(icon, color: color, size: 17),
+                            const SizedBox(width: 7),
+                            Expanded(
+                              child: Text(
+                                text,
+                                style: TextStyle(
+                                  color: color,
+                                  fontSize: V15Type.caption,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (CloudSync.internalDiagnosticsEnabled &&
+                            status.operation != null) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            tr('cloudSyncDiagnostic', {
+                              'operation': status.operation ?? '-',
+                              'code': status.firebaseCode ?? '-',
+                              'exists': status.documentExisted?.toString() ?? '-',
+                              'revision': status.revision?.toString() ?? '-',
+                              'commit': kGitCommitShort,
+                            }),
                             style: TextStyle(
-                              color: color,
+                              color: p.textMuted,
                               fontSize: V15Type.caption,
-                              fontWeight: FontWeight.w700,
+                              height: 1.45,
                             ),
                           ),
-                        ),
+                        ],
                       ],
                     );
                   },
@@ -678,7 +701,11 @@ class _AboutCard extends StatelessWidget {
         children: [
           _AboutLine(label: tr('ui_d83483faf7f9'), value: tr('ui_64e2da14cf04')),
           Divider(height: 1, color: p.stroke),
-          _AboutLine(label: tr('ui_f14158b9c061'), value: kAppBuildLabel),
+          _AboutLine(label: tr('ui_f14158b9c061'), value: kAppVersion),
+          Divider(height: 1, color: p.stroke),
+          _AboutLine(label: tr('appBuildNumber'), value: kAppBuildNumber),
+          Divider(height: 1, color: p.stroke),
+          _AboutLine(label: tr('appCommit'), value: kGitCommitShort),
           Divider(height: 1, color: p.stroke),
           _AboutLine(label: tr('ui_edcad556ffd0'), value: kAppBuildMode),
           Divider(height: 1, color: p.stroke),

@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishtirakati/services/cloud_sync.dart';
 
@@ -54,6 +55,71 @@ void main() {
       expect(CloudSync.isRetryableFirebaseCode('permission-denied'), isFalse);
       expect(CloudSync.isRetryableFirebaseCode('unauthenticated'), isFalse);
       expect(CloudSync.isRetryableFirebaseCode('not-found'), isFalse);
+    });
+
+    test('transaction document not-found falls back to first create', () async {
+      var firstCreateCalls = 0;
+      final outcome = await CloudSync.writeWithFirstCreateFallback(
+        localRevision: 0,
+        documentExists: () async => true,
+        transactionUpdate: () async => throw FirebaseException(
+          plugin: 'cloud_firestore',
+          code: 'not-found',
+          message: 'The requested document was not found.',
+        ),
+        firstCreate: () async {
+          firstCreateCalls++;
+        },
+      );
+
+      expect(firstCreateCalls, 1);
+      expect(outcome.operation, CloudSyncWriteOperation.firstCreate);
+      expect(outcome.documentExisted, isFalse);
+      expect(outcome.revision, 1);
+    });
+
+    test('missing database never falls back to document creation', () async {
+      var firstCreateCalls = 0;
+
+      await expectLater(
+        CloudSync.writeWithFirstCreateFallback(
+          localRevision: 0,
+          documentExists: () async => throw FirebaseException(
+            plugin: 'cloud_firestore',
+            code: 'not-found',
+            message: 'The database (default) does not exist.',
+          ),
+          transactionUpdate: () async => 1,
+          firstCreate: () async {
+            firstCreateCalls++;
+          },
+        ),
+        throwsA(isA<FirebaseException>()),
+      );
+
+      expect(firstCreateCalls, 0);
+    });
+
+    test('existing cloud document stays on transaction update', () async {
+      var firstCreateCalls = 0;
+      var transactionCalls = 0;
+      final outcome = await CloudSync.writeWithFirstCreateFallback(
+        localRevision: 4,
+        documentExists: () async => throw StateError('probe not expected'),
+        transactionUpdate: () async {
+          transactionCalls++;
+          return 5;
+        },
+        firstCreate: () async {
+          firstCreateCalls++;
+        },
+      );
+
+      expect(transactionCalls, 1);
+      expect(firstCreateCalls, 0);
+      expect(outcome.operation, CloudSyncWriteOperation.transactionUpdate);
+      expect(outcome.documentExisted, isTrue);
+      expect(outcome.revision, 5);
     });
   });
 

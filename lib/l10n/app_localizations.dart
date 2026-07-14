@@ -84,6 +84,13 @@ class AppLocalizations {
           'تعذر العثور على مورد Firestore المطلوب. تحقق من إعداد المشروع ثم أعد المحاولة.',
       'cloudSyncDocumentNotFound':
           'لا توجد نسخة سحابية لهذا الحساب بعد. أعد المزامنة لإنشاء النسخة الأولى.',
+      'cloudFirstCreateSuccess':
+          'تم إنشاء النسخة السحابية ومزامنتها بنجاح',
+      'cloudUpdateSuccess': 'تم تحديث النسخة السحابية بنجاح',
+      'cloudSyncDiagnostic':
+          'العملية: {operation} | الخطأ: {code} | المستند موجود: {exists} | المراجعة: {revision} | البناء: {commit}',
+      'appBuildNumber': 'رقم البناء',
+      'appCommit': 'نسخة الكود',
       'cloudStorageResourceNotFound':
           'مساحة التخزين السحابية أو الملف المطلوب غير موجود. تحقق من إعداد Firebase.',
       'cloudFailedPrecondition':
