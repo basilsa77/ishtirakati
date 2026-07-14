@@ -787,30 +787,32 @@ class _ThemeModeOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 14,
-              color: selected
-                  ? CupertinoColors.white
-                  : context.palette.textMuted,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              maxLines: 1,
-              style: TextStyle(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 14,
                 color: selected
                     ? CupertinoColors.white
-                    : context.palette.text,
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
+                    : context.palette.textMuted,
               ),
-            ),
-          ],
+              const SizedBox(width: 4),
+              Text(
+                label,
+                maxLines: 1,
+                style: TextStyle(
+                  color: selected
+                      ? CupertinoColors.white
+                      : context.palette.text,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
         ),
       );
 }
