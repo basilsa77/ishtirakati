@@ -103,4 +103,4 @@ flutter build ios --release --no-codesign
 
 التغييرات التفصيلية في [CHANGELOG.md](CHANGELOG.md).
 
-آخر بناء إنتاجي متحقق قبل v15: [GitHub Actions #63](https://github.com/basilsa77/ishtirakati/actions/runs/29301687635) — نجح التحليل والاختبارات وقواعد Firestore وبناء iOS وتغليف IPA.
+آخر بناء إنتاجي متحقق: [GitHub Actions #67](https://github.com/basilsa77/ishtirakati/actions/runs/29303260127) — نجح التحليل و91 اختبارًا وقواعد Firestore وبناء iOS وتغليف IPA.
