@@ -15,7 +15,7 @@ class AppMaterialRoot extends StatelessWidget {
     final theme = Theme.of(context);
     return Material(
       color: theme.scaffoldBackgroundColor,
-      textStyle: theme.textTheme.bodyMedium,
+      textStyle: theme.textTheme.bodyLarge,
       child: child,
     );
   }

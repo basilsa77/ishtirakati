@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:intl/date_symbol_data_local.dart' show initializeDateFormatting;
 import 'package:intl/intl.dart' show DateFormat, Intl, NumberFormat;
 
 import 'app_messages_ar.dart';
@@ -11,6 +12,7 @@ class AppLocalizations {
 
   final Locale locale;
   final Map<String, String> _messages;
+  static final Set<String> _initializedDateLocales = <String>{};
 
   static const supportedLocales = <Locale>[Locale('ar'), Locale('en')];
   static final _fallback = AppLocalizations._(
@@ -138,6 +140,12 @@ class AppLocalizations {
 
   String date(DateTime value, {String skeleton = 'yMMMd'}) {
     final localeName = locale.languageCode == 'ar' ? 'ar_SA' : 'en_SA';
+    if (_initializedDateLocales.add(localeName)) {
+      // The local Intl registrar installs symbols synchronously; its returned
+      // future is already completed. This also keeps pure services testable
+      // when they format a date before the Flutter localization delegate runs.
+      initializeDateFormatting(localeName);
+    }
     return _latinDigits(DateFormat(skeleton, localeName).format(value));
   }
 
