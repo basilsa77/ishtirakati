@@ -319,6 +319,19 @@ class Subscription {
 
   double get monthlyCost => yearlyCost / 12;
 
+  /// وصف موجز يميّز السجلات المتشابهة الاسم دون تغيير بياناتها المخزنة.
+  String get displayQualifier {
+    final renewal = nextRenewal();
+    final parts = <String>[
+      if (planName.trim().isNotEmpty) planName.trim(),
+      '${kind.labelAr} ${cycle.labelAr}',
+      if (paymentMethod != 'غير محدد' && paymentMethod.trim().isNotEmpty)
+        paymentMethod.trim(),
+      'التجديد ${renewal.day}/${renewal.month}',
+    ];
+    return parts.join(' · ');
+  }
+
   /// موعد التجديد القادم اعتبارًا من [from] (افتراضيًا: اليوم).
   ///
   /// يحافظ على "يوم الشهر" الأصلي قدر الإمكان: اشتراك بدأ يوم 31

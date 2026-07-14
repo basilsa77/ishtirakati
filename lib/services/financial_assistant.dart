@@ -76,6 +76,12 @@ class FinancialAssistantSnapshot {
   double get nextMonthForecast => forecast.isEmpty ? 0 : forecast.first.total;
   double get next12MonthsForecast =>
       forecast.fold(0.0, (sum, item) => sum + item.total);
+
+  /// عدد السجلات الإضافية المحتمل الاستغناء عنها داخل مجموعات التكرار.
+  int get duplicateCandidateCount => duplicateGroups.fold(
+        0,
+        (sum, group) => sum + group.subscriptions.length - 1,
+      );
 }
 
 abstract final class FinancialAssistant {
@@ -121,7 +127,12 @@ abstract final class FinancialAssistant {
     for (final item in active) {
       if (item.isEssential) continue;
       if (reviewedIds.contains(item.id)) continue;
-      if (item.usageCount == 0 && item.autoRenews) {
+      final reviewedAt = item.lastReviewedAt;
+      final hasMeasuredUsageWindow = reviewedAt != null &&
+          today.difference(_day(reviewedAt)).inDays >= 30;
+      if (item.usageCount == 0 &&
+          item.autoRenews &&
+          hasMeasuredUsageWindow) {
         reviewItems.add(FinancialReviewItem(
           subscription: item,
           reason: FinancialReviewReason.unusedAutoRenewal,
@@ -139,10 +150,10 @@ abstract final class FinancialAssistant {
         ));
         continue;
       }
-      final reviewedAt = item.lastReviewedAt;
       if (item.autoRenews &&
           !duplicateIds.contains(item.id) &&
-          (reviewedAt == null || today.difference(_day(reviewedAt)).inDays >= 180)) {
+          reviewedAt != null &&
+          today.difference(_day(reviewedAt)).inDays >= 180) {
         reviewItems.add(FinancialReviewItem(
           subscription: item,
           reason: FinancialReviewReason.overdueReview,
@@ -179,20 +190,43 @@ abstract final class FinancialAssistant {
     DateTime today,
   ) {
     return List.generate(12, (index) {
-      final month = Subscription.addMonths(DateTime(today.year, today.month), index);
+      final periodStart = Subscription.addMonths(today, index);
+      final periodEnd = Subscription.addMonths(today, index + 1);
       var total = 0.0;
       var count = 0;
       for (final item in active) {
-        for (final renewal in item.renewalsInMonth(month.year, month.month)) {
-          if (renewal.isBefore(today)) continue;
+        for (final renewal in _renewalsBetween(item, periodStart, periodEnd)) {
           final lastInstallment = item.lastInstallmentDate;
           if (lastInstallment != null && renewal.isAfter(lastInstallment)) continue;
           total += item.price;
           count += 1;
         }
       }
-      return MonthlyForecast(month: month, total: total, paymentCount: count);
+      return MonthlyForecast(
+        month: periodStart,
+        total: total,
+        paymentCount: count,
+      );
     });
+  }
+
+  /// يعيد التجديدات داخل فترة متحركة [start, end) حتى لا يكون الشهر الأول
+  /// جزئيًا بينما تكون بقية الأشهر كاملة.
+  static Iterable<DateTime> _renewalsBetween(
+    Subscription item,
+    DateTime start,
+    DateTime end,
+  ) sync* {
+    var month = DateTime(start.year, start.month);
+    final lastMonth = DateTime(end.year, end.month);
+    while (!month.isAfter(lastMonth)) {
+      for (final renewal in item.renewalsInMonth(month.year, month.month)) {
+        if (!renewal.isBefore(start) && renewal.isBefore(end)) {
+          yield renewal;
+        }
+      }
+      month = DateTime(month.year, month.month + 1);
+    }
   }
 
   static List<DuplicateSubscriptionGroup> _duplicates(
@@ -224,7 +258,19 @@ abstract final class FinancialAssistant {
   static String _serviceKey(Subscription item) {
     final uri = Uri.tryParse(item.manageUrl);
     final host = uri?.host.toLowerCase().replaceFirst(RegExp(r'^www\.'), '');
-    if (host != null && host.isNotEmpty) return host;
+    const genericManagementHosts = {
+      'apps.apple.com',
+      'itunes.apple.com',
+      'apple.com',
+      'play.google.com',
+      'payments.google.com',
+      'google.com',
+    };
+    if (host != null &&
+        host.isNotEmpty &&
+        !genericManagementHosts.contains(host)) {
+      return host;
+    }
     const ignored = {
       'pro', 'plus', 'premium', 'basic', 'family', 'monthly', 'yearly',
       'احترافي', 'برو', 'بلس', 'عائلي', 'شهري', 'سنوي', 'الخطة', 'اشتراك',

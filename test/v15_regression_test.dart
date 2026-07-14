@@ -4,6 +4,7 @@ import 'package:ishtirakati/screens/calendar_screen.dart';
 import 'package:ishtirakati/screens/pulse_home_screen.dart';
 import 'package:ishtirakati/screens/settings_screen.dart';
 import 'package:ishtirakati/screens/subscriptions_screen.dart';
+import 'package:ishtirakati/main.dart' show resolveAppThemeMode;
 import 'package:ishtirakati/services/cloud_sync.dart';
 import 'package:ishtirakati/theme.dart';
 import 'package:ishtirakati/widgets/app_media_query.dart';
@@ -81,5 +82,31 @@ void main() {
       CloudSync.messageForFirebaseCode('unauthenticated'),
       contains('سجّل الدخول'),
     );
+  });
+
+  test('theme preference resolves every appearance mode explicitly', () {
+    expect(resolveAppThemeMode('system'), ThemeMode.system);
+    expect(resolveAppThemeMode('dark'), ThemeMode.dark);
+    expect(resolveAppThemeMode('light'), ThemeMode.light);
+    expect(resolveAppThemeMode('unexpected'), ThemeMode.system);
+  });
+
+  testWidgets('calendar segment opens and closes the calendar grid',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildAppTheme(),
+        home: const CalendarScreen(),
+      ),
+    );
+
+    expect(find.byKey(const Key('renewals-calendar-grid')), findsNothing);
+    await tester.tap(find.byKey(const Key('renewals-calendar-option')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('renewals-calendar-grid')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('renewals-timeline-option')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('renewals-calendar-grid')), findsNothing);
   });
 }

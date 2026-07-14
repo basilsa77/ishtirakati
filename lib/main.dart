@@ -90,19 +90,14 @@ Future<void> main() async {
   UpdateChecker.check();
 }
 
+ThemeMode resolveAppThemeMode(String preference) => switch (preference) {
+      'light' => ThemeMode.light,
+      'dark' => ThemeMode.dark,
+      _ => ThemeMode.system,
+    };
+
 class IshtirakatiApp extends StatelessWidget {
   const IshtirakatiApp({super.key});
-
-  static ThemeMode _resolveMode(String pref) {
-    switch (pref) {
-      case 'light':
-        return ThemeMode.light;
-      case 'system':
-        return ThemeMode.system;
-      default:
-        return ThemeMode.system;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +106,7 @@ class IshtirakatiApp extends StatelessWidget {
     return ListenableBuilder(
       listenable: store,
       builder: (context, _) {
-        final mode = _resolveMode(store.themeMode);
+        final mode = resolveAppThemeMode(store.themeMode);
         return MaterialApp(
       title: 'اشتراكاتي',
       debugShowCheckedModeBanner: false,

@@ -82,14 +82,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
               label: 'اختيار طريقة عرض التجديدات',
               child: CupertinoSlidingSegmentedControl<bool>(
                 groupValue: _calendarView,
-                children: const {
-                  false: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Text('القائمة الزمنية'),
+                backgroundColor: context.palette.surfaceAlt,
+                thumbColor: context.palette.accent,
+                children: {
+                  false: _CalendarViewOption(
+                    key: const Key('renewals-timeline-option'),
+                    label: 'القائمة الزمنية',
+                    icon: CupertinoIcons.list_bullet,
+                    selected: !_calendarView,
                   ),
-                  true: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Text('التقويم'),
+                  true: _CalendarViewOption(
+                    key: const Key('renewals-calendar-option'),
+                    label: 'التقويم',
+                    icon: CupertinoIcons.calendar,
+                    selected: _calendarView,
                   ),
                 },
                 onValueChanged: (value) {
@@ -110,6 +116,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             if (_calendarView) ...[
               const SizedBox(height: 12),
               _CalendarGrid(
+                key: const Key('renewals-calendar-grid'),
                 month: _month,
                 weekdays: _weekdays,
                 entries: byDay,
@@ -195,6 +202,46 @@ class _CalendarScreenState extends State<CalendarScreen> {
       },
     );
   }
+}
+
+class _CalendarViewOption extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+
+  const _CalendarViewOption({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.selected,
+  });
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: selected
+                  ? CupertinoColors.white
+                  : context.palette.textMuted,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected
+                    ? CupertinoColors.white
+                    : context.palette.text,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 class _CalendarHeader extends StatelessWidget {

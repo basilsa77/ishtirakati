@@ -118,7 +118,7 @@ class _ForecastCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
-          Text('إجمالي التجديدات المتوقعة خلال 12 شهرًا', style: TextStyle(color: p.textMuted, fontSize: 11.5)),
+          Text('دفعات 12 شهرًا قادمة حسب مواعيد التجديد الفعلية', style: TextStyle(color: p.textMuted, fontSize: 11.5)),
           const SizedBox(height: 18),
           SizedBox(
             height: 106,
@@ -139,6 +139,14 @@ class _ForecastCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.fade,
                         style: TextStyle(color: p.textMuted, fontSize: 9.5, fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        '${item.paymentCount} دفعة',
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: p.textMuted,
+                          fontSize: 8.5,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Container(
@@ -448,7 +456,30 @@ class _TopServiceRow extends StatelessWidget {
           const SizedBox(width: 10),
           ServiceAvatar(name: subscription.name, emoji: subscription.emoji, manageUrl: subscription.manageUrl, iconUrl: subscription.iconUrl, tint: categoryColor(subscription.category), size: 40),
           const SizedBox(width: 10),
-          Expanded(child: Text(subscription.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: 13.5, fontWeight: FontWeight.w800))),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  subscription.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: p.text,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subscription.displayQualifier,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: p.textMuted, fontSize: 10.5),
+                ),
+              ],
+            ),
+          ),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 92),
             child: Text(

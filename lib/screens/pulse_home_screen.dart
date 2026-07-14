@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import '../design/design_tokens.dart';
 import '../models/subscription.dart';
 import '../services/financial_assistant.dart';
-import '../services/financial_leakage.dart';
 import '../services/device_greeting.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
@@ -31,10 +30,6 @@ class PulseHomeScreen extends StatelessWidget {
       listenable: store,
       builder: (context, _) {
         final currency = store.dominantCurrency;
-        final leakage = FinancialLeakage.calculate(
-          store.items,
-          currency: currency,
-        );
         final assistant = FinancialAssistant.analyze(
           store.items,
           currency: currency,
@@ -72,7 +67,9 @@ class PulseHomeScreen extends StatelessWidget {
                               Expanded(
                                 flex: 6,
                                 child: _RenewalSummary(
-                                  leakage: leakage,
+                                  currency: currency,
+                                  next12MonthsForecast:
+                                      assistant.next12MonthsForecast,
                                   upcoming: upcoming,
                                   onOpen: onOpenRenewals,
                                 ),
@@ -99,7 +96,9 @@ class PulseHomeScreen extends StatelessWidget {
                         return Column(
                           children: [
                             _RenewalSummary(
-                              leakage: leakage,
+                              currency: currency,
+                              next12MonthsForecast:
+                                  assistant.next12MonthsForecast,
                               upcoming: upcoming,
                               onOpen: onOpenRenewals,
                             ),
@@ -249,12 +248,14 @@ class _HeaderAction extends StatelessWidget {
 }
 
 class _RenewalSummary extends StatelessWidget {
-  final FinancialLeakageSnapshot leakage;
+  final String currency;
+  final double next12MonthsForecast;
   final List<Subscription> upcoming;
   final VoidCallback onOpen;
 
   const _RenewalSummary({
-    required this.leakage,
+    required this.currency,
+    required this.next12MonthsForecast,
     required this.upcoming,
     required this.onOpen,
   });
@@ -320,10 +321,10 @@ class _RenewalSummary extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: V12Space.lg),
-                  Text('التزامك السنوي',
+                  Text('دفعات 12 شهرًا القادمة',
                       style: TextStyle(color: context.palette.textMuted)),
                   Text(
-                    fmtMoney(leakage.annualCommitment, leakage.currency),
+                    fmtMoney(next12MonthsForecast, currency),
                     style: TextStyle(
                       color: context.palette.text,
                       fontSize: V12Type.headline,
@@ -434,7 +435,7 @@ class _LeakageBand extends StatelessWidget {
                   const SizedBox(width: V12Space.xs),
                   Expanded(
                     child: Text(
-                      'اشتراكات تحتاج مراجعة',
+                      'مؤشرات تحتاج مراجعة',
                       style: TextStyle(
                         color: context.palette.text,
                         fontSize: V12Type.emphasized,
@@ -465,7 +466,7 @@ class _LeakageBand extends StatelessWidget {
               if (snapshot.duplicateGroups.isNotEmpty) ...[
                 const SizedBox(height: V12Space.xs),
                 Text(
-                  '${snapshot.duplicateGroups.length} خدمات تبدو مكررة في مكتبتك.',
+                  'منها ${snapshot.duplicateCandidateCount} اشتراك إضافي محتمل ضمن ${snapshot.duplicateGroups.length} خدمات.',
                   style: TextStyle(
                     color: context.palette.text,
                     fontSize: V12Type.caption,
@@ -481,7 +482,7 @@ class _LeakageBand extends StatelessWidget {
                     horizontal: V12Space.md,
                     vertical: V12Space.sm,
                   ),
-                  child: Text('مراجعة $reviews اشتراكات'),
+                  child: Text('مراجعة $reviews مؤشرات'),
                 ),
               ],
             ],

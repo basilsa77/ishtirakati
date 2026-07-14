@@ -463,7 +463,7 @@ class _AccountCard extends StatelessWidget {
             ),
           const SizedBox(height: 12),
           Text(
-            'المزامنة اختيارية. تحمي Firebase البيانات أثناء النقل والتخزين، لكنها ليست مشفرة طرفيًا.',
+            'بياناتك على هذا الجهاز مشفرة بـ AES-256-GCM، ويُحفظ مفتاحها في Keychain. عند تفعيل المزامنة، تنقل Firebase النسخة عبر اتصال مشفر وتحميها في التخزين السحابي، لكنها ليست تشفيرًا طرفيًا بمفتاح لا تستطيع الخوادم قراءته.',
             style: TextStyle(color: p.textMuted, fontSize: 11.5, height: 1.6),
           ),
           ValueListenableBuilder<String?>(
@@ -744,19 +744,22 @@ class _ThemeModeCard extends StatelessWidget {
             child: CupertinoSlidingSegmentedControl<String>(
               groupValue: store.themeMode,
               backgroundColor: p.surfaceAlt,
-              thumbColor: p.surface,
-              children: const {
-                'system': Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text('حسب النظام'),
+              thumbColor: p.accent,
+              children: {
+                'system': _ThemeModeOption(
+                  label: 'حسب النظام',
+                  icon: CupertinoIcons.device_phone_portrait,
+                  selected: store.themeMode == 'system',
                 ),
-                'dark': Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text('داكن'),
+                'dark': _ThemeModeOption(
+                  label: 'داكن',
+                  icon: CupertinoIcons.moon_fill,
+                  selected: store.themeMode == 'dark',
                 ),
-                'light': Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text('فاتح'),
+                'light': _ThemeModeOption(
+                  label: 'فاتح',
+                  icon: CupertinoIcons.sun_max_fill,
+                  selected: store.themeMode == 'light',
                 ),
               },
               onValueChanged: (value) {
@@ -768,6 +771,48 @@ class _ThemeModeCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ThemeModeOption extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+
+  const _ThemeModeOption({
+    required this.label,
+    required this.icon,
+    required this.selected,
+  });
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: selected
+                  ? CupertinoColors.white
+                  : context.palette.textMuted,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              maxLines: 1,
+              style: TextStyle(
+                color: selected
+                    ? CupertinoColors.white
+                    : context.palette.text,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 /// إدارة البيانات: حذف السجل من الجهاز.
