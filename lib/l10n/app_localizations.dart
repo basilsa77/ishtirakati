@@ -267,7 +267,13 @@ class AppLocalizations {
 
   static Future<AppLocalizations> load(Locale locale) async {
     final language = locale.languageCode == 'en' ? 'en' : 'ar';
-    final source = await rootBundle.loadString('lib/l10n/app_$language.arb');
+    final data = await rootBundle.load('lib/l10n/app_$language.arb');
+    // CachingAssetBundle moves strings larger than 50 KB to a helper isolate.
+    // Decode this small catalog directly so localization remains deterministic
+    // in widget tests and during early iOS startup.
+    final source = utf8.decode(
+      data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+    );
     final raw = jsonDecode(source) as Map<String, dynamic>;
     final result = AppLocalizations._(
       Locale(language),
