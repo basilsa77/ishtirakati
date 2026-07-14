@@ -47,24 +47,13 @@ void main() {
       );
     });
 
-    test('first server probe creates a missing cloud document directly', () {
-      expect(
-        CloudSync.shouldCreateInitialCloudDocument(
-          remoteExists: false,
-          localRevision: 0,
-        ),
-        isTrue,
-      );
-    });
-
-    test('an existing cloud document always uses conflict protection', () {
-      expect(
-        CloudSync.shouldCreateInitialCloudDocument(
-          remoteExists: true,
-          localRevision: 0,
-        ),
-        isFalse,
-      );
+    test('only transient Firestore failures are retried', () {
+      expect(CloudSync.isRetryableFirebaseCode('unavailable'), isTrue);
+      expect(CloudSync.isRetryableFirebaseCode('aborted'), isTrue);
+      expect(CloudSync.isRetryableFirebaseCode('internal'), isTrue);
+      expect(CloudSync.isRetryableFirebaseCode('permission-denied'), isFalse);
+      expect(CloudSync.isRetryableFirebaseCode('unauthenticated'), isFalse);
+      expect(CloudSync.isRetryableFirebaseCode('not-found'), isFalse);
     });
   });
 

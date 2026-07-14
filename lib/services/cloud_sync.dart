@@ -77,7 +77,11 @@ class CloudSync {
   /// instances must not be used for this path.
   static const databaseId = '(default)';
   static const _maxBackupBytes = 850000;
-  static const _networkTimeout = Duration(seconds: 10);
+  // Firestore may need several seconds to establish TLS and refresh an auth
+  // token on the first request after launch, especially on cellular networks.
+  static const _networkTimeout = Duration(seconds: 45);
+  static const _transientRetryLimit = 2;
+  static const _transientRetryDelay = Duration(milliseconds: 1200);
   static const _revisionKeyPrefix = 'ishtirakati_cloud_revision_v15_';
   static final ValueNotifier<CloudSyncStatus> status =
       ValueNotifier(const CloudSyncStatus(CloudSyncPhase.idle));
@@ -93,10 +97,18 @@ class CloudSync {
   static bool _fail(CloudSyncFailure failure, String message) {
     status.value = CloudSyncStatus(
       CloudSyncPhase.failure,
+      updatedAt: status.value.updatedAt,
       failure: failure,
       message: message,
     );
     return false;
+  }
+
+  static void _setSyncing() {
+    status.value = CloudSyncStatus(
+      CloudSyncPhase.syncing,
+      updatedAt: status.value.updatedAt,
+    );
   }
 
   @visibleForTesting
@@ -176,6 +188,40 @@ class CloudSync {
       };
   }
 
+  @visibleForTesting
+  static bool isRetryableFirebaseCode(String code) {
+    final normalized = code.replaceFirst('storage/', '');
+    return normalized == 'unavailable' ||
+        normalized == 'internal' ||
+        normalized == 'aborted' ||
+        normalized == 'resource-exhausted';
+  }
+
+  static Future<T> _runFirestoreOperation<T>(
+    Future<T> Function() operation,
+  ) async {
+    for (var attempt = 1; attempt <= _transientRetryLimit; attempt++) {
+      try {
+        return await operation().timeout(_networkTimeout);
+      } on FirebaseException catch (error) {
+        if (!isRetryableFirebaseCode(error.code) ||
+            attempt == _transientRetryLimit) {
+          rethrow;
+        }
+        debugPrint(
+          'Cloud sync transient Firebase failure: plugin=${error.plugin} '
+          'code=${error.code} retry=$attempt/$_transientRetryLimit.',
+        );
+        await Future<void>.delayed(
+          Duration(
+            milliseconds: _transientRetryDelay.inMilliseconds * attempt,
+          ),
+        );
+      }
+    }
+    throw StateError('Firestore retry loop completed without a result.');
+  }
+
   static bool _failFirebase(
     FirebaseException error,
     StackTrace stackTrace, {
@@ -232,13 +278,6 @@ class CloudSync {
       !remoteExists || localRevision == remoteRevision;
 
   @visibleForTesting
-  static bool shouldCreateInitialCloudDocument({
-    required bool remoteExists,
-    required int localRevision,
-  }) =>
-      !remoteExists && localRevision == 0;
-
-  @visibleForTesting
   static CloudSyncFailure preflightFailure({
     required bool signedIn,
     required bool storageHealthy,
@@ -285,7 +324,7 @@ class CloudSync {
       );
     }
     if (doc == null || uid == null) return false;
-    status.value = const CloudSyncStatus(CloudSyncPhase.syncing);
+    _setSyncing();
     var firebaseOperation = 'firestore.prepare-encrypted-backup';
     try {
       final backup =
@@ -297,22 +336,13 @@ class CloudSync {
         );
       }
       final localRevision = await _localRevision(uid);
-      firebaseOperation = 'firestore.push-probe';
+      firebaseOperation = 'firestore.sync-transaction';
       _logFirebaseOperation(firebaseOperation);
-      final initialSnapshot = await doc
-          .get(const GetOptions(source: Source.server))
-          .timeout(_networkTimeout);
-      late final int nextRevision;
-      if (shouldCreateInitialCloudDocument(
-        remoteExists: initialSnapshot.exists,
-        localRevision: localRevision,
-      )) {
-        firebaseOperation = 'firestore.create-initial-document';
-        nextRevision = await _createInitialCloudDocument(doc, backup);
-      } else {
-        firebaseOperation = 'firestore.update-transaction';
-        nextRevision = await _updateCloudDocument(doc, backup, localRevision);
-      }
+      final nextRevision = await _writeCloudDocument(
+        doc,
+        backup,
+        localRevision,
+      );
       await _saveLocalRevision(uid, nextRevision);
       status.value = CloudSyncStatus(
         CloudSyncPhase.success,
@@ -361,23 +391,15 @@ class CloudSync {
         'encryption': _encryption,
       };
 
-  static Future<int> _createInitialCloudDocument(
-    DocumentReference<Map<String, dynamic>> doc,
-    String backup,
-  ) async {
-    _logFirebaseOperation('firestore.create-initial-document');
-    await doc.set(_encryptedBackupPayload(backup, 1)).timeout(_networkTimeout);
-    return 1;
-  }
-
-  static Future<int> _updateCloudDocument(
+  static Future<int> _writeCloudDocument(
     DocumentReference<Map<String, dynamic>> doc,
     String backup,
     int localRevision,
   ) async {
-    _logFirebaseOperation('firestore.update-transaction');
-    return FirebaseFirestore.instance
-        .runTransaction<int>((transaction) async {
+    _logFirebaseOperation('firestore.sync-transaction');
+    return _runFirestoreOperation(
+      () => FirebaseFirestore.instance.runTransaction<int>(
+        (transaction) async {
           final snapshot = await transaction.get(doc);
           final remoteRevision =
               (snapshot.data()?['revision'] as num?)?.toInt() ?? 0;
@@ -391,8 +413,9 @@ class CloudSync {
           final next = remoteRevision + 1;
           transaction.set(doc, _encryptedBackupPayload(backup, next));
           return next;
-        })
-        .timeout(_networkTimeout);
+        },
+      ),
+    );
   }
 
   /// جلب النسخة السحابية ودمجها مع المحلي.
@@ -408,9 +431,9 @@ class CloudSync {
       return -1;
     }
     if (uid == null) return -1;
-    status.value = const CloudSyncStatus(CloudSyncPhase.syncing);
+    _setSyncing();
     try {
-      final snap = await doc.get().timeout(_networkTimeout);
+      final snap = await _runFirestoreOperation(doc.get);
       final data = snap.data();
       final raw = data?['backup'] as String?;
       final schemaVersion = data?['schemaVersion'];
@@ -488,7 +511,10 @@ class CloudSync {
       return const CloudSyncResult.failed(CloudSyncFailure.unauthenticated);
     }
     try {
-      final exists = (await doc.get().timeout(_networkTimeout)).exists;
+      final exists = (await _runFirestoreOperation(
+        () => doc.get(const GetOptions(source: Source.server)),
+      ))
+          .exists;
       if (!exists) {
         final uploaded = await push();
         return uploaded
@@ -543,7 +569,7 @@ class CloudSync {
     final uid = AuthService.currentUser?.uid;
     if (doc == null) throw StateError('No authenticated cloud document.');
     try {
-      await doc.delete().timeout(_networkTimeout);
+      await _runFirestoreOperation(doc.delete);
     } on FirebaseException catch (error, stackTrace) {
       _failFirebase(
         error,

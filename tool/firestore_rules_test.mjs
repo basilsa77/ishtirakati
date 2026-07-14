@@ -11,6 +11,7 @@ import {
   enableNetwork,
   getDoc,
   getDocFromServer,
+  runTransaction,
   serverTimestamp,
   setDoc,
 } from 'firebase/firestore';
@@ -51,18 +52,46 @@ try {
   const versionedLegacyRef =
     doc(versionedLegacyOwner, 'users/versioned-legacy-user');
 
-  await assertSucceeds(setDoc(ownerRef, validBackup));
+  await assertSucceeds(
+    runTransaction(owner, async (transaction) => {
+      const firstRevision = 1;
+      const snapshot = await transaction.get(ownerRef);
+      if (snapshot.exists()) {
+        throw new Error('The first synchronization document already exists.');
+      }
+      transaction.set(ownerRef, { ...validBackup, revision: firstRevision });
+      return firstRevision;
+    }),
+  );
   if (validBackup.backup.includes('subscriptions')) {
     throw new Error('The cloud payload contains plaintext subscription data.');
   }
-  await assertSucceeds(getDoc(ownerRef));
+  const firstCloudCopy = await assertSucceeds(getDoc(ownerRef));
+  if (!firstCloudCopy.exists() || firstCloudCopy.data()?.revision !== 1) {
+    throw new Error('The first encrypted cloud synchronization was not created.');
+  }
   await assertFails(setDoc(ownerRef, validBackup));
   await assertSucceeds(
-    setDoc(ownerRef, { ...validBackup, revision: 2 }),
+    runTransaction(owner, async (transaction) => {
+      const snapshot = await transaction.get(ownerRef);
+      const currentRevision = snapshot.data()?.revision;
+      if (!snapshot.exists() || currentRevision !== 1) {
+        throw new Error('The existing cloud revision could not be read.');
+      }
+      transaction.set(ownerRef, {
+        ...validBackup,
+        revision: currentRevision + 1,
+      });
+      return currentRevision + 1;
+    }),
   );
   await assertFails(
     setDoc(ownerRef, { ...validBackup, revision: 4 }),
   );
+  const copyAfterRejectedWrite = await assertSucceeds(getDoc(ownerRef));
+  if (copyAfterRejectedWrite.data()?.revision !== 2) {
+    throw new Error('A failed synchronization changed the last cloud copy.');
+  }
   await assertFails(getDoc(doc(intruder, 'users/owner-user')));
   await assertFails(setDoc(doc(intruder, 'users/owner-user'), validBackup));
   await assertFails(getDoc(doc(anonymous, 'users/owner-user')));
@@ -129,7 +158,9 @@ try {
   await assertSucceeds(deleteDoc(legacyRef));
   await assertSucceeds(deleteDoc(unversionedRef));
   await assertSucceeds(deleteDoc(versionedLegacyRef));
-  console.log('Firestore rules isolation tests passed.');
+  console.log(
+    'Firestore transaction sync passed: missing document created, existing document updated, encrypted payload enforced, and failed writes preserved revision 2.',
+  );
 } finally {
   await environment.cleanup();
 }

@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=15.2.3"
-set "COMMIT_MESSAGE=v15.2.3+38: fix default Firestore synchronization"
+set "RELEASE_VERSION=15.2.4"
+set "COMMIT_MESSAGE=v15.2.4+39: make encrypted Firestore sync transactional"
 
 git init
 git config user.name "basilsa77"
