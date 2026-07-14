@@ -10,16 +10,15 @@ import '../theme.dart';
 import 'subscriptions_screen.dart';
 
 /// صفحة مستقلة للتقويم تُستخدم عند فتحه من خارج الشريط السفلي.
-/// تلف [CalendarScreen] داخل Scaffold لضمان وجود Material وخلفية صحيحة.
 class CalendarPage extends StatelessWidget {
   const CalendarPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    return Scaffold(
+    return CupertinoPageScaffold(
       backgroundColor: p.canvas,
-      appBar: CupertinoNavigationBar(
+      navigationBar: CupertinoNavigationBar(
         backgroundColor: p.canvas.withValues(alpha: .92),
         border: Border(bottom: BorderSide(color: p.stroke)),
         middle: Text(
@@ -27,7 +26,7 @@ class CalendarPage extends StatelessWidget {
           style: TextStyle(color: p.text, fontSize: 17, fontWeight: FontWeight.w900),
         ),
       ),
-      body: const SafeArea(top: false, child: CalendarScreen()),
+      child: const SafeArea(top: false, child: CalendarScreen()),
     );
   }
 }
@@ -143,9 +142,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       context: context,
       builder: (sheetContext) {
         final p = sheetContext.palette;
-        return Material(
-          type: MaterialType.transparency,
-          child: DraggableScrollableSheet(
+        return DraggableScrollableSheet(
             expand: false,
             initialChildSize: .52,
             minChildSize: .32,
@@ -171,24 +168,29 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     );
                   }
                   final subscription = subscriptions[index - 1];
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                    onTap: () {
+                  return CupertinoButton(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    onPressed: () {
                       Navigator.pop(sheetContext);
                       showSubscriptionDetails(context, subscription);
                     },
-                    leading: ServiceAvatar(name: subscription.name, emoji: subscription.emoji, manageUrl: subscription.manageUrl, iconUrl: subscription.iconUrl, tint: categoryColor(subscription.category), size: 42),
-                    title: Text(subscription.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontWeight: FontWeight.w800)),
-                    trailing: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 96),
-                      child: Text(fmtMoney(subscription.price, subscription.currency), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.accent, fontWeight: FontWeight.w900)),
+                    child: Row(
+                      children: [
+                        ServiceAvatar(name: subscription.name, emoji: subscription.emoji, manageUrl: subscription.manageUrl, iconUrl: subscription.iconUrl, tint: categoryColor(subscription.category), size: 42),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text(subscription.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontWeight: FontWeight.w800))),
+                        const SizedBox(width: 8),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 96),
+                          child: Text(fmtMoneyWithCurrency(subscription.price, subscription.currency), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.accent, fontWeight: FontWeight.w900)),
+                        ),
+                      ],
                     ),
                   );
                 },
               ),
             ),
             ),
-          ),
         );
       },
     );
@@ -242,18 +244,18 @@ class _MonthControl extends StatelessWidget {
     final p = context.palette;
     return Row(
       children: [
-        IconButton(
-          tooltip: 'الشهر التالي',
+        CupertinoButton(
+          padding: const EdgeInsets.all(8),
           onPressed: onNext,
-          icon: Icon(Icons.chevron_right_rounded, color: p.text),
+          child: Icon(CupertinoIcons.chevron_right, color: p.text),
         ),
         Expanded(child: Text(label, textAlign: TextAlign.center, style: TextStyle(color: p.text, fontSize: 18, fontWeight: FontWeight.w900))),
-        IconButton(
-          tooltip: 'الشهر السابق',
+        CupertinoButton(
+          padding: const EdgeInsets.all(8),
           onPressed: onPrevious,
-          icon: Icon(Icons.chevron_left_rounded, color: p.text),
+          child: Icon(CupertinoIcons.chevron_left, color: p.text),
         ),
-        TextButton(onPressed: onToday, child: const Text('اليوم')),
+        CupertinoButton(onPressed: onToday, child: const Text('اليوم')),
       ],
     );
   }
@@ -294,10 +296,11 @@ class _CalendarGrid extends StatelessWidget {
               final day = index - first + 1;
               final subscriptions = entries[day] ?? const <Subscription>[];
               final todaySelected = today.year == month.year && today.month == month.month && today.day == day;
-              return InkWell(
+              return GestureDetector(
                 onTap: subscriptions.isEmpty ? null : () => onOpen(day, subscriptions),
-                borderRadius: BorderRadius.circular(12),
-                child: Ink(
+                behavior: HitTestBehavior.opaque,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
                   decoration: BoxDecoration(
                     color: todaySelected ? p.accent : subscriptions.isNotEmpty ? p.accentSoft : Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
@@ -331,10 +334,11 @@ class _CalendarPayment extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    return InkWell(
-      onTap: () => showSubscriptionDetails(context, subscription),
+    return CupertinoButton(
+      onPressed: () => showSubscriptionDetails(context, subscription),
+      padding: EdgeInsets.zero,
       borderRadius: BorderRadius.circular(20),
-      child: Ink(
+      child: Container(
         padding: const EdgeInsets.all(13),
         decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(20), border: Border.all(color: p.stroke)),
         child: Row(
@@ -350,7 +354,15 @@ class _CalendarPayment extends StatelessWidget {
             ServiceAvatar(name: subscription.name, emoji: subscription.emoji, manageUrl: subscription.manageUrl, iconUrl: subscription.iconUrl, tint: categoryColor(subscription.category), size: 40),
             const SizedBox(width: 10),
             Expanded(child: Text(subscription.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: 13.5))),
-            Text(fmtMoney(subscription.price, subscription.currency), style: TextStyle(color: p.accent, fontWeight: FontWeight.w900, fontSize: 12.5)),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 92),
+              child: Text(
+                fmtMoneyWithCurrency(subscription.price, subscription.currency),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: p.accent, fontWeight: FontWeight.w900, fontSize: 12.5),
+              ),
+            ),
           ],
         ),
       ),
@@ -369,7 +381,7 @@ class _CalendarEmpty extends StatelessWidget {
       decoration: BoxDecoration(color: p.surfaceAlt, borderRadius: BorderRadius.circular(18)),
       child: Row(
         children: [
-          Icon(Icons.event_busy_rounded, color: p.textMuted),
+          Icon(CupertinoIcons.calendar_badge_minus, color: p.textMuted),
           const SizedBox(width: 10),
           Expanded(child: Text('لا توجد تجديدات مسجلة في هذا الشهر.', style: TextStyle(color: p.textMuted, fontSize: 12.5))),
         ],

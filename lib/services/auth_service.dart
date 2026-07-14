@@ -52,7 +52,8 @@ class AuthService {
       _initialized = true;
       try {
         await FirebaseAppCheck.instance.activate(
-          providerApple: const AppleAppAttestProvider(),
+          providerApple:
+              const AppleAppAttestWithDeviceCheckFallbackProvider(),
         );
         appCheckWarning.value = null;
       } catch (error) {
@@ -68,11 +69,15 @@ class AuthService {
       try {
         await GoogleSignIn.instance.initialize();
         _googleInitialized = true;
-      } catch (_) {
+      } catch (error) {
         _googleInitialized = false;
+        debugPrint(
+          'Google Sign-In initialization failed (${error.runtimeType}).',
+        );
       }
-    } catch (_) {
+    } catch (error) {
       _initialized = false;
+      debugPrint('Firebase initialization failed (${error.runtimeType}).');
     }
   }
 

@@ -426,7 +426,8 @@ class _AccountCard extends StatelessWidget {
                         ),
                       CloudSyncPhase.failure => (
                            CupertinoIcons.exclamationmark_circle,
-                           'تعذرت المزامنة. تحقق من الاتصال ثم أعد المحاولة.',
+                           status.message ??
+                               'تعذرت المزامنة. أعد المحاولة بعد التحقق من الاتصال.',
                           p.danger,
                         ),
                       CloudSyncPhase.idle => (

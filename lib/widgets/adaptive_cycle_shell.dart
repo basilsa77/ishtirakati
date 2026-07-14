@@ -50,18 +50,14 @@ class AdaptiveCycleShell extends StatelessWidget {
             ],
           );
         }
-        return Stack(
+        return Column(
           children: [
-            Positioned.fill(
-              bottom: 49 + MediaQuery.paddingOf(context).bottom,
-              child: page,
+            Expanded(
+              child: RepaintBoundary(child: page),
             ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: _IOSBottomBar(
-                destination: destination,
-                onDestination: _select,
-              ),
+            _IOSBottomBar(
+              destination: destination,
+              onDestination: _select,
             ),
           ],
         );
@@ -82,28 +78,30 @@ class _IOSBottomBar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: CupertinoTabBar(
-            key: const ValueKey('ios-tab-bar'),
-            currentIndex: destination.index,
-            onTap: (index) => onDestination(_primaryDestinations[index]),
-            activeColor: context.palette.accent,
-            inactiveColor: context.palette.textMuted,
-            backgroundColor: context.palette.surface.withValues(alpha: .88),
-            border: Border(top: BorderSide(color: context.palette.stroke)),
-            items: [
-              for (final item in _primaryDestinations)
-                BottomNavigationBarItem(
-                  icon: Icon(
-                    item.icon,
-                    key: ValueKey('v12-dock-${item.name}'),
+  Widget build(BuildContext context) => RepaintBoundary(
+        child: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: CupertinoTabBar(
+              key: const ValueKey('ios-tab-bar'),
+              currentIndex: destination.index,
+              onTap: (index) => onDestination(_primaryDestinations[index]),
+              activeColor: context.palette.accent,
+              inactiveColor: context.palette.textMuted,
+              backgroundColor: context.palette.surface.withValues(alpha: .96),
+              border: Border(top: BorderSide(color: context.palette.stroke)),
+              items: [
+                for (final item in _primaryDestinations)
+                  BottomNavigationBarItem(
+                    icon: Icon(
+                      item.icon,
+                      key: ValueKey('v12-dock-${item.name}'),
+                    ),
+                    activeIcon: Icon(item.selectedIcon),
+                    label: item.shortLabel,
                   ),
-                  activeIcon: Icon(item.selectedIcon),
-                  label: item.shortLabel,
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       );

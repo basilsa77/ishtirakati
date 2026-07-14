@@ -212,17 +212,20 @@ class _HeaderAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Tooltip(
         message: tooltip,
-        child: IconButton.filledTonal(
+        child: CupertinoButton(
           onPressed: onTap,
-          icon: Icon(icon),
-          color: emphasized ? V12Colors.white : context.palette.accent,
-          style: IconButton.styleFrom(
-            minimumSize: const Size.square(48),
-            backgroundColor:
-                emphasized ? context.palette.accentStrong : context.palette.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(V12Radius.standard),
-              side: BorderSide(color: context.palette.stroke),
+          padding: EdgeInsets.zero,
+          color: emphasized
+              ? context.palette.accentStrong
+              : context.palette.surface,
+          borderRadius: BorderRadius.circular(V12Radius.standard),
+          child: SizedBox.square(
+            dimension: 48,
+            child: Icon(
+              icon,
+              color: emphasized
+                  ? V12Colors.white
+                  : context.palette.accent,
             ),
           ),
         ),
@@ -246,8 +249,9 @@ class _RenewalSummary extends StatelessWidget {
         label: upcoming.isEmpty
             ? 'لا توجد تجديدات خلال 30 يومًا'
             : '${upcoming.length} تجديدات خلال 30 يومًا',
-        child: InkWell(
-          onTap: onOpen,
+        child: CupertinoButton(
+          onPressed: onOpen,
+          padding: EdgeInsets.zero,
           borderRadius: BorderRadius.circular(V12Radius.signature),
           child: DecoratedBox(
         decoration: BoxDecoration(
@@ -508,10 +512,10 @@ class _SectionHeading extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            tooltip: 'فتح المكتبة',
+          CupertinoButton(
+            padding: const EdgeInsets.all(8),
             onPressed: onTap,
-            icon: const Icon(Icons.arrow_back_rounded),
+            child: const Icon(CupertinoIcons.chevron_back),
           ),
         ],
       );
@@ -528,8 +532,9 @@ class _RenewalLine extends StatelessWidget {
     return Semantics(
       button: true,
       label: '${subscription.name} يتجدد بعد $days يوم',
-      child: InkWell(
-        onTap: () => showSubscriptionDetails(context, subscription),
+      child: CupertinoButton(
+        onPressed: () => showSubscriptionDetails(context, subscription),
+        padding: EdgeInsets.zero,
         borderRadius: BorderRadius.circular(V12Radius.standard),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: V12Space.sm),
@@ -632,10 +637,16 @@ class _EmptyPulse extends StatelessWidget {
               style: TextStyle(color: context.palette.textMuted),
             ),
             const SizedBox(height: V12Space.lg),
-            FilledButton.icon(
+            CupertinoButton.filled(
               onPressed: onAdd,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('إضافة اشتراك'),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(CupertinoIcons.add, size: 18),
+                  SizedBox(width: 8),
+                  Text('إضافة اشتراك'),
+                ],
+              ),
             ),
           ],
         ),

@@ -22,9 +22,14 @@ import 'services/subscription_store.dart';
 import 'services/update_checker.dart';
 import 'theme.dart';
 import 'widgets/adaptive_cycle_shell.dart';
+import 'widgets/app_media_query.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  ErrorWidget.builder = (details) {
+    debugPrint('UI render failure (${details.exception.runtimeType}).');
+    return const _RenderFailure();
+  };
   final store = SubscriptionStore.instance;
   try {
     await store.load();
@@ -113,10 +118,12 @@ class IshtirakatiApp extends StatelessWidget {
                 isDark ? Brightness.light : Brightness.dark,
           ),
         );
-        return GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-          child: child ?? const SizedBox.shrink(),
+        return AppMediaQuery(
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
       home: store.hasOnboarded
@@ -124,6 +131,49 @@ class IshtirakatiApp extends StatelessWidget {
           : const OnboardingScreen(),
         );
       },
+    );
+  }
+}
+
+class _RenderFailure extends StatelessWidget {
+  const _RenderFailure();
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return ColoredBox(
+      color: p.canvas,
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                CupertinoIcons.exclamationmark_triangle,
+                color: p.warning,
+                size: 36,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'تعذر عرض هذا الجزء',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: p.text,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'انتقل إلى تبويب آخر ثم عُد، وإذا استمرت المشكلة فأغلق التطبيق وافتحه مجددًا.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: p.textMuted, height: 1.5),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

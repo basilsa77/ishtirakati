@@ -2,8 +2,7 @@
 /// تظهر بعد الترحيب ويمكن فتحها من الإعدادات.
 library;
 
-import 'dart:async';
-
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../main.dart';
@@ -25,13 +24,30 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _busy = false;
   String? _error;
 
+  Future<void> _retrySync() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final sync = await CloudSync.restoreAndPush();
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      if (!sync.success) {
+        _error = CloudSync.status.value.message ??
+            'تعذرت المزامنة. أعد المحاولة من الإعدادات.';
+      }
+    });
+    if (sync.success) await _continueToApp();
+  }
+
   Future<void> _continueToApp() async {
     if (widget.fromSettings) {
       Navigator.of(context).pop();
       return;
     }
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
+      CupertinoPageRoute(
         builder: (_) => const LockGate(child: RootShell()),
       ),
     );
@@ -49,20 +65,17 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() => _busy = false); // ألغى المستخدم
         return;
       }
-      // اجلب النسخة السحابية إن وجدت، ثم ارفع الحالة الحالية.
-      unawaited(CloudSync.restoreAndPush());
-      const imported = 0;
+      // لا نغادر شاشة الدخول قبل معرفة أن Firestore قبل النسخة فعلًا.
+      final sync = await CloudSync.restoreAndPush();
       if (!mounted) return;
       setState(() => _busy = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            imported > 0
-                ? 'تم تسجيل الدخول واستعادة $imported عنصرًا من حسابك'
-                : 'تم تسجيل الدخول — بياناتك ستُزامَن تلقائيًا',
-          ),
-        ),
-      );
+      if (!sync.success) {
+        setState(() {
+          _error = CloudSync.status.value.message ??
+              'تم تسجيل الدخول، لكن تعذرت المزامنة. أعد المحاولة من الإعدادات.';
+        });
+        return;
+      }
       await _continueToApp();
     } on AuthException catch (e) {
       if (!mounted) return;
@@ -83,11 +96,18 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final configured = AuthService.isAvailable;
     final p = context.palette;
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 26),
-          child: Column(
+    final signedIn = AuthService.isSignedIn;
+    return CupertinoPageScaffold(
+      backgroundColor: p.canvas,
+      child: SafeArea(
+        child: CustomScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 26),
+              sliver: SliverFillRemaining(
+                hasScrollBody: false,
+                child: Column(
             children: [
               const Spacer(),
               Container(
@@ -135,57 +155,45 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              // زر Apple (أبيض بأيقونة سوداء كإرشادات Apple)
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor:
-                       configured ? Colors.white : p.surfaceAlt,
-                  foregroundColor:
-                       configured ? Colors.black : p.textMuted,
-                  minimumSize: const Size.fromHeight(54),
-                ),
-                onPressed: (!configured || _busy)
+              _AuthButton(
+                backgroundColor: CupertinoColors.white,
+                foregroundColor: CupertinoColors.black,
+                onPressed: (!configured || _busy || signedIn)
                     ? null
                     : () => _signIn(AuthService.signInWithApple),
                 icon: const Icon(Icons.apple_rounded, size: 26),
                 label: const Text(
                   'المتابعة بحساب Apple',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                  ),
                 ),
               ),
               const SizedBox(height: 12),
-              // زر Google
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor:
-                       configured ? p.accentStrong : p.surfaceAlt,
-                  foregroundColor: configured
-                      ? Colors.white
-                       : p.textMuted,
-                  minimumSize: const Size.fromHeight(54),
-                ),
+              _AuthButton(
+                backgroundColor: p.accentStrong,
+                foregroundColor: CupertinoColors.white,
                 onPressed: (!configured || _busy)
                     ? null
-                    : () => _signIn(AuthService.signInWithGoogle),
+                    : signedIn
+                        ? _retrySync
+                        : () => _signIn(AuthService.signInWithGoogle),
                 icon: _busy
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Colors.white,
+                        child: CupertinoActivityIndicator(
+                          color: CupertinoColors.white,
                         ),
                       )
-                    : const Icon(Icons.g_mobiledata_rounded, size: 30),
-                label: const Text(
-                  'المتابعة بحساب Google',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                  ),
+                    : const Text(
+                        'G',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                label: Text(
+                  signedIn
+                      ? 'إعادة محاولة المزامنة'
+                      : 'المتابعة بحساب Google',
                 ),
               ),
               if (_error != null) ...[
@@ -202,7 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ],
               const SizedBox(height: 10),
-              TextButton(
+              CupertinoButton(
                 onPressed: _busy ? null : _continueToApp,
                 child: Text(
                   'المتابعة بدون حساب',
@@ -227,9 +235,65 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ],
+                ),
+              ),
+            ),
+          ],
           ),
         ),
-      ),
     );
   }
+}
+
+class _AuthButton extends StatelessWidget {
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final VoidCallback? onPressed;
+  final Widget icon;
+  final Widget label;
+
+  const _AuthButton({
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: double.infinity,
+        child: CupertinoButton(
+          color: backgroundColor,
+          disabledColor: context.palette.surfaceAlt,
+          borderRadius: BorderRadius.circular(12),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+          onPressed: onPressed,
+          child: DefaultTextStyle(
+            style: TextStyle(
+              color: onPressed == null
+                  ? context.palette.textMuted
+                  : foregroundColor,
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+            child: IconTheme(
+              data: IconThemeData(
+                color: onPressed == null
+                    ? context.palette.textMuted
+                    : foregroundColor,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  icon,
+                  const SizedBox(width: 10),
+                  Flexible(child: label),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
 }

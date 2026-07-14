@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=14.0.0"
-set "COMMIT_MESSAGE=v14.0.0+28: native iOS interface and usability corrections"
+set "RELEASE_VERSION=15.0.0"
+set "COMMIT_MESSAGE=v15.0.0+29: resilient iOS layout and reliable cloud sync"
 
 git init
 git config user.name "basilsa77"

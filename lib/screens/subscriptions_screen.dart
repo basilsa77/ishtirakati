@@ -357,14 +357,15 @@ class _SubscriptionRow extends StatelessWidget {
         alignment: AlignmentDirectional.centerEnd,
         padding: const EdgeInsetsDirectional.only(end: 22),
         decoration: BoxDecoration(color: p.danger, borderRadius: BorderRadius.circular(22)),
-        child: const Icon(Icons.delete_outline_rounded, color: Colors.white),
+        child: const Icon(CupertinoIcons.delete, color: CupertinoColors.white),
       ),
       confirmDismiss: (_) => _confirmDelete(context, subscription.name),
       onDismissed: (_) => store.remove(subscription.id),
-      child: InkWell(
-        onTap: () => showSubscriptionDetails(context, subscription),
+      child: CupertinoButton(
+        onPressed: () => showSubscriptionDetails(context, subscription),
+        padding: EdgeInsets.zero,
         borderRadius: BorderRadius.circular(22),
-        child: Ink(
+        child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: p.surface,
@@ -472,7 +473,7 @@ class _LibraryEmpty extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.search_off_rounded, color: p.textMuted, size: 32),
+          Icon(CupertinoIcons.search, color: p.textMuted, size: 32),
           const SizedBox(height: 10),
           Text('لا توجد نتائج مطابقة.', style: TextStyle(color: p.text, fontWeight: FontWeight.w800)),
         ],
