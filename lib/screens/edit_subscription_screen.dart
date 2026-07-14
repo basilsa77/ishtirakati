@@ -742,36 +742,22 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   style: TextStyle(color: p.textMuted),
                 ),
                 children: [
-                  CupertinoFormRow(
-                    prefix: _FinancialFormText(
-                      tr('ui_805776c9a492'),
-                      color: p.text,
-                    ),
-                    helper: _FinancialFormText(
-                      tr('ui_d7b5a2799c4c'),
-                      color: p.textMuted,
-                      caption: true,
-                    ),
-                    child: CupertinoSwitch(
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: _CupertinoSwitchRow(
+                      title: tr('ui_805776c9a492'),
+                      detail: tr('ui_d7b5a2799c4c'),
                       value: _autoRenews,
-                      activeTrackColor: p.accent,
                       onChanged: (value) =>
                           setState(() => _autoRenews = value),
                     ),
                   ),
-                  CupertinoFormRow(
-                    prefix: _FinancialFormText(
-                      tr('ui_8fb8496b5a8d'),
-                      color: p.text,
-                    ),
-                    helper: _FinancialFormText(
-                      tr('ui_5bf69c56b1dd'),
-                      color: p.textMuted,
-                      caption: true,
-                    ),
-                    child: CupertinoSwitch(
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: _CupertinoSwitchRow(
+                      title: tr('ui_8fb8496b5a8d'),
+                      detail: tr('ui_5bf69c56b1dd'),
                       value: _isEssential,
-                      activeTrackColor: p.accent,
                       onChanged: (value) =>
                           setState(() => _isEssential = value),
                     ),
@@ -916,27 +902,3 @@ class _CupertinoSwitchRow extends StatelessWidget {
   }
 }
 
-class _FinancialFormText extends StatelessWidget {
-  final String text;
-  final Color color;
-  final bool caption;
-
-  const _FinancialFormText(
-    this.text, {
-    required this.color,
-    this.caption = false,
-  });
-
-  @override
-  Widget build(BuildContext context) => Text(
-        text,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: color,
-          fontSize: caption ? V15Type.caption : V15Type.body,
-          height: 1.35,
-          fontWeight: caption ? FontWeight.w500 : FontWeight.w700,
-        ),
-      );
-}
