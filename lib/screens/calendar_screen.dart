@@ -219,27 +219,30 @@ class _CalendarViewOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: selected
-                  ? CupertinoColors.white
-                  : context.palette.textMuted,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 16,
                 color: selected
                     ? CupertinoColors.white
-                    : context.palette.text,
-                fontWeight: FontWeight.w800,
+                    : context.palette.textMuted,
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: selected
+                      ? CupertinoColors.white
+                      : context.palette.text,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
         ),
       );
 }
