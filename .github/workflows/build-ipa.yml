@@ -128,7 +128,7 @@ jobs:
       - name: حفظ ملف قفل الاعتماديات
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: pubspec-lock-v15.2.2-build37
+          name: pubspec-lock-v15.2.3-build38
           path: pubspec.lock
           retention-days: 1
 
@@ -142,7 +142,7 @@ jobs:
         run: |
           # flutter build --no-codesign معطوب في Flutter الحديث. نولد الإعدادات
           # فقط ثم نبني عبر xcodebuild مع تعطيل التوقيع.
-          flutter build ios --release --config-only --no-codesign --obfuscate --split-debug-info=build/ios-symbols --dart-define=ENABLE_FIREBASE_APP_CHECK=false '--dart-define=FIRESTORE_DATABASE_ID=(default)'
+          flutter build ios --release --config-only --no-codesign --obfuscate --split-debug-info=build/ios-symbols --dart-define=ENABLE_FIREBASE_APP_CHECK=false
           # Flutter الحديث يستخدم Swift Package Manager. ندعم CocoaPods فقط
           # للمشاريع القديمة التي ما زال لديها Podfile.
           if [ -f ios/Podfile ]; then
@@ -196,19 +196,19 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/ios/iphoneos/Runner.app Payload/
-          zip -qr Ishtirakati-15.2.2-build37-unsigned.ipa Payload
-          ls -lh Ishtirakati-15.2.2-build37-unsigned.ipa
+          zip -qr Ishtirakati-15.2.3-build38-unsigned.ipa Payload
+          ls -lh Ishtirakati-15.2.3-build38-unsigned.ipa
 
       - name: رفع الملف الناتج
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: Ishtirakati-15.2.2-build37-unsigned-ipa
-          path: Ishtirakati-15.2.2-build37-unsigned.ipa
+          name: Ishtirakati-15.2.3-build38-unsigned-ipa
+          path: Ishtirakati-15.2.3-build38-unsigned.ipa
           retention-days: 30
 
       - name: رفع رموز فك التشويش الخاصة بالمطور
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: Ishtirakati-15.2.2-build37-iOS-symbols
+          name: Ishtirakati-15.2.3-build38-iOS-symbols
           path: build/ios-symbols
           retention-days: 30

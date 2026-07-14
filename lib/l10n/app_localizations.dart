@@ -80,6 +80,10 @@ class AppLocalizations {
           'تعذر الوصول إلى مورد Firebase المطلوب. حدّث التطبيق ثم أعد المحاولة.',
       'cloudFirestoreDatabaseNotFound':
           'قاعدة بيانات Firestore الافتراضية غير متاحة لهذا المشروع. تحقق من إعداد Firebase ثم أعد المحاولة.',
+      'cloudFirestoreResourceNotFound':
+          'تعذر العثور على مورد Firestore المطلوب. تحقق من إعداد المشروع ثم أعد المحاولة.',
+      'cloudSyncDocumentNotFound':
+          'لا توجد نسخة سحابية لهذا الحساب بعد. أعد المزامنة لإنشاء النسخة الأولى.',
       'cloudStorageResourceNotFound':
           'مساحة التخزين السحابية أو الملف المطلوب غير موجود. تحقق من إعداد Firebase.',
       'cloudFailedPrecondition':

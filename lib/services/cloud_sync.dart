@@ -73,10 +73,9 @@ class CloudSync {
   static const _schemaVersion = 2;
   static const _legacySchemaVersion = 1;
   static const _encryption = 'AES-256-GCM';
-  static const databaseId = String.fromEnvironment(
-    'FIRESTORE_DATABASE_ID',
-    defaultValue: '(default)',
-  );
+  /// The production project uses Firestore's default database. Named database
+  /// instances must not be used for this path.
+  static const databaseId = '(default)';
   static const _maxBackupBytes = 850000;
   static const _networkTimeout = Duration(seconds: 10);
   static const _revisionKeyPrefix = 'ishtirakati_cloud_revision_v15_';
@@ -86,12 +85,10 @@ class CloudSync {
   static DocumentReference<Map<String, dynamic>>? _doc() {
     final user = AuthService.currentUser;
     if (user == null) return null;
-    final firestore = FirebaseFirestore.instanceFor(
-      app: Firebase.app(),
-      databaseId: databaseId,
-    );
-    return firestore.collection('users').doc(user.uid);
+    return FirebaseFirestore.instance.collection('users').doc(user.uid);
   }
+
+  static const _safeDocumentPath = 'users/<uid>';
 
   static bool _fail(CloudSyncFailure failure, String message) {
     status.value = CloudSyncStatus(
@@ -110,15 +107,25 @@ class CloudSync {
   static String messageForFirebaseFailure({
     required String code,
     String plugin = '',
+    String message = '',
   }) {
     final normalized = code.replaceFirst('storage/', '');
     final isStorage = plugin.contains('storage') || code.startsWith('storage/');
+    final isFirestore = plugin.contains('firestore');
+    final databaseMissing = isFirestore &&
+        normalized == 'not-found' &&
+        isFirestoreDatabaseMissingMessage(message);
+    final documentMissing = isFirestore &&
+        normalized == 'not-found' &&
+        isFirestoreDocumentMissingMessage(message);
     return switch (normalized) {
       'permission-denied' => tr('cloudPermissionDenied'),
       'unauthenticated' => tr('cloudUnauthenticated'),
       'not-found' when isStorage => tr('cloudStorageResourceNotFound'),
-      'not-found' when plugin.contains('firestore') =>
+      'not-found' when databaseMissing =>
         tr('cloudFirestoreDatabaseNotFound'),
+      'not-found' when documentMissing => tr('cloudSyncDocumentNotFound'),
+      'not-found' when isFirestore => tr('cloudFirestoreResourceNotFound'),
       'not-found' => tr('cloudResourceNotFound'),
       'bucket-not-found' || 'object-not-found' =>
         tr('cloudStorageResourceNotFound'),
@@ -130,6 +137,26 @@ class CloudSync {
       'deadline-exceeded' => tr('cloudTimeout'),
       _ => tr('cloudFirebaseError', {'code': code}),
     };
+  }
+
+  @visibleForTesting
+  static bool isFirestoreDatabaseMissingMessage(String message) {
+    final normalized = message.toLowerCase();
+    final saysMissing = normalized.contains('not found') ||
+        normalized.contains('does not exist') ||
+        normalized.contains('doesn\'t exist') ||
+        normalized.contains('not available');
+    return normalized.contains('database') && saysMissing;
+  }
+
+  @visibleForTesting
+  static bool isFirestoreDocumentMissingMessage(String message) {
+    final normalized = message.toLowerCase();
+    final saysMissing = normalized.contains('not found') ||
+        normalized.contains('does not exist') ||
+        normalized.contains('doesn\'t exist') ||
+        normalized.contains('no document');
+    return normalized.contains('document') && saysMissing;
   }
 
   @visibleForTesting
@@ -168,7 +195,7 @@ class CloudSync {
       'Cloud sync Firebase failure: operation=$operation '
       'plugin=${error.plugin} code=${error.code} '
       'message=${safeMessage.isEmpty ? '<empty>' : safeMessage} '
-      'project=${Firebase.app().options.projectId} database=$databaseId.',
+      '${_safeFirebaseTarget()}.',
     );
     debugPrintStack(
       label: 'Cloud sync stack ($operation)',
@@ -176,8 +203,24 @@ class CloudSync {
     );
     return _fail(
       failureForFirebaseCode(error.code),
-      messageForFirebaseFailure(code: error.code, plugin: error.plugin),
+      messageForFirebaseFailure(
+        code: error.code,
+        plugin: error.plugin,
+        message: error.message ?? '',
+      ),
     );
+  }
+
+  static String _safeFirebaseTarget() {
+    final options = Firebase.app().options;
+    return 'project=${options.projectId} appId=${options.appId} '
+        'storageBucket=${options.storageBucket ?? '<none>'} '
+        'database=$databaseId document=$_safeDocumentPath';
+  }
+
+  static void _logFirebaseOperation(String operation) {
+    debugPrint('Cloud sync Firebase target: operation=$operation '
+        '${_safeFirebaseTarget()}.');
   }
 
   @visibleForTesting
@@ -187,6 +230,13 @@ class CloudSync {
     required bool remoteExists,
   }) =>
       !remoteExists || localRevision == remoteRevision;
+
+  @visibleForTesting
+  static bool shouldCreateInitialCloudDocument({
+    required bool remoteExists,
+    required int localRevision,
+  }) =>
+      !remoteExists && localRevision == 0;
 
   @visibleForTesting
   static CloudSyncFailure preflightFailure({
@@ -236,6 +286,7 @@ class CloudSync {
     }
     if (doc == null || uid == null) return false;
     status.value = const CloudSyncStatus(CloudSyncPhase.syncing);
+    var firebaseOperation = 'firestore.prepare-encrypted-backup';
     try {
       final backup =
           await SubscriptionStore.instance.exportEncryptedCloudBackup();
@@ -246,33 +297,22 @@ class CloudSync {
         );
       }
       final localRevision = await _localRevision(uid);
-      final firestore = FirebaseFirestore.instanceFor(
-        app: Firebase.app(),
-        databaseId: databaseId,
-      );
-      final nextRevision = await firestore
-          .runTransaction<int>((transaction) async {
-            final snapshot = await transaction.get(doc);
-            final remoteRevision =
-                (snapshot.data()?['revision'] as num?)?.toInt() ?? 0;
-            if (!canPushRevision(
-              localRevision: localRevision,
-              remoteRevision: remoteRevision,
-              remoteExists: snapshot.exists,
-            )) {
-              throw const _CloudRevisionConflict();
-            }
-            final next = remoteRevision + 1;
-            transaction.set(doc, {
-              'backup': backup,
-              'updatedAt': FieldValue.serverTimestamp(),
-              'schemaVersion': _schemaVersion,
-              'revision': next,
-              'encryption': _encryption,
-            });
-            return next;
-          })
+      firebaseOperation = 'firestore.push-probe';
+      _logFirebaseOperation(firebaseOperation);
+      final initialSnapshot = await doc
+          .get(const GetOptions(source: Source.server))
           .timeout(_networkTimeout);
+      late final int nextRevision;
+      if (shouldCreateInitialCloudDocument(
+        remoteExists: initialSnapshot.exists,
+        localRevision: localRevision,
+      )) {
+        firebaseOperation = 'firestore.create-initial-document';
+        nextRevision = await _createInitialCloudDocument(doc, backup);
+      } else {
+        firebaseOperation = 'firestore.update-transaction';
+        nextRevision = await _updateCloudDocument(doc, backup, localRevision);
+      }
       await _saveLocalRevision(uid, nextRevision);
       status.value = CloudSyncStatus(
         CloudSyncPhase.success,
@@ -293,7 +333,7 @@ class CloudSync {
       return _failFirebase(
         error,
         stackTrace,
-        operation: 'firestore.push-transaction',
+        operation: firebaseOperation,
       );
     } on SecureDataException catch (_) {
       return _fail(
@@ -307,6 +347,52 @@ class CloudSync {
         tr('cloudSyncUnknown'),
       );
     }
+  }
+
+  static Map<String, Object> _encryptedBackupPayload(
+    String backup,
+    int revision,
+  ) =>
+      {
+        'backup': backup,
+        'updatedAt': FieldValue.serverTimestamp(),
+        'schemaVersion': _schemaVersion,
+        'revision': revision,
+        'encryption': _encryption,
+      };
+
+  static Future<int> _createInitialCloudDocument(
+    DocumentReference<Map<String, dynamic>> doc,
+    String backup,
+  ) async {
+    _logFirebaseOperation('firestore.create-initial-document');
+    await doc.set(_encryptedBackupPayload(backup, 1)).timeout(_networkTimeout);
+    return 1;
+  }
+
+  static Future<int> _updateCloudDocument(
+    DocumentReference<Map<String, dynamic>> doc,
+    String backup,
+    int localRevision,
+  ) async {
+    _logFirebaseOperation('firestore.update-transaction');
+    return FirebaseFirestore.instance
+        .runTransaction<int>((transaction) async {
+          final snapshot = await transaction.get(doc);
+          final remoteRevision =
+              (snapshot.data()?['revision'] as num?)?.toInt() ?? 0;
+          if (!canPushRevision(
+            localRevision: localRevision,
+            remoteRevision: remoteRevision,
+            remoteExists: snapshot.exists,
+          )) {
+            throw const _CloudRevisionConflict();
+          }
+          final next = remoteRevision + 1;
+          transaction.set(doc, _encryptedBackupPayload(backup, next));
+          return next;
+        })
+        .timeout(_networkTimeout);
   }
 
   /// جلب النسخة السحابية ودمجها مع المحلي.

@@ -46,6 +46,26 @@ void main() {
         isFalse,
       );
     });
+
+    test('first server probe creates a missing cloud document directly', () {
+      expect(
+        CloudSync.shouldCreateInitialCloudDocument(
+          remoteExists: false,
+          localRevision: 0,
+        ),
+        isTrue,
+      );
+    });
+
+    test('an existing cloud document always uses conflict protection', () {
+      expect(
+        CloudSync.shouldCreateInitialCloudDocument(
+          remoteExists: true,
+          localRevision: 0,
+        ),
+        isFalse,
+      );
+    });
   });
 
   group('cloud synchronization preflight', () {

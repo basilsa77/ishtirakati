@@ -183,7 +183,23 @@ void main() {
         code: 'not-found',
         plugin: 'cloud_firestore',
       ),
-      contains('Firestore'),
+      contains('مورد Firestore'),
+    );
+    expect(
+      CloudSync.messageForFirebaseFailure(
+        code: 'not-found',
+        plugin: 'cloud_firestore',
+        message: 'The database (default) does not exist for project demo.',
+      ),
+      contains('قاعدة بيانات Firestore'),
+    );
+    expect(
+      CloudSync.messageForFirebaseFailure(
+        code: 'not-found',
+        plugin: 'cloud_firestore',
+        message: 'The requested document was not found.',
+      ),
+      contains('لا توجد نسخة سحابية'),
     );
     expect(
       CloudSync.messageForFirebaseCode('failed-precondition'),
@@ -213,6 +229,18 @@ void main() {
       CloudSyncFailure.configuration,
     );
     expect(CloudSync.databaseId, '(default)');
+    expect(
+      CloudSync.isFirestoreDatabaseMissingMessage(
+        'Database (default) was not found.',
+      ),
+      isTrue,
+    );
+    expect(
+      CloudSync.isFirestoreDatabaseMissingMessage(
+        'The requested document was not found.',
+      ),
+      isFalse,
+    );
   });
 
   test(

@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=15.2.2"
-set "COMMIT_MESSAGE=v15.2.2+37: encrypt Firebase sync and diagnose not-found"
+set "RELEASE_VERSION=15.2.3"
+set "COMMIT_MESSAGE=v15.2.3+38: fix default Firestore synchronization"
 
 git init
 git config user.name "basilsa77"
