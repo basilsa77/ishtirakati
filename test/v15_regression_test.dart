@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishtirakati/design/design_tokens.dart';
@@ -158,11 +157,13 @@ void main() {
       220,
       scrollable: scrollable,
     );
-    final planField = tester.widget<CupertinoTextFormFieldRow>(
-      find.byKey(const Key('plan-name-field')),
+    final planEditor = tester.widget<EditableText>(
+      find.descendant(
+        of: find.byKey(const Key('plan-name-field')),
+        matching: find.byType(EditableText),
+      ),
     );
-    expect(planField.style?.fontSize, V12Type.body);
-    expect(planField.placeholderStyle?.fontSize, V12Type.body);
+    expect(planEditor.style.fontSize, V12Type.body);
     expect(tester.takeException(), isNull);
   });
 }
