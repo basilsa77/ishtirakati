@@ -3,7 +3,9 @@
 library;
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:local_auth/local_auth.dart';
@@ -24,8 +26,21 @@ import 'theme.dart';
 import 'widgets/adaptive_cycle_shell.dart';
 import 'widgets/app_media_query.dart';
 
+/// Prevents Flutter Inspector paint overlays from leaking into an installed
+/// build. The baseline overlay is especially disruptive for Arabic text because
+/// it draws yellow and green rules across every rendered line.
+@visibleForTesting
+void disableVisualDebugOverlays() {
+  debugPaintSizeEnabled = false;
+  debugPaintBaselinesEnabled = false;
+  debugPaintPointersEnabled = false;
+  debugPaintLayerBordersEnabled = false;
+  debugRepaintRainbowEnabled = false;
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  disableVisualDebugOverlays();
   ErrorWidget.builder = (details) {
     debugPrint('UI render failure (${details.exception.runtimeType}).');
     return const _RenderFailure();
@@ -48,6 +63,9 @@ Future<void> main() async {
     ),
   );
   runApp(const IshtirakatiApp());
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    disableVisualDebugOverlays();
+  });
   // بعد الإقلاع: صلاحية الإشعارات وجدولتها + تحديث قاعدة الخدمات.
   if (store.notificationsEnabled) {
     // ignore: unawaited_futures
@@ -82,6 +100,7 @@ class IshtirakatiApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    disableVisualDebugOverlays();
     final store = SubscriptionStore.instance;
     return ListenableBuilder(
       listenable: store,

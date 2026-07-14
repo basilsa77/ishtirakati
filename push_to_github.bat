@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=15.0.0"
-set "COMMIT_MESSAGE=v15.0.0+29: resilient iOS layout and reliable cloud sync"
+set "RELEASE_VERSION=15.0.1"
+set "COMMIT_MESSAGE=v15.0.1+30: remove Flutter baseline diagnostics from iOS builds"
 
 git init
 git config user.name "basilsa77"

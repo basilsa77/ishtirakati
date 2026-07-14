@@ -151,7 +151,7 @@ jobs:
           if [ -n "$FLUTTER_ROOT" ]; then
             xattr -cr "$FLUTTER_ROOT/bin/cache/artifacts" 2>/dev/null || true
           fi
-          if ! xcodebuild -workspace ios/Runner.xcworkspace \
+          if ! FLUTTER_BUILD_MODE=release xcodebuild -workspace ios/Runner.xcworkspace \
             -scheme Runner \
             -configuration Release \
             -destination 'generic/platform=iOS' \
@@ -182,6 +182,11 @@ jobs:
           cp -R "$APP" build/ios/iphoneos/Runner.app
           test -f build/ios/iphoneos/Runner.app/Info.plist
           test -x build/ios/iphoneos/Runner.app/Runner
+          DEBUG_KERNEL=$(find "$APP" -name kernel_blob.bin -print -quit)
+          if [ -n "$DEBUG_KERNEL" ]; then
+            echo "::error::Debug Flutter kernel found in the iOS bundle: $DEBUG_KERNEL"
+            exit 1
+          fi
           echo "Unsigned Runner.app built and verified."
 
       - name: تغليف IPA
