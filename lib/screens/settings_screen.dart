@@ -607,7 +607,7 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: p.background,
+        color: p.surfaceAlt,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: p.stroke),
       ),
