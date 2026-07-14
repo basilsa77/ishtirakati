@@ -118,7 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: BoxDecoration(
                   gradient: AppColors.heroGradient,
                   shape: BoxShape.circle,
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(color: Color(0x5514B886), blurRadius: 30),
                   ],
                 ),

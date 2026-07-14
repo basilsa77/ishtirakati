@@ -46,7 +46,7 @@ Future<bool> showIosConfirmation({
   required BuildContext context,
   required String title,
   required String message,
-  String confirmLabel = tr('ui_8f7d74ac0eac'),
+  String? confirmLabel,
   bool destructive = false,
 }) async {
   final result = await showCupertinoDialog<bool>(
@@ -62,7 +62,7 @@ Future<bool> showIosConfirmation({
         CupertinoDialogAction(
           isDestructiveAction: destructive,
           onPressed: () => Navigator.pop(dialogContext, true),
-          child: Text(confirmLabel),
+          child: Text(confirmLabel ?? tr('ui_8f7d74ac0eac')),
         ),
       ],
     ),

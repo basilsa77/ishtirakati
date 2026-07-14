@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ishtirakati/design/design_tokens.dart';
 import 'package:ishtirakati/screens/edit_subscription_screen.dart';
 import 'package:ishtirakati/screens/calendar_screen.dart';
 import 'package:ishtirakati/screens/pulse_home_screen.dart';

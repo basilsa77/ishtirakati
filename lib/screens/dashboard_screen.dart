@@ -325,7 +325,7 @@ class _HeroCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: AppColors.heroGradient,
         borderRadius: BorderRadius.circular(28),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: Color(0x4414B886),
             blurRadius: 24,
@@ -894,7 +894,7 @@ class _EmptyState extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: AppColors.heroGradient,
                 shape: BoxShape.circle,
-                boxShadow: [
+                boxShadow: const [
                   BoxShadow(
                     color: Color(0x5514B886),
                     blurRadius: 30,

@@ -1,9 +1,8 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show DateFormat, NumberFormat;
 
 import 'app_messages_ar.dart';
 
@@ -85,7 +84,7 @@ class AppLocalizations {
       'ui_d966ce5d4f37': 'سيُرسل إلى {value0}:\n',
     },
   );
-  static late AppLocalizations _current = _fallback;
+  static AppLocalizations _current = _fallback;
 
   static AppLocalizations of(BuildContext context) {
     final result = Localizations.of<AppLocalizations>(

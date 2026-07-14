@@ -526,10 +526,10 @@ class _AdvisorPanelState extends State<_AdvisorPanel> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  tr('ui_d966ce5d4f37', {'value0': provider.localizedLabel}) +
-                  '${tr('advisorFields')}.\n\n' +
-                  tr('ui_9b1aedeb7ba4') +
-                  tr('ui_30aec583e95d'),
+                  '${tr('ui_d966ce5d4f37', {'value0': provider.localizedLabel})}'
+                  '${tr('advisorFields')}.\n\n'
+                  '${tr('ui_9b1aedeb7ba4')}'
+                  '${tr('ui_30aec583e95d')}',
                   style: TextStyle(height: 1.6),
                 ),
                 SizedBox(height: 12),
