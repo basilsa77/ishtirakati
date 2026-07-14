@@ -78,6 +78,18 @@ class AppLocalizations {
           'انتهت جلسة الحساب. سجّل الدخول مجددًا ثم أعد المحاولة.',
       'cloudResourceNotFound':
           'تعذر الوصول إلى مورد Firebase المطلوب. حدّث التطبيق ثم أعد المحاولة.',
+      'cloudFirestoreDatabaseNotFound':
+          'قاعدة بيانات Firestore الافتراضية غير متاحة لهذا المشروع. تحقق من إعداد Firebase ثم أعد المحاولة.',
+      'cloudStorageResourceNotFound':
+          'مساحة التخزين السحابية أو الملف المطلوب غير موجود. تحقق من إعداد Firebase.',
+      'cloudFailedPrecondition':
+          'لا يمكن بدء المزامنة قبل اكتمال إعداد Firebase على هذا الجهاز.',
+      'cloudAppNotAuthorized':
+          'هذا الإصدار من التطبيق غير مصرح له بالوصول إلى Firebase. تحقق من الباندل وتقييد مفتاح API.',
+      'cloudEncryptedRestoreFailed':
+          'تعذر فتح النسخة السحابية بالمفتاح المحفوظ في Keychain. لم تتغير بيانات هذا الجهاز.',
+      'cloudServiceUnavailable':
+          'خدمة المزامنة غير متاحة مؤقتًا. حاول مجددًا بعد لحظات.',
       'cloudOffline':
           'لا يمكن الوصول إلى Firebase الآن. تحقق من الإنترنت وأعد المحاولة.',
       'cloudTimeout':

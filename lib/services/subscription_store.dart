@@ -450,6 +450,25 @@ class SubscriptionStore extends ChangeNotifier {
     });
   }
 
+  /// Creates the cloud payload with the same AES-256-GCM/Keychain policy used
+  /// by the local record. Only the ciphertext envelope leaves the device.
+  Future<String> exportEncryptedCloudBackup() async {
+    _ensureWritable();
+    return _dataCodec.encrypt(exportJson());
+  }
+
+  /// Decrypts a cloud payload in memory and imports it only after successful
+  /// authentication. A missing/wrong Keychain key leaves local data untouched.
+  Future<int> importEncryptedCloudBackup(String encrypted) async {
+    try {
+      _ensureWritable();
+      final plain = await _dataCodec.decrypt(encrypted);
+      return importJson(plain);
+    } on SecureDataException {
+      return -1;
+    }
+  }
+
   /// استيراد بيانات من نص JSON مُصدَّر سابقًا.
   /// يعيد عدد الاشتراكات المستوردة، أو -1 إذا كان النص غير صالح.
   Future<int> importJson(String raw) async {

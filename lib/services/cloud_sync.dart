@@ -7,11 +7,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
 import 'auth_service.dart';
+import 'secure_data_codec.dart';
 import 'subscription_store.dart';
 
 enum CloudSyncPhase { idle, syncing, success, failure }
@@ -25,6 +27,9 @@ enum CloudSyncFailure {
   timeout,
   offline,
   permissionDenied,
+  configuration,
+  serviceUnavailable,
+  appNotAuthorized,
   conflict,
   unknown,
 }
@@ -65,7 +70,13 @@ class CloudSync {
   CloudSync._();
 
   static bool _pushQueued = false;
-  static const _schemaVersion = 1;
+  static const _schemaVersion = 2;
+  static const _legacySchemaVersion = 1;
+  static const _encryption = 'AES-256-GCM';
+  static const databaseId = String.fromEnvironment(
+    'FIRESTORE_DATABASE_ID',
+    defaultValue: '(default)',
+  );
   static const _maxBackupBytes = 850000;
   static const _networkTimeout = Duration(seconds: 10);
   static const _revisionKeyPrefix = 'ishtirakati_cloud_revision_v15_';
@@ -75,7 +86,11 @@ class CloudSync {
   static DocumentReference<Map<String, dynamic>>? _doc() {
     final user = AuthService.currentUser;
     if (user == null) return null;
-    return FirebaseFirestore.instance.collection('users').doc(user.uid);
+    final firestore = FirebaseFirestore.instanceFor(
+      app: Firebase.app(),
+      databaseId: databaseId,
+    );
+    return firestore.collection('users').doc(user.uid);
   }
 
   static bool _fail(CloudSyncFailure failure, String message) {
@@ -88,29 +103,80 @@ class CloudSync {
   }
 
   @visibleForTesting
-  static String messageForFirebaseCode(String code) => switch (code) {
-        'permission-denied' => tr('cloudPermissionDenied'),
-        'unauthenticated' => tr('cloudUnauthenticated'),
-        'not-found' => tr('cloudResourceNotFound'),
-        'unavailable' || 'network-request-failed' => tr('cloudOffline'),
-        'deadline-exceeded' => tr('cloudTimeout'),
-        _ => tr('cloudFirebaseError', {'code': code}),
-      };
+  static String messageForFirebaseCode(String code) =>
+      messageForFirebaseFailure(code: code);
 
-  static CloudSyncFailure _failureForFirebaseCode(String code) =>
-      switch (code) {
+  @visibleForTesting
+  static String messageForFirebaseFailure({
+    required String code,
+    String plugin = '',
+  }) {
+    final normalized = code.replaceFirst('storage/', '');
+    final isStorage = plugin.contains('storage') || code.startsWith('storage/');
+    return switch (normalized) {
+      'permission-denied' => tr('cloudPermissionDenied'),
+      'unauthenticated' => tr('cloudUnauthenticated'),
+      'not-found' when isStorage => tr('cloudStorageResourceNotFound'),
+      'not-found' when plugin.contains('firestore') =>
+        tr('cloudFirestoreDatabaseNotFound'),
+      'not-found' => tr('cloudResourceNotFound'),
+      'bucket-not-found' || 'object-not-found' =>
+        tr('cloudStorageResourceNotFound'),
+      'failed-precondition' => tr('cloudFailedPrecondition'),
+      'app-not-authorized' => tr('cloudAppNotAuthorized'),
+      'network-request-failed' => tr('cloudOffline'),
+      'unavailable' || 'internal' || 'resource-exhausted' =>
+        tr('cloudServiceUnavailable'),
+      'deadline-exceeded' => tr('cloudTimeout'),
+      _ => tr('cloudFirebaseError', {'code': code}),
+    };
+  }
+
+  @visibleForTesting
+  static CloudSyncFailure failureForFirebaseCode(String code) {
+    final normalized = code.replaceFirst('storage/', '');
+    return switch (normalized) {
         'permission-denied' => CloudSyncFailure.permissionDenied,
         'unauthenticated' => CloudSyncFailure.unauthenticated,
-        'unavailable' || 'network-request-failed' => CloudSyncFailure.offline,
+        'network-request-failed' => CloudSyncFailure.offline,
+        'unavailable' || 'internal' || 'resource-exhausted' =>
+          CloudSyncFailure.serviceUnavailable,
         'deadline-exceeded' => CloudSyncFailure.timeout,
+        'not-found' || 'failed-precondition' || 'bucket-not-found' ||
+        'object-not-found' => CloudSyncFailure.configuration,
+        'app-not-authorized' => CloudSyncFailure.appNotAuthorized,
         _ => CloudSyncFailure.unknown,
       };
+  }
 
-  static bool _failFirebase(FirebaseException error) {
-    debugPrint('Cloud sync failed with Firebase code: ${error.code}.');
+  static bool _failFirebase(
+    FirebaseException error,
+    StackTrace stackTrace, {
+    required String operation,
+  }) {
+    final uid = AuthService.currentUser?.uid;
+    var safeMessage = error.message ?? '';
+    if (uid != null && uid.isNotEmpty) {
+      safeMessage = safeMessage.replaceAll(uid, '<uid>');
+    }
+    safeMessage = safeMessage
+        .replaceAll(RegExp(r'[\r\n]+'), ' ');
+    if (safeMessage.length > 500) {
+      safeMessage = safeMessage.substring(0, 500);
+    }
+    debugPrint(
+      'Cloud sync Firebase failure: operation=$operation '
+      'plugin=${error.plugin} code=${error.code} '
+      'message=${safeMessage.isEmpty ? '<empty>' : safeMessage} '
+      'project=${Firebase.app().options.projectId} database=$databaseId.',
+    );
+    debugPrintStack(
+      label: 'Cloud sync stack ($operation)',
+      stackTrace: stackTrace,
+    );
     return _fail(
-      _failureForFirebaseCode(error.code),
-      messageForFirebaseCode(error.code),
+      failureForFirebaseCode(error.code),
+      messageForFirebaseFailure(code: error.code, plugin: error.plugin),
     );
   }
 
@@ -121,6 +187,22 @@ class CloudSync {
     required bool remoteExists,
   }) =>
       !remoteExists || localRevision == remoteRevision;
+
+  @visibleForTesting
+  static CloudSyncFailure preflightFailure({
+    required bool signedIn,
+    required bool storageHealthy,
+  }) {
+    if (!signedIn) return CloudSyncFailure.unauthenticated;
+    if (!storageHealthy) return CloudSyncFailure.storageLocked;
+    return CloudSyncFailure.none;
+  }
+
+  @visibleForTesting
+  static bool isSupportedCloudSchema(Object? schemaVersion) =>
+      schemaVersion == null ||
+      schemaVersion == _legacySchemaVersion ||
+      schemaVersion == _schemaVersion;
 
   static Future<int> _localRevision(String uid) async {
     final prefs = await SharedPreferences.getInstance();
@@ -136,27 +218,27 @@ class CloudSync {
   static Future<bool> push() async {
     final doc = _doc();
     final uid = AuthService.currentUser?.uid;
-    if (doc == null) {
+    final preflight = preflightFailure(
+      signedIn: doc != null && uid != null,
+      storageHealthy: SubscriptionStore.instance.storageHealthy,
+    );
+    if (preflight == CloudSyncFailure.unauthenticated) {
       return _fail(
         CloudSyncFailure.unauthenticated,
         tr('cloudSignInToSync'),
       );
     }
-    if (uid == null) {
-      return _fail(
-        CloudSyncFailure.unauthenticated,
-        tr('cloudSignInToSync'),
-      );
-    }
-    if (!SubscriptionStore.instance.storageHealthy) {
+    if (preflight == CloudSyncFailure.storageLocked) {
       return _fail(
         CloudSyncFailure.storageLocked,
         tr('cloudStorageLocked'),
       );
     }
+    if (doc == null || uid == null) return false;
     status.value = const CloudSyncStatus(CloudSyncPhase.syncing);
     try {
-      final backup = SubscriptionStore.instance.exportJson();
+      final backup =
+          await SubscriptionStore.instance.exportEncryptedCloudBackup();
       if (utf8.encode(backup).length > _maxBackupBytes) {
         return _fail(
           CloudSyncFailure.payloadTooLarge,
@@ -164,7 +246,11 @@ class CloudSync {
         );
       }
       final localRevision = await _localRevision(uid);
-      final nextRevision = await FirebaseFirestore.instance
+      final firestore = FirebaseFirestore.instanceFor(
+        app: Firebase.app(),
+        databaseId: databaseId,
+      );
+      final nextRevision = await firestore
           .runTransaction<int>((transaction) async {
             final snapshot = await transaction.get(doc);
             final remoteRevision =
@@ -182,6 +268,7 @@ class CloudSync {
               'updatedAt': FieldValue.serverTimestamp(),
               'schemaVersion': _schemaVersion,
               'revision': next,
+              'encryption': _encryption,
             });
             return next;
           })
@@ -202,8 +289,17 @@ class CloudSync {
         CloudSyncFailure.timeout,
         tr('cloudTimeout'),
       );
-    } on FirebaseException catch (error) {
-      return _failFirebase(error);
+    } on FirebaseException catch (error, stackTrace) {
+      return _failFirebase(
+        error,
+        stackTrace,
+        operation: 'firestore.push-transaction',
+      );
+    } on SecureDataException catch (_) {
+      return _fail(
+        CloudSyncFailure.storageLocked,
+        tr('cloudStorageLocked'),
+      );
     } catch (error) {
       debugPrint('Cloud push failed (${error.runtimeType}).');
       return _fail(
@@ -232,9 +328,11 @@ class CloudSync {
       final data = snap.data();
       final raw = data?['backup'] as String?;
       final schemaVersion = data?['schemaVersion'];
+      final encryption = data?['encryption'];
       final revision = (data?['revision'] as num?)?.toInt() ?? 0;
-      if (raw == null || raw.isEmpty ||
-          (schemaVersion != null && schemaVersion != _schemaVersion) ||
+      if (raw == null ||
+          raw.isEmpty ||
+          !isSupportedCloudSchema(schemaVersion) ||
           utf8.encode(raw).length > _maxBackupBytes) {
         _fail(
           CloudSyncFailure.invalidBackup,
@@ -242,11 +340,32 @@ class CloudSync {
         );
         return -1;
       }
-      final count = await SubscriptionStore.instance.importJson(raw);
-      if (count >= 0) await _saveLocalRevision(uid, revision);
+      if (schemaVersion == _schemaVersion && encryption != _encryption) {
+        _fail(
+          CloudSyncFailure.invalidBackup,
+          tr('cloudInvalidBackup'),
+        );
+        return -1;
+      }
+      final encrypted = schemaVersion == _schemaVersion;
+      final count = encrypted
+          ? await SubscriptionStore.instance.importEncryptedCloudBackup(raw)
+          : await SubscriptionStore.instance.importJson(raw);
+      if (count < 0) {
+        _fail(
+          encrypted
+              ? CloudSyncFailure.storageLocked
+              : CloudSyncFailure.invalidBackup,
+          encrypted
+              ? tr('cloudEncryptedRestoreFailed')
+              : tr('cloudInvalidBackup'),
+        );
+        return -1;
+      }
+      await _saveLocalRevision(uid, revision);
       status.value = CloudSyncStatus(
-        count >= 0 ? CloudSyncPhase.success : CloudSyncPhase.failure,
-        updatedAt: count >= 0 ? DateTime.now() : null,
+        CloudSyncPhase.success,
+        updatedAt: DateTime.now(),
       );
       return count;
     } on TimeoutException {
@@ -255,8 +374,12 @@ class CloudSync {
         tr('cloudRestoreTimeout'),
       );
       return -1;
-    } on FirebaseException catch (error) {
-      _failFirebase(error);
+    } on FirebaseException catch (error, stackTrace) {
+      _failFirebase(
+        error,
+        stackTrace,
+        operation: 'firestore.pull-document',
+      );
       return -1;
     } catch (error) {
       debugPrint('Cloud pull failed (${error.runtimeType}).');
@@ -300,8 +423,12 @@ class CloudSync {
         tr('cloudTimeout'),
       );
       return const CloudSyncResult.failed(CloudSyncFailure.timeout);
-    } on FirebaseException catch (error) {
-      _failFirebase(error);
+    } on FirebaseException catch (error, stackTrace) {
+      _failFirebase(
+        error,
+        stackTrace,
+        operation: 'firestore.restore-probe',
+      );
       return CloudSyncResult.failed(status.value.failure);
     } catch (error) {
       debugPrint('Cloud restore failed (${error.runtimeType}).');
@@ -329,7 +456,16 @@ class CloudSync {
     final doc = _doc();
     final uid = AuthService.currentUser?.uid;
     if (doc == null) throw StateError('No authenticated cloud document.');
-    await doc.delete().timeout(_networkTimeout);
+    try {
+      await doc.delete().timeout(_networkTimeout);
+    } on FirebaseException catch (error, stackTrace) {
+      _failFirebase(
+        error,
+        stackTrace,
+        operation: 'firestore.delete-document',
+      );
+      rethrow;
+    }
     if (uid != null) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('$_revisionKeyPrefix$uid');

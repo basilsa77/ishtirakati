@@ -168,7 +168,7 @@ void main() {
     );
     expect(
       CloudSync.messageForFirebaseCode('unavailable'),
-      contains('الإنترنت'),
+      contains('مؤقتًا'),
     );
     expect(
       CloudSync.messageForFirebaseCode('unauthenticated'),
@@ -178,6 +178,41 @@ void main() {
       CloudSync.messageForFirebaseCode('not-found'),
       contains('مورد Firebase'),
     );
+    expect(
+      CloudSync.messageForFirebaseFailure(
+        code: 'not-found',
+        plugin: 'cloud_firestore',
+      ),
+      contains('Firestore'),
+    );
+    expect(
+      CloudSync.messageForFirebaseCode('failed-precondition'),
+      contains('إعداد Firebase'),
+    );
+    expect(
+      CloudSync.messageForFirebaseCode('app-not-authorized'),
+      contains('غير مصرح'),
+    );
+    expect(
+      CloudSync.messageForFirebaseFailure(
+        code: 'storage/bucket-not-found',
+        plugin: 'firebase_storage',
+      ),
+      contains('التخزين السحابية'),
+    );
+    expect(
+      CloudSync.failureForFirebaseCode('permission-denied'),
+      CloudSyncFailure.permissionDenied,
+    );
+    expect(
+      CloudSync.failureForFirebaseCode('network-request-failed'),
+      CloudSyncFailure.offline,
+    );
+    expect(
+      CloudSync.failureForFirebaseCode('not-found'),
+      CloudSyncFailure.configuration,
+    );
+    expect(CloudSync.databaseId, '(default)');
   });
 
   test(

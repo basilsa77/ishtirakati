@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=15.2.1"
-set "COMMIT_MESSAGE=v15.2.1+36: fix Firebase sync and free-team App Check"
+set "RELEASE_VERSION=15.2.2"
+set "COMMIT_MESSAGE=v15.2.2+37: encrypt Firebase sync and diagnose not-found"
 
 git init
 git config user.name "basilsa77"

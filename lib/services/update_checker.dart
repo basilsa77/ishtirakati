@@ -8,8 +8,8 @@ import 'package:http/http.dart' as http;
 import '../l10n/app_localizations.dart';
 
 /// نسخة التطبيق الحالية — تُحدَّث مع كل إصدار.
-const String kAppVersion = '15.2.1';
-const String kAppBuildNumber = '36';
+const String kAppVersion = '15.2.2';
+const String kAppBuildNumber = '37';
 const String kAppBuildLabel = '$kAppVersion ($kAppBuildNumber)';
 String get kAppBuildMode => kReleaseMode
     ? tr('buildRelease')

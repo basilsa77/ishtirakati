@@ -29,6 +29,10 @@ function dartValue(source, key) {
 const plist = await readFile('GoogleService-Info.plist', 'utf8');
 const dart = await readFile('lib/firebase_options.dart', 'utf8');
 const expectedBundleId = 'com.basil.ishtirakati';
+const expectedProjectId = 'ishtirakati-260f7';
+const expectedAppId = '1:49076094328:ios:5d299c3b8960ef52fc748d';
+const expectedSenderId = '49076094328';
+const expectedStorageBucket = 'ishtirakati-260f7.firebasestorage.app';
 
 const comparisons = [
   ['API key', plistValue(plist, 'API_KEY'), dartValue(dart, 'apiKey')],
@@ -45,6 +49,18 @@ const plistBundle = plistValue(plist, 'BUNDLE_ID');
 const dartBundle = dart.match(/_iosBundleId\s*=\s*['"]([^'"]+)['"]/)?.[1] ?? '';
 if (plistBundle !== expectedBundleId || dartBundle !== expectedBundleId) {
   fail('iOS bundle id does not match the production identifier');
+}
+
+const expectedValues = [
+  ['project id', plistValue(plist, 'PROJECT_ID'), expectedProjectId],
+  ['app id', plistValue(plist, 'GOOGLE_APP_ID'), expectedAppId],
+  ['sender id', plistValue(plist, 'GCM_SENDER_ID'), expectedSenderId],
+  ['storage bucket', plistValue(plist, 'STORAGE_BUCKET'), expectedStorageBucket],
+  ['Dart storage bucket', dartValue(dart, 'storageBucket'), expectedStorageBucket],
+];
+
+for (const [label, actual, expected] of expectedValues) {
+  if (actual !== expected) fail(`${label} is not the production Firebase value`);
 }
 
 if (!process.exitCode) {

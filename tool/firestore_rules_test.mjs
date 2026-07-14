@@ -23,10 +23,11 @@ const environment = await initializeTestEnvironment({
 });
 
 const validBackup = {
-  backup: '{"subscriptions":[]}',
+  backup: '{"v":1,"n":"bm9uY2U","c":"Y2lwaGVydGV4dA","m":"bWFj"}',
   updatedAt: serverTimestamp(),
-  schemaVersion: 1,
+  schemaVersion: 2,
   revision: 1,
+  encryption: 'AES-256-GCM',
 };
 
 const validLegacyBackup = {
@@ -38,12 +39,22 @@ const validLegacyBackup = {
 try {
   const owner = environment.authenticatedContext('owner-user').firestore();
   const legacyOwner = environment.authenticatedContext('legacy-user').firestore();
+  const unversionedOwner =
+    environment.authenticatedContext('unversioned-user').firestore();
+  const versionedLegacyOwner =
+    environment.authenticatedContext('versioned-legacy-user').firestore();
   const intruder = environment.authenticatedContext('intruder-user').firestore();
   const anonymous = environment.unauthenticatedContext().firestore();
   const ownerRef = doc(owner, 'users/owner-user');
   const legacyRef = doc(legacyOwner, 'users/legacy-user');
+  const unversionedRef = doc(unversionedOwner, 'users/unversioned-user');
+  const versionedLegacyRef =
+    doc(versionedLegacyOwner, 'users/versioned-legacy-user');
 
   await assertSucceeds(setDoc(ownerRef, validBackup));
+  if (validBackup.backup.includes('subscriptions')) {
+    throw new Error('The cloud payload contains plaintext subscription data.');
+  }
   await assertSucceeds(getDoc(ownerRef));
   await assertFails(setDoc(ownerRef, validBackup));
   await assertSucceeds(
@@ -62,26 +73,38 @@ try {
       injectedField: 'must-be-rejected',
     }),
   );
-  await assertSucceeds(setDoc(legacyRef, validLegacyBackup));
-  await assertSucceeds(
-    setDoc(legacyRef, {
+  await assertFails(setDoc(legacyRef, validLegacyBackup));
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), 'users/legacy-user'), validLegacyBackup);
+    await setDoc(doc(context.firestore(), 'users/unversioned-user'), {
+      backup: validLegacyBackup.backup,
+      updatedAt: serverTimestamp(),
+    });
+    await setDoc(doc(context.firestore(), 'users/versioned-legacy-user'), {
       ...validLegacyBackup,
-      backup: '{"subscriptions":[{"id":"legacy"}]}',
-    }),
+      revision: 7,
+    });
+  });
+  await assertSucceeds(
+    setDoc(legacyRef, validBackup),
   );
   await assertSucceeds(
-    setDoc(legacyRef, { ...validBackup, revision: 1 }),
+    setDoc(unversionedRef, validBackup),
   );
   await assertFails(setDoc(legacyRef, validLegacyBackup));
   await assertSucceeds(
     setDoc(legacyRef, { ...validBackup, revision: 2 }),
   );
+  await assertSucceeds(
+    setDoc(versionedLegacyRef, { ...validBackup, revision: 8 }),
+  );
   await assertFails(
     setDoc(doc(owner, 'users/owner-user'), {
       backup: '',
       updatedAt: serverTimestamp(),
-      schemaVersion: 1,
+      schemaVersion: 2,
       revision: 3,
+      encryption: 'AES-256-GCM',
     }),
   );
   await disableNetwork(owner);
@@ -104,6 +127,8 @@ try {
   }
   await assertSucceeds(deleteDoc(ownerRef));
   await assertSucceeds(deleteDoc(legacyRef));
+  await assertSucceeds(deleteDoc(unversionedRef));
+  await assertSucceeds(deleteDoc(versionedLegacyRef));
   console.log('Firestore rules isolation tests passed.');
 } finally {
   await environment.cleanup();

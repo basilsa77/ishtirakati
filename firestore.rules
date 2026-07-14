@@ -10,48 +10,40 @@ service cloud.firestore {
       return request.resource.data.backup is string
           && request.resource.data.backup.size() > 0
           && request.resource.data.backup.size() <= 850000
-          && request.resource.data.schemaVersion == 1
           && request.resource.data.updatedAt == request.time;
     }
 
-    function hasValidLegacyBackup() {
+    function hasValidEncryptedBackup() {
       return request.resource.data.keys()
-          .hasOnly(['backup', 'updatedAt', 'schemaVersion'])
-          && hasValidBackupPayload();
-    }
-
-    function hasValidVersionedBackup() {
-      return request.resource.data.keys()
-          .hasOnly(['backup', 'updatedAt', 'schemaVersion', 'revision'])
+          .hasOnly([
+            'backup',
+            'updatedAt',
+            'schemaVersion',
+            'revision',
+            'encryption'
+          ])
           && hasValidBackupPayload()
+          && request.resource.data.schemaVersion == 2
+          && request.resource.data.encryption == 'AES-256-GCM'
           && request.resource.data.revision is int
           && request.resource.data.revision > 0;
+    }
+
+    function storedRevision() {
+      return resource.data.keys().hasAny(['revision'])
+          && resource.data.revision is int
+          ? resource.data.revision
+          : 0;
     }
 
     match /users/{uid} {
       allow read, delete: if isOwner(uid);
       allow create: if isOwner(uid)
-                    && (
-                      hasValidLegacyBackup()
-                      || (hasValidVersionedBackup()
-                        && request.resource.data.revision == 1)
-                    );
+                    && hasValidEncryptedBackup()
+                    && request.resource.data.revision == 1;
       allow update: if isOwner(uid)
-                    && (
-                      (
-                        !resource.data.keys().hasAny(['revision'])
-                        && hasValidLegacyBackup()
-                      )
-                      || (
-                        hasValidVersionedBackup()
-                        && (
-                          (!resource.data.keys().hasAny(['revision'])
-                            && request.resource.data.revision == 1)
-                          || request.resource.data.revision
-                            == resource.data.revision + 1
-                        )
-                      )
-                    );
+                    && hasValidEncryptedBackup()
+                    && request.resource.data.revision == storedRevision() + 1;
     }
   }
 }
