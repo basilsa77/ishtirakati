@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=15.2.5"
-set "COMMIT_MESSAGE=v15.2.5+40: create first encrypted Firestore backup"
+set "RELEASE_VERSION=15.2.6"
+set "COMMIT_MESSAGE=v15.2.6+41: add decisive Firestore transport diagnostics"
 
 git init
 git config user.name "basilsa77"

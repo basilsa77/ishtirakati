@@ -10,6 +10,7 @@ import '../l10n/app_localizations.dart';
 import '../services/account_deletion_service.dart';
 import '../services/auth_service.dart';
 import '../services/cloud_sync.dart';
+import '../services/firestore_connection_diagnostics.dart';
 import '../services/notification_service.dart';
 import '../services/subscription_store.dart';
 import '../services/update_checker.dart';
@@ -478,6 +479,64 @@ class _AccountCard extends StatelessWidget {
                             ),
                           ),
                         ],
+                        if (FirestoreConnectionDiagnostics.enabled) ...[
+                          const SizedBox(height: 10),
+                          ValueListenableBuilder<bool>(
+                            valueListenable:
+                                FirestoreConnectionDiagnostics.running,
+                            builder: (context, running, _) =>
+                                CupertinoButton(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 9,
+                              ),
+                              color: p.accentSoft,
+                              onPressed: running
+                                  ? null
+                                  : FirestoreConnectionDiagnostics.run,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  if (running)
+                                    const CupertinoActivityIndicator()
+                                  else
+                                    Icon(
+                                      CupertinoIcons.antenna_radiowaves_left_right,
+                                      color: p.accent,
+                                      size: 18,
+                                    ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    running
+                                        ? tr('firestoreDiagnosticRunning')
+                                        : tr('firestoreDiagnosticButton'),
+                                    style: TextStyle(
+                                      color: p.accent,
+                                      fontSize: V15Type.caption,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          ValueListenableBuilder<
+                              FirestoreConnectionDiagnostic?>(
+                            valueListenable:
+                                FirestoreConnectionDiagnostics.lastResult,
+                            builder: (context, result, _) {
+                              if (result == null) {
+                                return const SizedBox.shrink();
+                              }
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 10),
+                                child: _FirestoreDiagnosticPanel(
+                                  result: result,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ],
                     );
                   },
@@ -531,6 +590,214 @@ class _AccountCard extends StatelessWidget {
     final hour = at.hour.toString().padLeft(2, '0');
     final minute = at.minute.toString().padLeft(2, '0');
     return tr('ui_1e0af0b94ec1', {'value0': hour, 'value1': minute});
+  }
+}
+
+class _FirestoreDiagnosticPanel extends StatelessWidget {
+  final FirestoreConnectionDiagnostic result;
+
+  const _FirestoreDiagnosticPanel({required this.result});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final rest = result.rest;
+    final native = result.native;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: p.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: p.stroke),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            tr('firestoreDiagnosticRestTitle'),
+            style: TextStyle(
+              color: p.text,
+              fontSize: V15Type.bodySmall,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticHttpStatus'),
+            value: rest.httpStatus?.toString() ?? '-',
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticDns'),
+            value: _yesNo(rest.dnsSucceeded),
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticHttps'),
+            value: _yesNo(rest.connectionSucceeded),
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticDuration'),
+            value: '${rest.elapsed.inMilliseconds} ms',
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticResult'),
+            value: _restOutcomeText(rest.outcome),
+          ),
+          if (rest.exceptionType != null)
+            _DiagnosticLine(
+              label: tr('firestoreDiagnosticException'),
+              value: rest.exceptionType!,
+            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Divider(height: 1, color: p.stroke),
+          ),
+          Text(
+            tr('firestoreDiagnosticNativeTitle'),
+            style: TextStyle(
+              color: p.text,
+              fontSize: V15Type.bodySmall,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticSucceeded'),
+            value: _yesNo(native.succeeded),
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticDocumentExists'),
+            value: native.documentExists == null
+                ? '-'
+                : _yesNo(native.documentExists!),
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticFirebaseCode'),
+            value: native.firebaseCode ?? '-',
+          ),
+          _DiagnosticLine(
+            label: tr('firestoreDiagnosticDuration'),
+            value: '${native.elapsed.inMilliseconds} ms',
+          ),
+          if (native.safeMessage != null) ...[
+            const SizedBox(height: 5),
+            Text(
+              native.safeMessage!,
+              style: TextStyle(
+                color: p.textMuted,
+                fontSize: V15Type.caption,
+                height: 1.45,
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Text(
+            _diagnosticConclusion(result),
+            style: TextStyle(
+              color: p.accent,
+              fontSize: V15Type.caption,
+              fontWeight: FontWeight.w700,
+              height: 1.45,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _yesNo(bool value) =>
+      value ? tr('firestoreDiagnosticYes') : tr('firestoreDiagnosticNo');
+
+  String _restOutcomeText(FirestoreRestOutcome outcome) => switch (outcome) {
+        FirestoreRestOutcome.success => tr('firestoreDiagnosticRest200'),
+        FirestoreRestOutcome.missingDocument =>
+          tr('firestoreDiagnosticRest404'),
+        FirestoreRestOutcome.unauthenticated =>
+          tr('firestoreDiagnosticRest401'),
+        FirestoreRestOutcome.permissionDenied =>
+          tr('firestoreDiagnosticRest403'),
+        FirestoreRestOutcome.invalidTarget =>
+          tr('firestoreDiagnosticRest400'),
+        FirestoreRestOutcome.rateLimited =>
+          tr('firestoreDiagnosticRest429'),
+        FirestoreRestOutcome.serviceFailure =>
+          tr('firestoreDiagnosticRest5xx'),
+        FirestoreRestOutcome.dnsFailure => tr('firestoreDiagnosticDnsFailed'),
+        FirestoreRestOutcome.socketFailure =>
+          tr('firestoreDiagnosticSocketFailed'),
+        FirestoreRestOutcome.tlsFailure => tr('firestoreDiagnosticTlsFailed'),
+        FirestoreRestOutcome.timeout => tr('firestoreDiagnosticTimedOut'),
+        FirestoreRestOutcome.clientFailure =>
+          tr('firestoreDiagnosticClientFailed'),
+        FirestoreRestOutcome.noUser => tr('firestoreDiagnosticNoUser'),
+        FirestoreRestOutcome.tokenFailure =>
+          tr('firestoreDiagnosticTokenFailed'),
+        FirestoreRestOutcome.unexpectedFailure =>
+          tr('firestoreDiagnosticUnexpected'),
+      };
+
+  String _diagnosticConclusion(FirestoreConnectionDiagnostic result) {
+    final restReachedFirestore = result.rest.httpStatus != null;
+    if (restReachedFirestore && !result.native.succeeded) {
+      return tr('firestoreDiagnosticNativeTransportConclusion');
+    }
+    if (result.rest.outcome == FirestoreRestOutcome.dnsFailure ||
+        result.rest.outcome == FirestoreRestOutcome.socketFailure ||
+        result.rest.outcome == FirestoreRestOutcome.tlsFailure ||
+        result.rest.outcome == FirestoreRestOutcome.timeout) {
+      return tr('firestoreDiagnosticNetworkConclusion');
+    }
+    if (result.rest.outcome == FirestoreRestOutcome.unauthenticated) {
+      return tr('firestoreDiagnosticAuthConclusion');
+    }
+    if (result.rest.outcome == FirestoreRestOutcome.permissionDenied) {
+      return tr('firestoreDiagnosticRulesConclusion');
+    }
+    if (restReachedFirestore && result.native.succeeded) {
+      return tr('firestoreDiagnosticBothReachedConclusion');
+    }
+    return tr('firestoreDiagnosticNeedsReviewConclusion');
+  }
+}
+
+class _DiagnosticLine extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DiagnosticLine({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: p.textMuted,
+                fontSize: V15Type.caption,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                color: p.text,
+                fontSize: V15Type.caption,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

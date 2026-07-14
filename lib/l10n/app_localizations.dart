@@ -91,6 +91,59 @@ class AppLocalizations {
           'العملية: {operation} | الخطأ: {code} | المستند موجود: {exists} | المراجعة: {revision} | البناء: {commit}',
       'appBuildNumber': 'رقم البناء',
       'appCommit': 'نسخة الكود',
+      'firestoreDiagnosticButton': 'اختبار اتصال Firestore',
+      'firestoreDiagnosticRunning': 'جارٍ اختبار الاتصال...',
+      'firestoreDiagnosticRestTitle': 'اختبار Firestore REST',
+      'firestoreDiagnosticNativeTitle': 'اختبار Firestore Native',
+      'firestoreDiagnosticHttpStatus': 'حالة HTTP',
+      'firestoreDiagnosticDns': 'نجاح DNS',
+      'firestoreDiagnosticHttps': 'نجاح اتصال HTTPS',
+      'firestoreDiagnosticDuration': 'المدة',
+      'firestoreDiagnosticResult': 'النتيجة',
+      'firestoreDiagnosticException': 'نوع الاستثناء',
+      'firestoreDiagnosticSucceeded': 'نجح الطلب',
+      'firestoreDiagnosticDocumentExists': 'المستند موجود',
+      'firestoreDiagnosticFirebaseCode': 'رمز Firebase',
+      'firestoreDiagnosticYes': 'نعم',
+      'firestoreDiagnosticNo': 'لا',
+      'firestoreDiagnosticRest200':
+          'HTTP 200: الاتصال والمصادقة يعملان والمستند موجود',
+      'firestoreDiagnosticRest404':
+          'HTTP 404: الاتصال والمصادقة يعملان والمستند غير موجود',
+      'firestoreDiagnosticRest401':
+          'HTTP 401: رمز Firebase غير صالح أو لم يتجدد',
+      'firestoreDiagnosticRest403':
+          'HTTP 403: الطلب مرفوض بقواعد Firestore أو الصلاحيات',
+      'firestoreDiagnosticRest400':
+          'HTTP 400: مسار المشروع أو قاعدة البيانات غير صحيح',
+      'firestoreDiagnosticRest429': 'HTTP 429: تجاوز مؤقت للحصة',
+      'firestoreDiagnosticRest5xx': 'خطأ مؤقت من خدمة Firestore',
+      'firestoreDiagnosticDnsFailed':
+          'تعذر حل اسم firestore.googleapis.com',
+      'firestoreDiagnosticSocketFailed':
+          'فشل اتصال Socket مع firestore.googleapis.com',
+      'firestoreDiagnosticTlsFailed':
+          'فشلت مصافحة TLS مع firestore.googleapis.com',
+      'firestoreDiagnosticTimedOut': 'انتهت مهلة الاتصال',
+      'firestoreDiagnosticClientFailed':
+          'فشل عميل HTTPS قبل استلام استجابة',
+      'firestoreDiagnosticNoUser': 'لا يوجد مستخدم Firebase مسجل',
+      'firestoreDiagnosticTokenFailed':
+          'تعذر تجديد Firebase ID token',
+      'firestoreDiagnosticUnexpected':
+          'فشل غير متوقع أثناء اختبار REST',
+      'firestoreDiagnosticNativeTransportConclusion':
+          'وصل REST إلى Firestore بينما فشل Native؛ الخلل محصور في نقل cloud_firestore أو Firebase iOS SDK.',
+      'firestoreDiagnosticNetworkConclusion':
+          'فشل REST قبل استلام HTTP؛ النتيجة تشير إلى DNS أو الشبكة أو TLS على الجهاز.',
+      'firestoreDiagnosticAuthConclusion':
+          'وصل REST إلى Firestore لكن المصادقة رُفضت؛ يلزم فحص تجديد جلسة Firebase Auth.',
+      'firestoreDiagnosticRulesConclusion':
+          'وصل REST إلى Firestore لكن الطلب رُفض؛ يلزم فحص القواعد أو صلاحية الحساب.',
+      'firestoreDiagnosticBothReachedConclusion':
+          'وصل REST وNative إلى Firestore بنجاح.',
+      'firestoreDiagnosticNeedsReviewConclusion':
+          'اكتمل الاختبار وتحتاج النتيجة إلى مراجعة الرمز الظاهر أعلاه.',
       'cloudStorageResourceNotFound':
           'مساحة التخزين السحابية أو الملف المطلوب غير موجود. تحقق من إعداد Firebase.',
       'cloudFailedPrecondition':

@@ -8,8 +8,8 @@ import 'package:http/http.dart' as http;
 import '../l10n/app_localizations.dart';
 
 /// نسخة التطبيق الحالية — تُحدَّث مع كل إصدار.
-const String kAppVersion = '15.2.5';
-const String kAppBuildNumber = '40';
+const String kAppVersion = '15.2.6';
+const String kAppBuildNumber = '41';
 const String kAppBuildLabel = '$kAppVersion ($kAppBuildNumber)';
 const String kGitCommit = String.fromEnvironment(
   'GIT_COMMIT',
