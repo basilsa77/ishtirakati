@@ -6,8 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// نسخة التطبيق الحالية — تُحدَّث مع كل إصدار.
-const String kAppVersion = '15.1.1';
-const String kAppBuildNumber = '33';
+const String kAppVersion = '15.1.2';
+const String kAppBuildNumber = '34';
 const String kAppBuildLabel = '$kAppVersion ($kAppBuildNumber)';
 const String kAppBuildMode = kReleaseMode
     ? 'إصدار نهائي'
