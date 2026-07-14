@@ -144,41 +144,40 @@ class _PulseHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final greeting = deviceGreeting();
-    return Row(
+    final copy = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                greeting,
-                style: TextStyle(
-                  color: context.palette.textMuted,
-                  fontSize: V12Type.body,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: V12Space.xxs),
-              Text(
-                'ملخص الاشتراكات',
-                style: TextStyle(
-                  color: context.palette.text,
-                  fontFamily: V12Type.displayFamily,
-                  fontFamilyFallback: V12Type.fallbacks,
-                  fontSize: V12Type.headline,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              Text(
-                '$activeCount التزامات نشطة',
-                style: TextStyle(
-                  color: context.palette.textMuted,
-                  fontSize: V12Type.caption,
-                ),
-              ),
-            ],
+        Text(
+          greeting,
+          style: TextStyle(
+            color: context.palette.textMuted,
+            fontSize: V12Type.body,
+            fontWeight: FontWeight.w600,
           ),
         ),
+        const SizedBox(height: V12Space.xxs),
+        Text(
+          'ملخص الاشتراكات',
+          style: TextStyle(
+            color: context.palette.text,
+            fontFamily: V12Type.displayFamily,
+            fontFamilyFallback: V12Type.fallbacks,
+            fontSize: V12Type.headline,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        Text(
+          '$activeCount التزامات نشطة',
+          style: TextStyle(
+            color: context.palette.textMuted,
+            fontSize: V12Type.caption,
+          ),
+        ),
+      ],
+    );
+    final actions = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
         _HeaderAction(
           tooltip: 'بحث وأوامر',
           icon: Icons.search_rounded,
@@ -191,6 +190,24 @@ class _PulseHeader extends StatelessWidget {
           emphasized: true,
           onTap: onAdd,
         ),
+      ],
+    );
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    if (textScale > 1.2) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          copy,
+          const SizedBox(height: V12Space.sm),
+          Align(alignment: AlignmentDirectional.centerEnd, child: actions),
+        ],
+      );
+    }
+    return Row(
+      children: [
+        Expanded(child: copy),
+        const SizedBox(width: V12Space.sm),
+        actions,
       ],
     );
   }
