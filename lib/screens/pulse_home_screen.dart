@@ -175,15 +175,14 @@ class _PulseHeader extends StatelessWidget {
         ),
       ],
     );
-    final actions = Row(
-      mainAxisSize: MainAxisSize.min,
+    final actions = Wrap(
+      spacing: V12Space.xs,
       children: [
         _HeaderAction(
           tooltip: 'بحث وأوامر',
           icon: Icons.search_rounded,
           onTap: onSearch,
         ),
-        const SizedBox(width: V12Space.xs),
         _HeaderAction(
           tooltip: 'إضافة اشتراك',
           icon: Icons.add_rounded,
@@ -656,14 +655,7 @@ class _EmptyPulse extends StatelessWidget {
             const SizedBox(height: V12Space.lg),
             CupertinoButton.filled(
               onPressed: onAdd,
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(CupertinoIcons.add, size: 18),
-                  SizedBox(width: 8),
-                  Text('إضافة اشتراك'),
-                ],
-              ),
+              child: const Text('إضافة اشتراك'),
             ),
           ],
         ),
