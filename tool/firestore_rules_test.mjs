@@ -29,11 +29,19 @@ const validBackup = {
   revision: 1,
 };
 
+const validLegacyBackup = {
+  backup: '{"subscriptions":[]}',
+  updatedAt: serverTimestamp(),
+  schemaVersion: 1,
+};
+
 try {
   const owner = environment.authenticatedContext('owner-user').firestore();
+  const legacyOwner = environment.authenticatedContext('legacy-user').firestore();
   const intruder = environment.authenticatedContext('intruder-user').firestore();
   const anonymous = environment.unauthenticatedContext().firestore();
   const ownerRef = doc(owner, 'users/owner-user');
+  const legacyRef = doc(legacyOwner, 'users/legacy-user');
 
   await assertSucceeds(setDoc(ownerRef, validBackup));
   await assertSucceeds(getDoc(ownerRef));
@@ -53,6 +61,20 @@ try {
       ...validBackup,
       injectedField: 'must-be-rejected',
     }),
+  );
+  await assertSucceeds(setDoc(legacyRef, validLegacyBackup));
+  await assertSucceeds(
+    setDoc(legacyRef, {
+      ...validLegacyBackup,
+      backup: '{"subscriptions":[{"id":"legacy"}]}',
+    }),
+  );
+  await assertSucceeds(
+    setDoc(legacyRef, { ...validBackup, revision: 1 }),
+  );
+  await assertFails(setDoc(legacyRef, validLegacyBackup));
+  await assertSucceeds(
+    setDoc(legacyRef, { ...validBackup, revision: 2 }),
   );
   await assertFails(
     setDoc(doc(owner, 'users/owner-user'), {
@@ -81,6 +103,7 @@ try {
     throw new Error('Recovery returned an unexpected cloud revision.');
   }
   await assertSucceeds(deleteDoc(ownerRef));
+  await assertSucceeds(deleteDoc(legacyRef));
   console.log('Firestore rules isolation tests passed.');
 } finally {
   await environment.cleanup();

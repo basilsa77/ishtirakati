@@ -386,7 +386,7 @@ class _AccountCard extends StatelessWidget {
                     Expanded(
                       child: CupertinoButton.filled(
                         onPressed: () async {
-                          await CloudSync.push();
+                          await CloudSync.syncNow();
                         },
                         child: Text(tr('ui_1c9524c2caca')),
                       ),

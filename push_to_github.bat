@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=15.2.0"
-set "COMMIT_MESSAGE=v15.2.0+35: bilingual typography and resilient Firebase sync"
+set "RELEASE_VERSION=15.2.1"
+set "COMMIT_MESSAGE=v15.2.1+36: fix Firebase sync and free-team App Check"
 
 git init
 git config user.name "basilsa77"

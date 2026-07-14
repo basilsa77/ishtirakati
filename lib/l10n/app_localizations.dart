@@ -76,6 +76,8 @@ class AppLocalizations {
           'رفضت Firebase المزامنة. تحقق من App Check ونشر قواعد Firestore.',
       'cloudUnauthenticated':
           'انتهت جلسة الحساب. سجّل الدخول مجددًا ثم أعد المحاولة.',
+      'cloudResourceNotFound':
+          'تعذر الوصول إلى مورد Firebase المطلوب. حدّث التطبيق ثم أعد المحاولة.',
       'cloudOffline':
           'لا يمكن الوصول إلى Firebase الآن. تحقق من الإنترنت وأعد المحاولة.',
       'cloudTimeout':

@@ -28,6 +28,14 @@ class AuthException implements Exception {
 class AuthService {
   AuthService._();
 
+  /// App Attest cannot issue production assertions for the current free-team
+  /// sideload build. Enable this only after registering the iOS app in Firebase
+  /// App Check with a paid Apple Developer team.
+  static const bool appCheckEnabled = bool.fromEnvironment(
+    'ENABLE_FIREBASE_APP_CHECK',
+    defaultValue: false,
+  );
+
   static bool _initialized = false;
   static bool _googleInitialized = false;
   static final ValueNotifier<String?> appCheckWarning = ValueNotifier(null);
@@ -51,18 +59,26 @@ class AuthService {
         options: DefaultFirebaseOptions.currentPlatform,
       );
       _initialized = true;
-      try {
-        await FirebaseAppCheck.instance.activate(
-          providerApple:
-              const AppleAppAttestWithDeviceCheckFallbackProvider(),
-        );
+      if (appCheckEnabled) {
+        try {
+          await FirebaseAppCheck.instance.activate(
+            providerApple:
+                const AppleAppAttestWithDeviceCheckFallbackProvider(),
+          );
+          appCheckWarning.value = null;
+        } catch (error) {
+          final message = tr('appCheckActivationWarning');
+          appCheckWarning.value = message;
+          debugPrint(
+            'App Check activation failed (${error.runtimeType}). '
+            'Enable enforcement from Firebase Console after monitoring.',
+          );
+        }
+      } else {
         appCheckWarning.value = null;
-      } catch (error) {
-        final message = tr('appCheckActivationWarning');
-        appCheckWarning.value = message;
         debugPrint(
-          'App Check activation failed (${error.runtimeType}). '
-          'Enable enforcement from Firebase Console after monitoring.',
+          'App Check is disabled for this sideload build. Firebase Auth and '
+          'owner-only Firestore rules remain enforced.',
         );
       }
       try {

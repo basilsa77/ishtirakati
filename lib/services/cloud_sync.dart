@@ -91,6 +91,7 @@ class CloudSync {
   static String messageForFirebaseCode(String code) => switch (code) {
         'permission-denied' => tr('cloudPermissionDenied'),
         'unauthenticated' => tr('cloudUnauthenticated'),
+        'not-found' => tr('cloudResourceNotFound'),
         'unavailable' || 'network-request-failed' => tr('cloudOffline'),
         'deadline-exceeded' => tr('cloudTimeout'),
         _ => tr('cloudFirebaseError', {'code': code}),
@@ -310,6 +311,17 @@ class CloudSync {
       );
       return const CloudSyncResult.failed(CloudSyncFailure.unknown);
     }
+  }
+
+  /// Uploads first, then resolves a genuine revision conflict by restoring
+  /// and merging the newer cloud copy before retrying once.
+  static Future<CloudSyncResult> syncNow() async {
+    final uploaded = await push();
+    if (uploaded) return const CloudSyncResult.success();
+    if (status.value.failure != CloudSyncFailure.conflict) {
+      return CloudSyncResult.failed(status.value.failure);
+    }
+    return restoreAndPush();
   }
 
   /// حذف النسخة الخاصة بالمستخدم قبل حذف حساب المصادقة.

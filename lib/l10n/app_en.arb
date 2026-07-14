@@ -70,6 +70,7 @@
   "missingAppleToken": "Apple did not return a valid authentication token.",
   "cloudPermissionDenied": "Firebase rejected the sync. Check App Check and deploy the Firestore rules.",
   "cloudUnauthenticated": "Your session has expired. Sign in again and retry.",
+  "cloudResourceNotFound": "The required Firebase resource could not be reached. Update the app and try again.",
   "cloudOffline": "Firebase cannot be reached right now. Check your connection and retry.",
   "cloudTimeout": "Sync took too long. Try again in a moment.",
   "cloudFirebaseError": "Sync failed because of a Firebase error ({code}).",

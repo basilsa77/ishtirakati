@@ -1,4 +1,4 @@
-# اشتراكاتي 15.2.0+35
+# اشتراكاتي 15.2.1+36
 
 تطبيق Flutter عربي أولًا لإدارة الاشتراكات والأقساط والفواتير في السعودية والخليج. يعمل محليًا دون حساب، ويدعم مزامنة Firebase الاختيارية.
 
@@ -94,14 +94,14 @@ test/                               اختبارات المنطق والترحي
 flutter pub get
 flutter analyze lib test --no-fatal-warnings --no-fatal-infos
 flutter test
-flutter build ios --release --no-codesign
+flutter build ios --release --no-codesign --dart-define=ENABLE_FIREBASE_APP_CHECK=false
 ```
 
 مجلد iOS يُولّد في CI. إعدادات Firebase غير موجودة في Git، وتُستعاد من GitHub Actions Secrets أثناء البناء. راجع `FIREBASE_CI_SETUP.md` و`BUILD_IPA_GUIDE.md`.
 
 ## الإصدار
 
-- النسخة: `15.2.0+35`
+- النسخة: `15.2.1+36`
 - Bundle ID: `com.basil.ishtirakati`
 - الحد الأدنى في بناء CI: iOS 15
 

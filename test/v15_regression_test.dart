@@ -7,6 +7,7 @@ import 'package:ishtirakati/screens/pulse_home_screen.dart';
 import 'package:ishtirakati/screens/settings_screen.dart';
 import 'package:ishtirakati/screens/subscriptions_screen.dart';
 import 'package:ishtirakati/main.dart' show resolveAppThemeMode;
+import 'package:ishtirakati/services/auth_service.dart';
 import 'package:ishtirakati/services/cloud_sync.dart';
 import 'package:ishtirakati/theme.dart';
 import 'package:ishtirakati/widgets/app_material_root.dart';
@@ -173,7 +174,18 @@ void main() {
       CloudSync.messageForFirebaseCode('unauthenticated'),
       contains('سجّل الدخول'),
     );
+    expect(
+      CloudSync.messageForFirebaseCode('not-found'),
+      contains('مورد Firebase'),
+    );
   });
+
+  test(
+    'free-team sideload builds do not initialize an unregistered App Check provider',
+    () {
+      expect(AuthService.appCheckEnabled, isFalse);
+    },
+  );
 
   test('theme preference resolves every appearance mode explicitly', () {
     expect(resolveAppThemeMode('system'), ThemeMode.system);
