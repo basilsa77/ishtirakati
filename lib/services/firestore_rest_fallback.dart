@@ -644,7 +644,6 @@ class FirestoreRestFallback {
     };
   }
 
-  @visibleForTesting
   static bool isEncryptedBackupEnvelope(String backup) {
     try {
       final decoded = jsonDecode(backup);
