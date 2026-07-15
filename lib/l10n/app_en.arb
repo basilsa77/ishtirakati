@@ -722,7 +722,7 @@
   "firestoreDiagnosticDependencyManager": "iOS dependency manager",
   "firestoreDiagnosticFeatureFlags": "Build flags",
   "firestoreDiagnosticAppCheck": "App Check: enabled | provider | token",
-  "firestoreDiagnosticFeatureFlagsValue": "Offline queue: {offline} | REST fallback: {rest} | App Check debug: {appCheckDebug}",
+  "firestoreDiagnosticFeatureFlagsValue": "Offline queue: {offline} | General REST: {rest} | REST-first create: {firstCreate} | REST update: {restUpdate} | App Check debug: {appCheckDebug}",
   "firestoreDiagnosticAppCheckValue": "Enabled: {enabled} | provider: {provider} | token: {token}",
   "firestoreDiagnosticNotRequired": "Not required",
   "firestoreDiagnosticNotUsed": "Not used",

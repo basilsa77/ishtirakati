@@ -156,7 +156,7 @@ class AppLocalizations {
       'firestoreDiagnosticFeatureFlags': 'خيارات البناء',
       'firestoreDiagnosticAppCheck': 'App Check: مفعّل | المزوّد | الرمز',
       'firestoreDiagnosticFeatureFlagsValue':
-          'الانتظار المحلي: {offline} | REST الاحتياطي: {rest} | App Check التشخيصي: {appCheckDebug}',
+          'الانتظار المحلي: {offline} | REST العام: {rest} | إنشاء REST أولًا: {firstCreate} | تحديث REST: {restUpdate} | App Check التشخيصي: {appCheckDebug}',
       'firestoreDiagnosticAppCheckValue':
           'مفعّل: {enabled} | المزوّد: {provider} | الرمز: {token}',
       'firestoreDiagnosticNotRequired': 'غير مطلوب',

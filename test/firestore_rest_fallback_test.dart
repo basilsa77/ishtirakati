@@ -111,6 +111,109 @@ void main() {
     expect(calls, 1);
   });
 
+  test('REST GET 404 proves the document is missing before create', () async {
+    final client = MockClient((request) async {
+      expect(request.method, 'GET');
+      return http.Response('{"error":{"status":"NOT_FOUND"}}', 404);
+    });
+
+    final result = await FirestoreRestFallback.readEncryptedBackup(
+      uid: 'test-uid',
+      tokenProvider: (_) async => 'token-1',
+      client: client,
+    );
+
+    expect(result.outcome, FirestoreRestReadOutcome.missing);
+    expect(result.httpStatus, 404);
+  });
+
+  test('REST GET reads revision and updateTime without exposing backup',
+      () async {
+    final client = MockClient((request) async => http.Response(
+          jsonEncode({
+            'fields': {
+              'backup': {'stringValue': encryptedBackup},
+              'schemaVersion': {'integerValue': '2'},
+              'revision': {'integerValue': '7'},
+              'encryption': {'stringValue': 'AES-256-GCM'},
+            },
+            'updateTime': '2026-07-15T01:02:03.000000Z',
+          }),
+          200,
+        ));
+
+    final result = await FirestoreRestFallback.readEncryptedBackup(
+      uid: 'test-uid',
+      tokenProvider: (_) async => 'token-1',
+      client: client,
+    );
+
+    expect(result.outcome, FirestoreRestReadOutcome.found);
+    expect(result.document?.revision, 7);
+    expect(result.document?.updateTime, '2026-07-15T01:02:03.000000Z');
+    expect(result.toString(), isNot(contains(encryptedBackup)));
+  });
+
+  test('REST update advances revision and uses updateTime precondition', () {
+    final body = FirestoreRestFallback.buildRevisionUpdateCommitBody(
+      uid: 'test-uid',
+      backup: encryptedBackup,
+      revision: 2,
+      remoteUpdateTime: '2026-07-15T01:02:03.000000Z',
+    );
+    final write = (body['writes']! as List<Object>).single
+        as Map<String, Object>;
+    final update = write['update']! as Map<String, Object>;
+    final fields = update['fields']! as Map<String, Object>;
+
+    expect(fields['revision'], {'integerValue': '2'});
+    expect(write['currentDocument'], {
+      'updateTime': '2026-07-15T01:02:03.000000Z',
+    });
+    expect(write['updateTransforms'], [
+      {'fieldPath': 'updatedAt', 'setToServerValue': 'REQUEST_TIME'},
+    ]);
+    expect(jsonEncode(body), isNot(contains('subscriptions')));
+  });
+
+  test('REST update HTTP 200 is server-confirmed', () async {
+    final client = MockClient((request) async {
+      expect(request.method, 'POST');
+      return http.Response('{"commitTime":"2026-07-15T00:00:00Z"}', 200);
+    });
+
+    final result = await FirestoreRestFallback.updateEncryptedBackup(
+      uid: 'test-uid',
+      backup: encryptedBackup,
+      nextRevision: 2,
+      remoteUpdateTime: '2026-07-15T01:02:03.000000Z',
+      tokenProvider: (_) async => 'token-1',
+      client: client,
+    );
+
+    expect(result.confirmed, isTrue);
+    expect(result.httpStatus, 200);
+  });
+
+  test('REST update precondition conflict never overwrites newer data',
+      () async {
+    final client = MockClient((request) async => http.Response(
+          '{"error":{"status":"FAILED_PRECONDITION"}}',
+          412,
+        ));
+
+    final result = await FirestoreRestFallback.updateEncryptedBackup(
+      uid: 'test-uid',
+      backup: encryptedBackup,
+      nextRevision: 2,
+      remoteUpdateTime: '2026-07-15T01:02:03.000000Z',
+      tokenProvider: (_) async => 'token-1',
+      client: client,
+    );
+
+    expect(result.outcome, FirestoreRestUpdateOutcome.conflict);
+  });
+
   test('App Check debug provider is restricted to internal App Check builds',
       () {
     expect(

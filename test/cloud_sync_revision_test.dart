@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishtirakati/services/cloud_sync.dart';
+import 'package:ishtirakati/services/firestore_rest_fallback.dart';
 
 void main() {
   group('cloud revision conflict protection', () {
@@ -128,6 +129,126 @@ void main() {
       expect(outcome.operation, CloudSyncWriteOperation.transactionUpdate);
       expect(outcome.documentExisted, isTrue);
       expect(outcome.revision, 5);
+    });
+
+    test('REST-first create bypasses Native before any pending write',
+        () async {
+      var restCalls = 0;
+      var nativeCalls = 0;
+      final outcome = await CloudSync.writeWithTransportPolicy(
+        localRevision: 0,
+        restFirstCreateEnabled: true,
+        restUpdateEnabled: true,
+        restFirstCreate: () async {
+          restCalls++;
+          return const CloudSyncWriteOutcome(
+            operation: CloudSyncWriteOperation.firstCreate,
+            documentExisted: false,
+            revision: 1,
+            restHttpStatus: 200,
+            restOutcome: 'serverConfirmed',
+          );
+        },
+        nativeFirstCreate: () async {
+          nativeCalls++;
+          throw StateError('Native first-create must not run');
+        },
+        restUpdate: () async => throw StateError('update must not run'),
+        nativeUpdate: () async => throw StateError('update must not run'),
+      );
+
+      expect(restCalls, 1);
+      expect(nativeCalls, 0);
+      expect(outcome.delivery, CloudSyncDelivery.serverConfirmed);
+      expect(outcome.hasPendingWrites, isFalse);
+      expect(outcome.restHttpStatus, 200);
+    });
+
+    test('REST update policy bypasses Native for confirmed revisions',
+        () async {
+      var restCalls = 0;
+      var nativeCalls = 0;
+      final outcome = await CloudSync.writeWithTransportPolicy(
+        localRevision: 1,
+        restFirstCreateEnabled: true,
+        restUpdateEnabled: true,
+        restFirstCreate: () async => throw StateError('create must not run'),
+        nativeFirstCreate: () async => throw StateError('create must not run'),
+        restUpdate: () async {
+          restCalls++;
+          return const CloudSyncWriteOutcome(
+            operation: CloudSyncWriteOperation.restUpdate,
+            documentExisted: true,
+            revision: 2,
+            restHttpStatus: 200,
+          );
+        },
+        nativeUpdate: () async {
+          nativeCalls++;
+          throw StateError('Native update must not run');
+        },
+      );
+
+      expect(restCalls, 1);
+      expect(nativeCalls, 0);
+      expect(outcome.revision, 2);
+    });
+
+    test('disabled REST flags preserve the Native paths', () async {
+      var nativeFirstCalls = 0;
+      var nativeUpdateCalls = 0;
+      await CloudSync.writeWithTransportPolicy(
+        localRevision: 0,
+        restFirstCreateEnabled: false,
+        restUpdateEnabled: false,
+        restFirstCreate: () async => throw StateError('REST must not run'),
+        nativeFirstCreate: () async {
+          nativeFirstCalls++;
+          return const CloudSyncWriteOutcome(
+            operation: CloudSyncWriteOperation.firstCreate,
+            documentExisted: false,
+            revision: 1,
+          );
+        },
+        restUpdate: () async => throw StateError('REST must not run'),
+        nativeUpdate: () async => throw StateError('update must not run'),
+      );
+      await CloudSync.writeWithTransportPolicy(
+        localRevision: 1,
+        restFirstCreateEnabled: false,
+        restUpdateEnabled: false,
+        restFirstCreate: () async => throw StateError('create must not run'),
+        nativeFirstCreate: () async => throw StateError('create must not run'),
+        restUpdate: () async => throw StateError('REST must not run'),
+        nativeUpdate: () async {
+          nativeUpdateCalls++;
+          return const CloudSyncWriteOutcome(
+            operation: CloudSyncWriteOperation.transactionUpdate,
+            documentExisted: true,
+            revision: 2,
+          );
+        },
+      );
+
+      expect(nativeFirstCalls, 1);
+      expect(nativeUpdateCalls, 1);
+    });
+
+    test('missing REST probe permits stale pending marker migration', () {
+      expect(
+        CloudSync.shouldClearStalePendingRevision(
+          localRevision: 0,
+          probeOutcome: FirestoreRestReadOutcome.missing,
+        ),
+        isTrue,
+      );
+      expect(
+        CloudSync.shouldClearStalePendingRevision(
+          localRevision: 0,
+          probeOutcome: FirestoreRestReadOutcome.found,
+        ),
+        isFalse,
+      );
     });
 
     test('queued writes never persist as confirmed revisions', () {

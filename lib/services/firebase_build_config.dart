@@ -19,6 +19,16 @@ class FirebaseBuildConfig {
     defaultValue: false,
   );
 
+  static const _restFirstCreateRequested = bool.fromEnvironment(
+    'ENABLE_REST_FIRST_CREATE',
+    defaultValue: false,
+  );
+
+  static const _restUpdateFallbackRequested = bool.fromEnvironment(
+    'ENABLE_REST_UPDATE_FALLBACK',
+    defaultValue: false,
+  );
+
   static const appCheckEnabled = bool.fromEnvironment(
     'ENABLE_FIREBASE_APP_CHECK',
     defaultValue: false,
@@ -34,6 +44,12 @@ class FirebaseBuildConfig {
 
   static bool get restFallbackEnabled =>
       internalBuild && _restFallbackRequested;
+
+  static bool get restFirstCreateEnabled =>
+      internalBuild && _restFirstCreateRequested;
+
+  static bool get restUpdateFallbackEnabled =>
+      internalBuild && _restUpdateFallbackRequested;
 
   static bool get appCheckDebugEnabled =>
       internalBuild && appCheckEnabled && _appCheckDebugRequested;

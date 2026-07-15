@@ -124,7 +124,7 @@ class CloudSyncStatus {
       );
 }
 
-enum CloudSyncWriteOperation { firstCreate, transactionUpdate }
+enum CloudSyncWriteOperation { firstCreate, transactionUpdate, restUpdate }
 
 class CloudSyncWriteOutcome {
   final CloudSyncWriteOperation operation;
@@ -133,6 +133,8 @@ class CloudSyncWriteOutcome {
   final CloudSyncDelivery delivery;
   final int attempts;
   final int? restHttpStatus;
+  final String? restOutcome;
+  final bool hasPendingWrites;
 
   const CloudSyncWriteOutcome({
     required this.operation,
@@ -141,6 +143,8 @@ class CloudSyncWriteOutcome {
     this.delivery = CloudSyncDelivery.serverConfirmed,
     this.attempts = 1,
     this.restHttpStatus,
+    this.restOutcome,
+    this.hasPendingWrites = false,
   });
 }
 
@@ -455,6 +459,13 @@ class CloudSync {
     await prefs.setInt('$_pendingRevisionKeyPrefix$uid', revision);
   }
 
+  static Future<void> _clearPendingRevision(String uid) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('$_pendingRevisionKeyPrefix$uid');
+    await _pendingConfirmationSubscription?.cancel();
+    _pendingConfirmationSubscription = null;
+  }
+
   @visibleForTesting
   static bool shouldPersistConfirmedRevision(CloudSyncDelivery delivery) =>
       delivery == CloudSyncDelivery.serverConfirmed;
@@ -469,6 +480,13 @@ class CloudSync {
       localRevision == 0 &&
       (firebaseCode == 'unavailable' ||
           firebaseCode == 'deadline-exceeded');
+
+  @visibleForTesting
+  static bool shouldClearStalePendingRevision({
+    required int localRevision,
+    required FirestoreRestReadOutcome probeOutcome,
+  }) =>
+      localRevision == 0 && probeOutcome == FirestoreRestReadOutcome.missing;
 
   static Future<bool> _hasPendingFirstCreate(
     DocumentReference<Map<String, dynamic>> doc,
@@ -527,7 +545,7 @@ class CloudSync {
       );
       if (shouldPersistConfirmedRevision(outcome.delivery)) {
         await _saveLocalRevision(uid, outcome.revision);
-      } else {
+      } else if (outcome.delivery == CloudSyncDelivery.queuedLocally) {
         await _savePendingRevision(uid, outcome.revision);
       }
       if (outcome.delivery == CloudSyncDelivery.queuedLocally) {
@@ -539,10 +557,13 @@ class CloudSync {
           documentExisted: false,
           revision: outcome.revision,
           delivery: CloudSyncDelivery.queuedLocally,
-          hasPendingWrites: true,
+          hasPendingWrites: outcome.hasPendingWrites,
           restHttpStatus: outcome.restHttpStatus,
+          restOutcome: outcome.restOutcome,
         );
-        _watchPendingConfirmation(doc, uid, outcome.revision);
+        if (outcome.hasPendingWrites) {
+          _watchPendingConfirmation(doc, uid, outcome.revision);
+        }
         return false;
       }
       status.value = CloudSyncStatus(
@@ -551,16 +572,18 @@ class CloudSync {
         message: outcome.operation == CloudSyncWriteOperation.firstCreate
             ? tr('cloudFirstCreateSuccess')
             : tr('cloudUpdateSuccess'),
-        operation: outcome.operation == CloudSyncWriteOperation.firstCreate
-            ? 'first-create'
-            : 'transaction-update',
+        operation: switch (outcome.operation) {
+          CloudSyncWriteOperation.firstCreate => 'first-create',
+          CloudSyncWriteOperation.transactionUpdate => 'transaction-update',
+          CloudSyncWriteOperation.restUpdate => 'rest-update',
+        },
         documentExisted: outcome.documentExisted,
         revision: outcome.revision,
         delivery: CloudSyncDelivery.serverConfirmed,
         attemptCount: outcome.attempts,
         hasPendingWrites: false,
         restHttpStatus: outcome.restHttpStatus,
-        restOutcome: status.value.restOutcome,
+        restOutcome: outcome.restOutcome ?? status.value.restOutcome,
       );
       return true;
     } on _CloudRevisionConflict {
@@ -645,44 +668,327 @@ class CloudSync {
     String backup,
     int localRevision,
   ) =>
-      writeWithoutPreflightRead(
+      writeWithTransportPolicy(
         localRevision: localRevision,
-        firstCreate: () => _createFirstCloudDocument(doc, backup),
-        transactionUpdate: () async {
-          _setWriteDiagnostics(
-            operation: 'transaction-update',
-            documentExisted: true,
-            revision: localRevision + 1,
-          );
-          _logFirebaseOperation('firestore.transaction-update');
-          final revision = await _runFirestoreOperation(
-            () => FirebaseFirestore.instance.runTransaction<int>(
-              (transaction) async {
-                final snapshot = await transaction.get(doc);
-                final remoteRevision =
-                    (snapshot.data()?['revision'] as num?)?.toInt() ?? 0;
-                if (!canPushRevision(
-                  localRevision: localRevision,
-                  remoteRevision: remoteRevision,
-                  remoteExists: snapshot.exists,
-                )) {
-                  throw const _CloudRevisionConflict();
-                }
-                final next = remoteRevision + 1;
-                transaction.set(doc, _encryptedBackupPayload(backup, next));
-                return next;
-              },
-            ),
-            operationName: 'transaction-update',
-          );
-          return CloudSyncWriteOutcome(
-            operation: CloudSyncWriteOperation.transactionUpdate,
-            documentExisted: true,
-            revision: revision,
-            attempts: status.value.attemptCount,
-          );
-        },
+        restFirstCreateEnabled: FirebaseBuildConfig.restFirstCreateEnabled,
+        restUpdateEnabled: FirebaseBuildConfig.restUpdateFallbackEnabled,
+        restFirstCreate: () => _createFirstCloudDocumentViaRest(backup),
+        nativeFirstCreate: () => _createFirstCloudDocument(doc, backup),
+        restUpdate: () => _updateCloudDocumentViaRest(
+          backup,
+          localRevision,
+        ),
+        nativeUpdate: () => _transactionUpdateCloudDocument(
+          doc,
+          backup,
+          localRevision,
+        ),
       );
+
+  @visibleForTesting
+  static Future<CloudSyncWriteOutcome> writeWithTransportPolicy({
+    required int localRevision,
+    required bool restFirstCreateEnabled,
+    required bool restUpdateEnabled,
+    required Future<CloudSyncWriteOutcome> Function() restFirstCreate,
+    required Future<CloudSyncWriteOutcome> Function() nativeFirstCreate,
+    required Future<CloudSyncWriteOutcome> Function() restUpdate,
+    required Future<CloudSyncWriteOutcome> Function() nativeUpdate,
+  }) {
+    if (localRevision == 0) {
+      return restFirstCreateEnabled ? restFirstCreate() : nativeFirstCreate();
+    }
+    return restUpdateEnabled ? restUpdate() : nativeUpdate();
+  }
+
+  static Future<CloudSyncWriteOutcome> _transactionUpdateCloudDocument(
+    DocumentReference<Map<String, dynamic>> doc,
+    String backup,
+    int localRevision,
+  ) async {
+    _setWriteDiagnostics(
+      operation: 'transaction-update',
+      documentExisted: true,
+      revision: localRevision + 1,
+    );
+    _logFirebaseOperation('firestore.transaction-update');
+    final revision = await _runFirestoreOperation(
+      () => FirebaseFirestore.instance.runTransaction<int>(
+        (transaction) async {
+          final snapshot = await transaction.get(doc);
+          final remoteRevision =
+              (snapshot.data()?['revision'] as num?)?.toInt() ?? 0;
+          if (!canPushRevision(
+            localRevision: localRevision,
+            remoteRevision: remoteRevision,
+            remoteExists: snapshot.exists,
+          )) {
+            throw const _CloudRevisionConflict();
+          }
+          final next = remoteRevision + 1;
+          transaction.set(doc, _encryptedBackupPayload(backup, next));
+          return next;
+        },
+      ),
+      operationName: 'transaction-update',
+    );
+    return CloudSyncWriteOutcome(
+      operation: CloudSyncWriteOperation.transactionUpdate,
+      documentExisted: true,
+      revision: revision,
+      attempts: status.value.attemptCount,
+    );
+  }
+
+  static Future<CloudSyncWriteOutcome> _createFirstCloudDocumentViaRest(
+    String backup,
+  ) async {
+    final user = AuthService.currentUser;
+    if (user == null) {
+      throw FirebaseException(
+        plugin: 'firestore_rest',
+        code: 'unauthenticated',
+      );
+    }
+    _setWriteDiagnostics(
+      operation: 'rest-first-create-probe',
+      documentExisted: null,
+      revision: 1,
+    );
+    final probe = await FirestoreRestFallback.readEncryptedBackup(
+      uid: user.uid,
+      tokenProvider: user.getIdToken,
+    );
+    _recordRestResult(
+      httpStatus: probe.httpStatus,
+      outcome: 'probe-${probe.outcome.name}',
+      attempts: probe.attempts,
+      exceptionType: probe.exceptionType,
+      documentExisted: probe.outcome == FirestoreRestReadOutcome.found
+          ? true
+          : probe.outcome == FirestoreRestReadOutcome.missing
+              ? false
+              : null,
+    );
+    if (probe.outcome == FirestoreRestReadOutcome.found) {
+      throw const _CloudRevisionConflict();
+    }
+    if (probe.outcome == FirestoreRestReadOutcome.networkFailure ||
+        probe.outcome == FirestoreRestReadOutcome.rateLimited ||
+        probe.outcome == FirestoreRestReadOutcome.serviceUnavailable) {
+      return CloudSyncWriteOutcome(
+        operation: CloudSyncWriteOperation.firstCreate,
+        documentExisted: false,
+        revision: 1,
+        delivery: CloudSyncDelivery.queuedLocally,
+        attempts: probe.attempts,
+        restHttpStatus: probe.httpStatus,
+        restOutcome: 'probe-${probe.outcome.name}',
+        hasPendingWrites: false,
+      );
+    }
+    if (probe.outcome != FirestoreRestReadOutcome.missing) {
+      _throwRestReadFailure(probe);
+    }
+
+    // Build 42 may have left only this sync marker behind. The encrypted
+    // subscriptions, Keychain key, and Firestore cache are intentionally kept.
+    if (shouldClearStalePendingRevision(
+      localRevision: 0,
+      probeOutcome: probe.outcome,
+    )) {
+      await _clearPendingRevision(user.uid);
+    }
+    _setWriteDiagnostics(
+      operation: 'rest-first-create',
+      documentExisted: false,
+      revision: 1,
+    );
+    final create = await FirestoreRestFallback.createFirstEncryptedBackup(
+      uid: user.uid,
+      backup: backup,
+      tokenProvider: user.getIdToken,
+    );
+    _recordRestResult(
+      httpStatus: create.httpStatus,
+      outcome: create.outcome.name,
+      attempts: probe.attempts + create.attempts,
+      exceptionType: create.exceptionType,
+      documentExisted: false,
+    );
+    if (create.confirmed) {
+      return CloudSyncWriteOutcome(
+        operation: CloudSyncWriteOperation.firstCreate,
+        documentExisted: false,
+        revision: 1,
+        attempts: probe.attempts + create.attempts,
+        restHttpStatus: create.httpStatus,
+        restOutcome: create.outcome.name,
+      );
+    }
+    if (create.outcome == FirestoreRestCreateOutcome.conflict) {
+      throw const _CloudRevisionConflict();
+    }
+    if (create.outcome == FirestoreRestCreateOutcome.permissionDenied) {
+      throw FirebaseException(
+        plugin: 'firestore_rest',
+        code: 'permission-denied',
+      );
+    }
+    if (create.outcome == FirestoreRestCreateOutcome.unauthenticated) {
+      throw FirebaseException(
+        plugin: 'firestore_rest',
+        code: 'unauthenticated',
+      );
+    }
+    if (create.outcome == FirestoreRestCreateOutcome.networkFailure ||
+        create.outcome == FirestoreRestCreateOutcome.rateLimited ||
+        create.outcome == FirestoreRestCreateOutcome.serviceUnavailable) {
+      return CloudSyncWriteOutcome(
+        operation: CloudSyncWriteOperation.firstCreate,
+        documentExisted: false,
+        revision: 1,
+        delivery: CloudSyncDelivery.queuedLocally,
+        attempts: probe.attempts + create.attempts,
+        restHttpStatus: create.httpStatus,
+        restOutcome: create.outcome.name,
+        hasPendingWrites: false,
+      );
+    }
+    throw FirebaseException(
+      plugin: 'firestore_rest',
+      code: 'invalid-argument',
+    );
+  }
+
+  static Future<CloudSyncWriteOutcome> _updateCloudDocumentViaRest(
+    String backup,
+    int localRevision,
+  ) async {
+    final user = AuthService.currentUser;
+    if (user == null) {
+      throw FirebaseException(
+        plugin: 'firestore_rest',
+        code: 'unauthenticated',
+      );
+    }
+    _setWriteDiagnostics(
+      operation: 'rest-update-probe',
+      documentExisted: null,
+      revision: localRevision + 1,
+    );
+    final probe = await FirestoreRestFallback.readEncryptedBackup(
+      uid: user.uid,
+      tokenProvider: user.getIdToken,
+    );
+    _recordRestResult(
+      httpStatus: probe.httpStatus,
+      outcome: 'probe-${probe.outcome.name}',
+      attempts: probe.attempts,
+      exceptionType: probe.exceptionType,
+      documentExisted: probe.outcome == FirestoreRestReadOutcome.found
+          ? true
+          : probe.outcome == FirestoreRestReadOutcome.missing
+              ? false
+              : null,
+    );
+    if (probe.outcome == FirestoreRestReadOutcome.missing) {
+      throw const _CloudRevisionConflict();
+    }
+    if (probe.outcome != FirestoreRestReadOutcome.found ||
+        probe.document == null) {
+      _throwRestReadFailure(probe);
+    }
+    final remote = probe.document!;
+    if (remote.revision != localRevision ||
+        remote.schemaVersion != _schemaVersion ||
+        remote.encryption != _encryption ||
+        !FirestoreRestFallback.isEncryptedBackupEnvelope(remote.backup)) {
+      throw const _CloudRevisionConflict();
+    }
+    final nextRevision = remote.revision + 1;
+    _setWriteDiagnostics(
+      operation: 'rest-update',
+      documentExisted: true,
+      revision: nextRevision,
+    );
+    final update = await FirestoreRestFallback.updateEncryptedBackup(
+      uid: user.uid,
+      backup: backup,
+      nextRevision: nextRevision,
+      remoteUpdateTime: remote.updateTime,
+      tokenProvider: user.getIdToken,
+    );
+    _recordRestResult(
+      httpStatus: update.httpStatus,
+      outcome: update.outcome.name,
+      attempts: probe.attempts + update.attempts,
+      exceptionType: update.exceptionType,
+      documentExisted: true,
+    );
+    if (update.confirmed) {
+      return CloudSyncWriteOutcome(
+        operation: CloudSyncWriteOperation.restUpdate,
+        documentExisted: true,
+        revision: nextRevision,
+        attempts: probe.attempts + update.attempts,
+        restHttpStatus: update.httpStatus,
+        restOutcome: update.outcome.name,
+      );
+    }
+    if (update.outcome == FirestoreRestUpdateOutcome.conflict) {
+      throw const _CloudRevisionConflict();
+    }
+    if (update.outcome == FirestoreRestUpdateOutcome.permissionDenied) {
+      throw FirebaseException(
+        plugin: 'firestore_rest',
+        code: 'permission-denied',
+      );
+    }
+    if (update.outcome == FirestoreRestUpdateOutcome.unauthenticated) {
+      throw FirebaseException(
+        plugin: 'firestore_rest',
+        code: 'unauthenticated',
+      );
+    }
+    throw FirebaseException(
+      plugin: 'firestore_rest',
+      code: update.outcome == FirestoreRestUpdateOutcome.networkFailure
+          ? 'unavailable'
+          : update.outcome == FirestoreRestUpdateOutcome.invalidPayload
+              ? 'invalid-argument'
+              : 'unavailable',
+    );
+  }
+
+  static void _recordRestResult({
+    required int? httpStatus,
+    required String outcome,
+    required int attempts,
+    required String? exceptionType,
+    required bool? documentExisted,
+  }) {
+    status.value = status.value.copyWith(
+      restHttpStatus: httpStatus,
+      restOutcome: outcome,
+      attemptCount: attempts,
+      exceptionType: exceptionType,
+      documentExisted: documentExisted,
+    );
+  }
+
+  static Never _throwRestReadFailure(FirestoreRestReadResult result) {
+    final code = switch (result.outcome) {
+      FirestoreRestReadOutcome.unauthenticated => 'unauthenticated',
+      FirestoreRestReadOutcome.permissionDenied => 'permission-denied',
+      FirestoreRestReadOutcome.invalidDocument => 'data-loss',
+      FirestoreRestReadOutcome.rateLimited => 'resource-exhausted',
+      FirestoreRestReadOutcome.serviceUnavailable ||
+      FirestoreRestReadOutcome.networkFailure => 'unavailable',
+      _ => 'unknown',
+    };
+    throw FirebaseException(plugin: 'firestore_rest', code: code);
+  }
 
   static Future<CloudSyncWriteOutcome> _createFirstCloudDocument(
     DocumentReference<Map<String, dynamic>> doc,
@@ -711,49 +1017,6 @@ class CloudSync {
     } on FirebaseException catch (error) {
       final pending = await _hasPendingFirstCreate(doc);
       status.value = status.value.copyWith(hasPendingWrites: pending);
-      if (shouldUseRestFallback(
-        enabled: FirebaseBuildConfig.restFallbackEnabled,
-        localRevision: 0,
-        firebaseCode: error.code,
-      )) {
-        final user = AuthService.currentUser;
-        if (user == null) rethrow;
-        final rest = await FirestoreRestFallback.createFirstEncryptedBackup(
-          uid: user.uid,
-          backup: backup,
-          tokenProvider: user.getIdToken,
-        );
-        status.value = status.value.copyWith(
-          restHttpStatus: rest.httpStatus,
-          restOutcome: rest.outcome.name,
-          attemptCount: status.value.attemptCount + rest.attempts,
-          exceptionType: rest.exceptionType,
-        );
-        if (rest.confirmed) {
-          return CloudSyncWriteOutcome(
-            operation: CloudSyncWriteOperation.firstCreate,
-            documentExisted: false,
-            revision: 1,
-            attempts: status.value.attemptCount,
-            restHttpStatus: rest.httpStatus,
-          );
-        }
-        if (rest.outcome == FirestoreRestCreateOutcome.conflict) {
-          throw const _CloudRevisionConflict();
-        }
-        if (rest.outcome == FirestoreRestCreateOutcome.permissionDenied) {
-          throw FirebaseException(
-            plugin: 'firestore_rest',
-            code: 'permission-denied',
-          );
-        }
-        if (rest.outcome == FirestoreRestCreateOutcome.unauthenticated) {
-          throw FirebaseException(
-            plugin: 'firestore_rest',
-            code: 'unauthenticated',
-          );
-        }
-      }
       if (pending) {
         return CloudSyncWriteOutcome(
           operation: CloudSyncWriteOperation.firstCreate,
@@ -762,8 +1025,15 @@ class CloudSync {
           delivery: CloudSyncDelivery.queuedLocally,
           attempts: status.value.attemptCount,
           restHttpStatus: status.value.restHttpStatus,
+          restOutcome: status.value.restOutcome,
+          hasPendingWrites: true,
         );
       }
+      final restOutcome = await _restCreateAfterNativeFailure(
+        backup: backup,
+        firebaseCode: error.code,
+      );
+      if (restOutcome != null) return restOutcome;
       rethrow;
     } on TimeoutException {
       final pending = await _hasPendingFirstCreate(doc);
@@ -774,10 +1044,69 @@ class CloudSync {
           revision: 1,
           delivery: CloudSyncDelivery.queuedLocally,
           attempts: status.value.attemptCount,
+          hasPendingWrites: true,
         );
       }
+      final restOutcome = await _restCreateAfterNativeFailure(
+        backup: backup,
+        firebaseCode: 'deadline-exceeded',
+      );
+      if (restOutcome != null) return restOutcome;
       rethrow;
     }
+  }
+
+  static Future<CloudSyncWriteOutcome?> _restCreateAfterNativeFailure({
+    required String backup,
+    required String firebaseCode,
+  }) async {
+    if (!shouldUseRestFallback(
+      enabled: FirebaseBuildConfig.restFallbackEnabled,
+      localRevision: 0,
+      firebaseCode: firebaseCode,
+    )) {
+      return null;
+    }
+    final user = AuthService.currentUser;
+    if (user == null) return null;
+    final rest = await FirestoreRestFallback.createFirstEncryptedBackup(
+      uid: user.uid,
+      backup: backup,
+      tokenProvider: user.getIdToken,
+    );
+    _recordRestResult(
+      httpStatus: rest.httpStatus,
+      outcome: rest.outcome.name,
+      attempts: status.value.attemptCount + rest.attempts,
+      exceptionType: rest.exceptionType,
+      documentExisted: false,
+    );
+    if (rest.confirmed) {
+      return CloudSyncWriteOutcome(
+        operation: CloudSyncWriteOperation.firstCreate,
+        documentExisted: false,
+        revision: 1,
+        attempts: status.value.attemptCount,
+        restHttpStatus: rest.httpStatus,
+        restOutcome: rest.outcome.name,
+      );
+    }
+    if (rest.outcome == FirestoreRestCreateOutcome.conflict) {
+      throw const _CloudRevisionConflict();
+    }
+    if (rest.outcome == FirestoreRestCreateOutcome.permissionDenied) {
+      throw FirebaseException(
+        plugin: 'firestore_rest',
+        code: 'permission-denied',
+      );
+    }
+    if (rest.outcome == FirestoreRestCreateOutcome.unauthenticated) {
+      throw FirebaseException(
+        plugin: 'firestore_rest',
+        code: 'unauthenticated',
+      );
+    }
+    return null;
   }
 
   @visibleForTesting
@@ -874,6 +1203,78 @@ class CloudSync {
     }
   }
 
+  static Future<int> _pullViaRest() async {
+    final user = AuthService.currentUser;
+    if (user == null) {
+      _fail(CloudSyncFailure.unauthenticated, tr('cloudSignInToRestore'));
+      return -1;
+    }
+    _setSyncing();
+    final result = await FirestoreRestFallback.readEncryptedBackup(
+      uid: user.uid,
+      tokenProvider: user.getIdToken,
+    );
+    _recordRestResult(
+      httpStatus: result.httpStatus,
+      outcome: 'restore-${result.outcome.name}',
+      attempts: result.attempts,
+      exceptionType: result.exceptionType,
+      documentExisted: result.outcome == FirestoreRestReadOutcome.found
+          ? true
+          : result.outcome == FirestoreRestReadOutcome.missing
+              ? false
+              : null,
+    );
+    if (result.outcome != FirestoreRestReadOutcome.found ||
+        result.document == null) {
+      if (result.outcome == FirestoreRestReadOutcome.missing) {
+        _fail(CloudSyncFailure.configuration, tr('cloudSyncDocumentNotFound'));
+        return -1;
+      }
+      try {
+        _throwRestReadFailure(result);
+      } on FirebaseException catch (error, stackTrace) {
+        _failFirebase(
+          error,
+          stackTrace,
+          operation: 'rest-restore',
+        );
+        return -1;
+      }
+    }
+    final remote = result.document!;
+    if (remote.schemaVersion != _schemaVersion ||
+        remote.encryption != _encryption ||
+        utf8.encode(remote.backup).length > _maxBackupBytes ||
+        !FirestoreRestFallback.isEncryptedBackupEnvelope(remote.backup)) {
+      _fail(CloudSyncFailure.invalidBackup, tr('cloudInvalidBackup'));
+      return -1;
+    }
+    try {
+      final count = await SubscriptionStore.instance
+          .importEncryptedCloudBackup(remote.backup);
+      if (count < 0) {
+        _fail(
+          CloudSyncFailure.storageLocked,
+          tr('cloudEncryptedRestoreFailed'),
+        );
+        return -1;
+      }
+      await _saveLocalRevision(user.uid, remote.revision);
+      status.value = status.value.copyWith(
+        phase: CloudSyncPhase.success,
+        updatedAt: DateTime.now(),
+        revision: remote.revision,
+        delivery: CloudSyncDelivery.serverConfirmed,
+        hasPendingWrites: false,
+      );
+      return count;
+    } on SecureDataException {
+      _fail(CloudSyncFailure.storageLocked, tr('cloudStorageLocked'));
+      return -1;
+    }
+  }
+
   /// Restores a backup before uploading the latest local state.
   static Future<CloudSyncResult> restoreAndPush() async {
     final doc = _doc();
@@ -883,6 +1284,16 @@ class CloudSync {
         tr('cloudSignInToSync'),
       );
       return const CloudSyncResult.failed(CloudSyncFailure.unauthenticated);
+    }
+    if (FirebaseBuildConfig.restUpdateFallbackEnabled) {
+      final restored = await _pullViaRest();
+      if (restored < 0) {
+        return CloudSyncResult.failed(status.value.failure);
+      }
+      final uploaded = await push();
+      return uploaded
+          ? CloudSyncResult.success(imported: restored)
+          : CloudSyncResult.failed(status.value.failure);
     }
     try {
       final exists = (await _runFirestoreOperation(

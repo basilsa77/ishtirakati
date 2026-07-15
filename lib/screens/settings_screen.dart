@@ -662,6 +662,10 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
             value: tr('firestoreDiagnosticFeatureFlagsValue', {
               'offline': _yesNo(FirebaseBuildConfig.offlineQueueEnabled),
               'rest': _yesNo(FirebaseBuildConfig.restFallbackEnabled),
+              'firstCreate':
+                  _yesNo(FirebaseBuildConfig.restFirstCreateEnabled),
+              'restUpdate':
+                  _yesNo(FirebaseBuildConfig.restUpdateFallbackEnabled),
               'appCheckDebug':
                   _yesNo(FirebaseBuildConfig.appCheckDebugEnabled),
             }),
