@@ -1,10 +1,8 @@
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../design/design_tokens.dart';
 import '../l10n/app_localizations.dart';
 import '../screens/command_palette.dart';
 import '../theme.dart';
@@ -35,31 +33,29 @@ class AdaptiveCycleShell extends StatelessWidget {
         if (tablet) {
           return Row(
             children: [
-              SafeArea(
-                right: false,
-                child: _CycleRail(
-                  destination: destination,
-                  onDestination: _select,
-                  onCommands: () => showV12CommandPalette(
-                    context,
+              Padding(
+                padding: const EdgeInsets.all(V16Space.md),
+                child: SafeArea(
+                  right: false,
+                  child: _CycleRail(
+                    destination: destination,
                     onDestination: _select,
+                    onCommands:
+                        () => showV12CommandPalette(
+                          context,
+                          onDestination: _select,
+                        ),
                   ),
                 ),
               ),
-              VerticalDivider(width: 1, color: context.palette.stroke),
               Expanded(child: page),
             ],
           );
         }
         return Column(
           children: [
-            Expanded(
-              child: RepaintBoundary(child: page),
-            ),
-            _IOSBottomBar(
-              destination: destination,
-              onDestination: _select,
-            ),
+            Expanded(child: RepaintBoundary(child: page)),
+            _IOSBottomBar(destination: destination, onDestination: _select),
           ],
         );
       },
@@ -73,24 +69,35 @@ class _IOSBottomBar extends StatelessWidget {
   final V12Destination destination;
   final ValueChanged<V12Destination> onDestination;
 
-  const _IOSBottomBar({
-    required this.destination,
-    required this.onDestination,
-  });
+  const _IOSBottomBar({required this.destination, required this.onDestination});
 
   @override
-  Widget build(BuildContext context) => RepaintBoundary(
-        child: ClipRect(
+  Widget build(BuildContext context) => SafeArea(
+    top: false,
+    minimum: const EdgeInsets.fromLTRB(
+      V16Space.sm,
+      V16Space.xxs,
+      V16Space.sm,
+      V16Space.xs,
+    ),
+    child: RepaintBoundary(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(V16Radius.signature),
+          boxShadow: context.palette.cardShadow,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(V16Radius.signature),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: CupertinoTabBar(
               key: const ValueKey('ios-tab-bar'),
               currentIndex: destination.index,
               onTap: (index) => onDestination(_primaryDestinations[index]),
               activeColor: context.palette.accent,
               inactiveColor: context.palette.textMuted,
-              backgroundColor: context.palette.surface.withValues(alpha: .96),
-              border: Border(top: BorderSide(color: context.palette.stroke)),
+              backgroundColor: context.palette.surface.withValues(alpha: .92),
+              border: Border.all(color: context.palette.stroke),
               items: [
                 for (final item in _primaryDestinations)
                   BottomNavigationBarItem(
@@ -105,7 +112,9 @@ class _IOSBottomBar extends StatelessWidget {
             ),
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _CycleRail extends StatelessWidget {
@@ -120,55 +129,82 @@ class _CycleRail extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-        width: 224,
-        child: Padding(
-          padding: const EdgeInsets.all(V12Space.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget build(BuildContext context) => Container(
+    width: 244,
+    padding: const EdgeInsets.all(V16Space.md),
+    decoration: BoxDecoration(
+      color: context.palette.surface,
+      borderRadius: BorderRadius.circular(V16Radius.signature),
+      border: Border.all(color: context.palette.stroke),
+      boxShadow: context.palette.cardShadow,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(V16Space.xs),
+          child: Row(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(V12Space.xs),
+              Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  gradient: context.palette.heroGradient,
+                  borderRadius: BorderRadius.circular(V16Radius.compact),
+                ),
+                child: const Icon(
+                  CupertinoIcons.waveform_path_ecg,
+                  color: V16Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: V16Space.sm),
+              Expanded(
                 child: Text(
                   context.l10n.text('appTitle'),
                   style: TextStyle(
                     color: context.palette.text,
-                    fontFamily: V15Type.displayFamily,
-                    fontFamilyFallback: V15Type.fallbacks,
-                    fontSize: V15Type.title,
-                    fontWeight: FontWeight.w800,
+                    fontFamily: V16Type.displayFamily,
+                    fontFamilyFallback: V16Type.fallbacks,
+                    fontSize: V16Type.title,
+                    fontWeight: V16Type.semibold,
                   ),
-                ),
-              ),
-              const SizedBox(height: V12Space.lg),
-              for (final item in V12Destination.values)
-                _SidebarButton(
-                  destination: item,
-                  selected: destination == item,
-                  onTap: () => onDestination(item),
-                ),
-              const Spacer(),
-              CupertinoButton(
-                onPressed: onCommands,
-                padding: const EdgeInsets.symmetric(vertical: V12Space.sm),
-                child: Row(
-                  children: [
-                    const Icon(CupertinoIcons.search, size: 20),
-                    const SizedBox(width: V12Space.sm),
-                    Expanded(
-                      child: Text(
-                        context.l10n.text('searchAndCommands'),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ],
           ),
         ),
-      );
+        const SizedBox(height: V16Space.lg),
+        for (final item in V12Destination.values)
+          _SidebarButton(
+            destination: item,
+            selected: destination == item,
+            onTap: () => onDestination(item),
+          ),
+        const Spacer(),
+        CupertinoButton(
+          onPressed: onCommands,
+          padding: const EdgeInsets.symmetric(vertical: V16Space.sm),
+          borderRadius: BorderRadius.circular(V16Radius.standard),
+          color: context.palette.surfaceAlt,
+          child: Row(
+            children: [
+              const Icon(CupertinoIcons.search, size: 20),
+              const SizedBox(width: V16Space.sm),
+              Expanded(
+                child: Text(
+                  context.l10n.text('searchAndCommands'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _SidebarButton extends StatelessWidget {
@@ -184,37 +220,34 @@ class _SidebarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: V12Space.xs),
-        child: CupertinoButton(
-          onPressed: onTap,
-          padding: const EdgeInsets.symmetric(
-            horizontal: V12Space.sm,
-            vertical: V12Space.sm,
+    padding: const EdgeInsets.only(bottom: V16Space.xs),
+    child: CupertinoButton(
+      onPressed: onTap,
+      padding: const EdgeInsets.symmetric(
+        horizontal: V16Space.sm,
+        vertical: V16Space.sm,
+      ),
+      color: selected ? context.palette.accentSoft : null,
+      borderRadius: BorderRadius.circular(V16Radius.standard),
+      child: Row(
+        children: [
+          Icon(
+            selected ? destination.selectedIcon : destination.icon,
+            color:
+                selected ? context.palette.accent : context.palette.textMuted,
           ),
-          color: selected ? context.palette.accentSoft : null,
-          borderRadius: BorderRadius.circular(V12Radius.standard),
-          child: Row(
-            children: [
-              Icon(
-                selected ? destination.selectedIcon : destination.icon,
-                color: selected
-                    ? context.palette.accent
-                    : context.palette.textMuted,
+          const SizedBox(width: V16Space.sm),
+          Expanded(
+            child: Text(
+              destination.label(context),
+              style: TextStyle(
+                color: selected ? context.palette.accent : context.palette.text,
+                fontWeight: selected ? V16Type.semibold : V16Type.regular,
               ),
-              const SizedBox(width: V12Space.sm),
-              Expanded(
-                child: Text(
-                  destination.label(context),
-                  style: TextStyle(
-                    color: selected
-                        ? context.palette.accent
-                        : context.palette.text,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 }

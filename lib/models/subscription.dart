@@ -1,8 +1,7 @@
 /// نموذج بيانات الاشتراك وحسابات التجديد والتكاليف.
 library;
 
-import '../l10n/app_localizations.dart'
-    show isEnglishLocale, localizedNumber;
+import '../l10n/app_localizations.dart' show isEnglishLocale, localizedNumber;
 import 'subscription_schema.dart';
 
 /// دورة الفوترة.
@@ -13,10 +12,10 @@ enum PaymentKind { subscription, installment, bill }
 
 extension PaymentKindX on PaymentKind {
   String get labelAr => switch (this) {
-        PaymentKind.subscription => 'اشتراك',
-        PaymentKind.installment => 'قسط',
-        PaymentKind.bill => 'فاتورة',
-      };
+    PaymentKind.subscription => 'اشتراك',
+    PaymentKind.installment => 'قسط',
+    PaymentKind.bill => 'فاتورة',
+  };
 }
 
 /// تغيير سعر سابق: السعر القديم وتاريخ استبداله.
@@ -27,9 +26,9 @@ class PriceChange {
   const PriceChange({required this.oldPrice, required this.changedAt});
 
   Map<String, dynamic> toJson() => {
-        'p': oldPrice,
-        'd': changedAt.toIso8601String(),
-      };
+    'p': oldPrice,
+    'd': changedAt.toIso8601String(),
+  };
 
   static PriceChange? fromJson(dynamic json) {
     if (json is! Map<String, dynamic>) return null;
@@ -42,18 +41,18 @@ class PriceChange {
 
 extension BillingCycleX on BillingCycle {
   String get labelAr => switch (this) {
-        BillingCycle.weekly => 'أسبوعي',
-        BillingCycle.monthly => 'شهري',
-        BillingCycle.quarterly => 'كل ٣ أشهر',
-        BillingCycle.yearly => 'سنوي',
-      };
+    BillingCycle.weekly => 'أسبوعي',
+    BillingCycle.monthly => 'شهري',
+    BillingCycle.quarterly => 'كل ٣ أشهر',
+    BillingCycle.yearly => 'سنوي',
+  };
 
   int get cyclesPerYear => switch (this) {
-        BillingCycle.weekly => 52,
-        BillingCycle.monthly => 12,
-        BillingCycle.quarterly => 4,
-        BillingCycle.yearly => 1,
-      };
+    BillingCycle.weekly => 52,
+    BillingCycle.monthly => 12,
+    BillingCycle.quarterly => 4,
+    BillingCycle.yearly => 1,
+  };
 }
 
 /// طرق الدفع الشائعة.
@@ -89,17 +88,19 @@ String buildCsv(List<Subscription> subs) {
   );
   for (final s in subs) {
     final d = s.nextRenewal();
-    b.writeln([
-      esc(s.name),
-      s.price.toStringAsFixed(2),
-      s.currency,
-      esc(s.cycle.labelAr),
-      esc(s.category),
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}',
-      s.totalSpent().toStringAsFixed(2),
-      esc(s.paymentMethod),
-      esc(s.notes),
-    ].join(','));
+    b.writeln(
+      [
+        esc(s.name),
+        s.price.toStringAsFixed(2),
+        s.currency,
+        esc(s.cycle.labelAr),
+        esc(s.category),
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}',
+        s.totalSpent().toStringAsFixed(2),
+        esc(s.paymentMethod),
+        esc(s.notes),
+      ].join(','),
+    );
   }
   return b.toString();
 }
@@ -271,11 +272,14 @@ class Subscription {
 
   /// تواريخ التجديد الواقعة داخل شهر معيّن (لعرض التقويم).
   List<DateTime> renewalsInMonth(int year, int month) {
-    final start =
-        DateTime(anchorDate.year, anchorDate.month, anchorDate.day);
+    final start = DateTime(anchorDate.year, anchorDate.month, anchorDate.day);
     final monthStart = DateTime(year, month, 1);
     final monthEnd = DateTime(year, month + 1, 0);
     if (start.isAfter(monthEnd)) return const [];
+    final installmentEnd = lastInstallmentDate;
+    if (installmentEnd != null && monthStart.isAfter(installmentEnd)) {
+      return const [];
+    }
 
     final out = <DateTime>[];
     if (cycle == BillingCycle.weekly) {
@@ -284,7 +288,10 @@ class Subscription {
       var d = start.add(Duration(days: 7 * k));
       var guard = 0;
       while (!d.isAfter(monthEnd) && guard++ < 10) {
-        if (!d.isBefore(monthStart)) out.add(d);
+        if (!d.isBefore(monthStart) &&
+            (installmentEnd == null || !d.isAfter(installmentEnd))) {
+          out.add(d);
+        }
         k += 1;
         d = start.add(Duration(days: 7 * k));
       }
@@ -304,7 +311,10 @@ class Subscription {
     var d = addMonths(start, k);
     var guard = 0;
     while (!d.isAfter(monthEnd) && guard++ < 30) {
-      if (!d.isBefore(monthStart)) out.add(d);
+      if (!d.isBefore(monthStart) &&
+          (installmentEnd == null || !d.isAfter(installmentEnd))) {
+        out.add(d);
+      }
       k += step;
       d = addMonths(start, k);
     }
@@ -318,6 +328,32 @@ class Subscription {
     if (first <= 0) return null;
     return (price - first) / first * 100;
   }
+
+  /// The price that applied on [date]. Each history entry stores the previous
+  /// price and the instant at which it was replaced. Sorting defensively keeps
+  /// imported records deterministic even if their history order was changed.
+  double priceAt(DateTime date) {
+    if (priceHistory.isEmpty) return price;
+    final target = DateTime(date.year, date.month, date.day);
+    final changes = [...priceHistory]
+      ..sort((a, b) => a.changedAt.compareTo(b.changedAt));
+    for (final change in changes) {
+      final changed = DateTime(
+        change.changedAt.year,
+        change.changedAt.month,
+        change.changedAt.day,
+      );
+      if (target.isBefore(changed)) return change.oldPrice;
+    }
+    return price;
+  }
+
+  /// Actual amount charged in a calendar month using the historical price for
+  /// every occurrence and respecting a finite installment plan.
+  double spendingInMonth(int year, int month) => renewalsInMonth(
+    year,
+    month,
+  ).fold<double>(0, (sum, date) => sum + priceAt(date));
 
   double get yearlyCost => price * cycle.cyclesPerYear;
 
@@ -343,8 +379,7 @@ class Subscription {
   DateTime nextRenewal([DateTime? from]) {
     final ref = from ?? DateTime.now();
     final today = DateTime(ref.year, ref.month, ref.day);
-    final start =
-        DateTime(anchorDate.year, anchorDate.month, anchorDate.day);
+    final start = DateTime(anchorDate.year, anchorDate.month, anchorDate.day);
     if (!start.isBefore(today)) return start;
 
     if (cycle == BillingCycle.weekly) {
@@ -387,12 +422,11 @@ class Subscription {
   int paymentsMade([DateTime? from]) {
     final ref = from ?? DateTime.now();
     final today = DateTime(ref.year, ref.month, ref.day);
-    final start =
-        DateTime(anchorDate.year, anchorDate.month, anchorDate.day);
+    final start = DateTime(anchorDate.year, anchorDate.month, anchorDate.day);
     if (start.isAfter(today)) return 0;
 
     if (cycle == BillingCycle.weekly) {
-      return today.difference(start).inDays ~/ 7 + 1;
+      return _capInstallmentCount(today.difference(start).inDays ~/ 7 + 1);
     }
 
     final step = switch (cycle) {
@@ -409,11 +443,40 @@ class Subscription {
       k += step;
       d = addMonths(start, k);
     }
-    return count;
+    return _capInstallmentCount(count);
   }
 
-  /// إجمالي ما دُفع على هذا الاشتراك منذ البداية (تقديري).
-  double totalSpent([DateTime? from]) => paymentsMade(from) * price;
+  int _capInstallmentCount(int count) {
+    final total = totalInstallments;
+    if (kind != PaymentKind.installment || total == null || total <= 0) {
+      return count;
+    }
+    return count > total ? total : count;
+  }
+
+  /// إجمالي ما دُفع منذ البداية وفق السعر الذي كان نافذًا عند كل دفعة.
+  double totalSpent([DateTime? from]) {
+    final count = paymentsMade(from);
+    if (count == 0) return 0;
+    final start = DateTime(anchorDate.year, anchorDate.month, anchorDate.day);
+    var total = 0.0;
+    if (cycle == BillingCycle.weekly) {
+      for (var index = 0; index < count; index++) {
+        total += priceAt(start.add(Duration(days: index * 7)));
+      }
+      return total;
+    }
+    final step = switch (cycle) {
+      BillingCycle.monthly => 1,
+      BillingCycle.quarterly => 3,
+      BillingCycle.yearly => 12,
+      BillingCycle.weekly => 1,
+    };
+    for (var index = 0; index < count; index++) {
+      total += priceAt(addMonths(start, index * step));
+    }
+    return total;
+  }
 
   /// إضافة أشهر مع تثبيت يوم الشهر الأصلي (مع القصّ لنهاية الشهر).
   static DateTime addMonths(DateTime d, int n) {
@@ -429,40 +492,41 @@ class Subscription {
       DateTime(year, month + 1, 0).day;
 
   Map<String, dynamic> toJson() => {
-        'schemaVersion': SubscriptionSchema.currentVersion,
-        'id': id,
-        'name': name,
-        'emoji': emoji,
-        'price': price,
-        'currency': currency,
-        'cycle': cycle.index,
-        'anchor': anchorDate.toIso8601String(),
-        'category': category,
-        'notes': notes,
-        'paused': isPaused,
-        'payMethod': paymentMethod,
-        'manageUrl': manageUrl,
-        'reminderDays': reminderDays,
-        'trialEnd': trialEndDate?.toIso8601String(),
-        'priceHistory': priceHistory.map((e) => e.toJson()).toList(),
-        'isFamily': isFamily,
-        'familyMembers': familyMembers,
-        'usageCount': usageCount,
-        'lastUsedAt': lastUsedAt?.toIso8601String(),
-        'autoRenews': autoRenews,
-        'isEssential': isEssential,
-        'planName': planName,
-        'lastReviewedAt': lastReviewedAt?.toIso8601String(),
-        'iconUrl': iconUrl,
-        'kind': kind.index,
-        'totalInstallments': totalInstallments,
-      };
+    'schemaVersion': SubscriptionSchema.currentVersion,
+    'id': id,
+    'name': name,
+    'emoji': emoji,
+    'price': price,
+    'currency': currency,
+    'cycle': cycle.index,
+    'anchor': anchorDate.toIso8601String(),
+    'category': category,
+    'notes': notes,
+    'paused': isPaused,
+    'payMethod': paymentMethod,
+    'manageUrl': manageUrl,
+    'reminderDays': reminderDays,
+    'trialEnd': trialEndDate?.toIso8601String(),
+    'priceHistory': priceHistory.map((e) => e.toJson()).toList(),
+    'isFamily': isFamily,
+    'familyMembers': familyMembers,
+    'usageCount': usageCount,
+    'lastUsedAt': lastUsedAt?.toIso8601String(),
+    'autoRenews': autoRenews,
+    'isEssential': isEssential,
+    'planName': planName,
+    'lastReviewedAt': lastReviewedAt?.toIso8601String(),
+    'iconUrl': iconUrl,
+    'kind': kind.index,
+    'totalInstallments': totalInstallments,
+  };
 
   factory Subscription.fromJson(Map<String, dynamic> json) {
     final data = SubscriptionSchema.migrateToV13(json);
     final cycleIndex = (data['cycle'] as num?)?.toInt() ?? 1;
     return Subscription(
-      id: (data['id'] as String?) ??
+      id:
+          (data['id'] as String?) ??
           DateTime.now().microsecondsSinceEpoch.toString(),
       name: (data['name'] as String?) ?? 'اشتراك',
       emoji: (data['emoji'] as String?) ?? '🔖',
@@ -470,7 +534,8 @@ class Subscription {
       currency: (data['currency'] as String?) ?? 'SAR',
       cycle: BillingCycle
           .values[cycleIndex.clamp(0, BillingCycle.values.length - 1)],
-      anchorDate: DateTime.tryParse((data['anchor'] as String?) ?? '') ??
+      anchorDate:
+          DateTime.tryParse((data['anchor'] as String?) ?? '') ??
           DateTime.now(),
       category: (data['category'] as String?) ?? 'أخرى',
       notes: (data['notes'] as String?) ?? '',
@@ -478,29 +543,34 @@ class Subscription {
       paymentMethod: (data['payMethod'] as String?) ?? 'غير محدد',
       manageUrl: (data['manageUrl'] as String?) ?? '',
       reminderDays: (data['reminderDays'] as num?)?.toInt() ?? 3,
-      trialEndDate:
-          DateTime.tryParse((data['trialEnd'] as String?) ?? ''),
+      trialEndDate: DateTime.tryParse((data['trialEnd'] as String?) ?? ''),
       priceHistory: [
         if (data['priceHistory'] is List)
           for (final e in data['priceHistory'] as List)
             if (PriceChange.fromJson(e) case final change?) change,
       ],
       isFamily: (data['isFamily'] as bool?) ?? false,
-      familyMembers:
-          (((data['familyMembers'] as num?)?.toInt() ?? 2).clamp(1, 20))
-              .toInt(),
-      usageCount:
-          (((data['usageCount'] as num?)?.toInt() ?? 0).clamp(0, 100000))
-              .toInt(),
+      familyMembers: (((data['familyMembers'] as num?)?.toInt() ?? 2).clamp(
+        1,
+        20,
+      )).toInt(),
+      usageCount: (((data['usageCount'] as num?)?.toInt() ?? 0).clamp(
+        0,
+        100000,
+      )).toInt(),
       lastUsedAt: DateTime.tryParse((data['lastUsedAt'] as String?) ?? ''),
       autoRenews: (data['autoRenews'] as bool?) ?? true,
       isEssential: (data['isEssential'] as bool?) ?? false,
       planName: (data['planName'] as String?) ?? '',
-      lastReviewedAt:
-          DateTime.tryParse((data['lastReviewedAt'] as String?) ?? ''),
+      lastReviewedAt: DateTime.tryParse(
+        (data['lastReviewedAt'] as String?) ?? '',
+      ),
       iconUrl: (data['iconUrl'] as String?) ?? '',
-      kind: PaymentKind.values[((data['kind'] as num?)?.toInt() ?? 0)
-          .clamp(0, PaymentKind.values.length - 1)],
+      kind:
+          PaymentKind.values[((data['kind'] as num?)?.toInt() ?? 0).clamp(
+            0,
+            PaymentKind.values.length - 1,
+          )],
       totalInstallments: (data['totalInstallments'] as num?)?.toInt(),
     );
   }

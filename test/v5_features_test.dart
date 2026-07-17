@@ -21,7 +21,8 @@ void main() {
 
   group('بحث iTunes', () {
     test('يحلل نتائج صالحة ويتجاهل المكرر', () {
-      const raw = '{"resultCount":2,"results":['
+      const raw =
+          '{"resultCount":2,"results":['
           '{"trackName":"Netflix","artworkUrl100":"https://a/icon.png",'
           '"sellerName":"Netflix, Inc."},'
           '{"trackName":"Netflix","artworkUrl100":"https://b/icon2.png"}]}';
@@ -51,10 +52,7 @@ void main() {
         category: 'أخرى',
         iconUrl: 'https://a/icon.png',
       );
-      expect(
-        Subscription.fromJson(s.toJson()).iconUrl,
-        'https://a/icon.png',
-      );
+      expect(Subscription.fromJson(s.toJson()).iconUrl, 'https://a/icon.png');
     });
   });
 
@@ -79,6 +77,10 @@ void main() {
       expect(s.isCompleted(DateTime(2027, 1, 15)), isTrue);
       expect(s.remainingInstallments(DateTime(2027, 6, 1)), 0);
       expect(s.lastInstallmentDate, DateTime(2026, 12, 10));
+      expect(s.paymentsMade(DateTime(2028, 1, 1)), 12);
+      expect(s.totalSpent(DateTime(2028, 1, 1)), 1200);
+      expect(s.renewalsInMonth(2027, 1), isEmpty);
+      expect(s.spendingInMonth(2027, 1), 0);
     });
 
     test('roundtrip JSON يحفظ النوع وعدد الأقساط', () {
@@ -98,10 +100,7 @@ void main() {
       expect(back.totalInstallments, isNull);
       // التوافق مع بيانات قديمة بدون الحقل
       final legacy = s.toJson()..remove('kind');
-      expect(
-        Subscription.fromJson(legacy).kind,
-        PaymentKind.subscription,
-      );
+      expect(Subscription.fromJson(legacy).kind, PaymentKind.subscription);
     });
   });
 }

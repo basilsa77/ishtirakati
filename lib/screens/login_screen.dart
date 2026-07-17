@@ -10,6 +10,7 @@ import '../main.dart';
 import '../services/auth_service.dart';
 import '../services/cloud_sync.dart';
 import '../theme.dart';
+import '../widgets/ios_controls.dart';
 
 class LoginScreen extends StatefulWidget {
   /// true عند فتحها من الإعدادات (تُغلق بدل الانتقال للرئيسية).
@@ -35,8 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {
       _busy = false;
       if (!sync.success) {
-        _error = CloudSync.status.value.message ??
-            tr('ui_7eb5d2bf9dcd');
+        _error = CloudSync.status.value.message ?? tr('ui_7eb5d2bf9dcd');
       }
     });
     if (sync.success) await _continueToApp();
@@ -48,9 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
     Navigator.of(context).pushReplacement(
-      CupertinoPageRoute(
-        builder: (_) => const LockGate(child: RootShell()),
-      ),
+      CupertinoPageRoute(builder: (_) => const LockGate(child: RootShell())),
     );
   }
 
@@ -72,8 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _busy = false);
       if (!sync.success) {
         setState(() {
-          _error = CloudSync.status.value.message ??
-              tr('ui_cffd5d591fa0');
+          _error = CloudSync.status.value.message ?? tr('ui_cffd5d591fa0');
         });
         return;
       }
@@ -105,144 +102,149 @@ class _LoginScreenState extends State<LoginScreen> {
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 26),
-              sliver: SliverFillRemaining(
-                hasScrollBody: false,
-                child: Column(
-            children: [
-              const Spacer(),
-              Container(
-                width: 104,
-                height: 104,
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  gradient: AppColors.heroGradient,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(color: Color(0x5514B886), blurRadius: 30),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.cloud_sync_rounded,
-                  color: Colors.white,
-                  size: 48,
-                ),
-              ),
-              const SizedBox(height: 28),
-              Text(
-                tr('ui_3502ec3b7f9b'),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: V15Type.title,
-                  fontWeight: FontWeight.w900,
-                  color: p.text,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                configured
-                    ? tr('ui_4bffc5821b60') +
-                        tr('ui_097f251b4dfb') +
-                        tr('ui_3c23a47a16b1') +
-                        tr('ui_109c78d3b1e9') +
-                        tr('ui_2b0d41e83704')
-                    : tr('ui_b5da29068d03') +
-                        tr('ui_a8b972961189') +
-                        tr('ui_fe70ed8741e8'),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: V15Type.bodySmall,
-                  color: p.textMuted,
-                  height: 1.8,
-                ),
-              ),
-              const SizedBox(height: 32),
-              _AuthButton(
-                backgroundColor: CupertinoColors.white,
-                foregroundColor: CupertinoColors.black,
-                onPressed: (!configured || _busy || signedIn)
-                    ? null
-                    : () => _signIn(AuthService.signInWithApple),
-                icon: const Icon(Icons.apple_rounded, size: 26),
-                label: Text(
-                  tr('ui_99e77aefca64'),
-                ),
-              ),
-              const SizedBox(height: 12),
-              _AuthButton(
-                backgroundColor: p.accentStrong,
-                foregroundColor: CupertinoColors.white,
-                onPressed: (!configured || _busy)
-                    ? null
-                    : signedIn
-                        ? _retrySync
-                        : () => _signIn(AuthService.signInWithGoogle),
-                icon: _busy
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CupertinoActivityIndicator(
-                          color: CupertinoColors.white,
-                        ),
-                      )
-                    : const Text(
-                        'G',
-                        style: TextStyle(
-                          fontSize: V15Type.title,
-                          fontWeight: FontWeight.w800,
-                        ),
+              padding: const EdgeInsets.symmetric(horizontal: V16Space.lg),
+              sliver: SliverToBoxAdapter(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 560),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: V16Space.xxl,
                       ),
-                label: Text(
-                  signedIn
-                      ? tr('ui_eb496e41e621')
-                      : tr('ui_39553349fb40'),
-                ),
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 14),
-                Text(
-                  _error!,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: p.danger,
-                    fontSize: V15Type.labelSmall,
-                    fontWeight: FontWeight.w700,
-                    height: 1.6,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 96,
+                            height: 96,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              gradient: p.heroGradient,
+                              borderRadius: BorderRadius.circular(
+                                V16Radius.signature,
+                              ),
+                              boxShadow:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? V16Elevation.darkLow
+                                  : V16Elevation.medium,
+                            ),
+                            child: const Icon(
+                              Icons.cloud_sync_rounded,
+                              color: V16Colors.white,
+                              size: 44,
+                            ),
+                          ),
+                          const SizedBox(height: V16Space.xl),
+                          if (configured)
+                            AppCard(
+                              tone: AppCardTone.muted,
+                              elevated: false,
+                              padding: const EdgeInsets.all(V16Space.lg),
+                              child: AppPageIntro(
+                                title: tr('ui_3502ec3b7f9b'),
+                                description:
+                                    tr('ui_4bffc5821b60') +
+                                    tr('ui_097f251b4dfb') +
+                                    tr('ui_3c23a47a16b1') +
+                                    tr('ui_109c78d3b1e9') +
+                                    tr('ui_2b0d41e83704'),
+                              ),
+                            )
+                          else
+                            AppEmptyState(
+                              icon: Icons.cloud_off_rounded,
+                              title: tr('ui_3502ec3b7f9b'),
+                              description:
+                                  tr('ui_b5da29068d03') +
+                                  tr('ui_a8b972961189') +
+                                  tr('ui_fe70ed8741e8'),
+                            ),
+                          const SizedBox(height: V16Space.xl),
+                          if (configured) ...[
+                            _AuthButton(
+                              backgroundColor: CupertinoColors.white,
+                              foregroundColor: CupertinoColors.black,
+                              onPressed: (_busy || signedIn)
+                                  ? null
+                                  : () => _signIn(AuthService.signInWithApple),
+                              icon: const Icon(Icons.apple_rounded, size: 26),
+                              label: Text(tr('ui_99e77aefca64')),
+                            ),
+                            const SizedBox(height: V16Space.sm),
+                            _AuthButton(
+                              backgroundColor: p.accentStrong,
+                              foregroundColor: CupertinoColors.white,
+                              onPressed: _busy
+                                  ? null
+                                  : signedIn
+                                  ? _retrySync
+                                  : () => _signIn(AuthService.signInWithGoogle),
+                              icon: _busy
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CupertinoActivityIndicator(
+                                        color: CupertinoColors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'G',
+                                      style: TextStyle(
+                                        fontSize: V16Type.title,
+                                        fontWeight: V16Type.semibold,
+                                      ),
+                                    ),
+                              label: Text(
+                                signedIn
+                                    ? tr('ui_eb496e41e621')
+                                    : tr('ui_39553349fb40'),
+                              ),
+                            ),
+                          ],
+                          if (_error != null) ...[
+                            const SizedBox(height: V16Space.md),
+                            IosStatusNotice(
+                              message: _error!,
+                              tone:
+                                  CloudSync.status.value.phase ==
+                                      CloudSyncPhase.queued
+                                  ? IosStatusTone.queued
+                                  : IosStatusTone.error,
+                              onRetry: signedIn && !_busy ? _retrySync : null,
+                            ),
+                          ],
+                          const SizedBox(height: V16Space.xs),
+                          CupertinoButton(
+                            onPressed: _busy ? null : _continueToApp,
+                            child: Text(
+                              tr('ui_14cc566e3f90'),
+                              style: TextStyle(
+                                color: p.textMuted,
+                                fontSize: V16Type.bodySmall,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: V16Space.xl),
+                          Text(
+                            tr('ui_51c4df2de9fd') + tr('ui_712795b04159'),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: p.textMuted,
+                              fontSize: V16Type.caption,
+                              height: V16Type.captionHeight,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              ],
-              const SizedBox(height: 10),
-              CupertinoButton(
-                onPressed: _busy ? null : _continueToApp,
-                child: Text(
-                  tr('ui_14cc566e3f90'),
-                  style: TextStyle(
-                    color: p.textMuted,
-                    fontSize: V15Type.bodySmall,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Text(
-                  tr('ui_51c4df2de9fd') +
-                  tr('ui_712795b04159'),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: p.textMuted,
-                    fontSize: V15Type.caption,
-                    height: 1.6,
-                  ),
-                ),
-              ),
-            ],
                 ),
               ),
             ),
           ],
-          ),
         ),
+      ),
     );
   }
 }
@@ -264,38 +266,41 @@ class _AuthButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        width: double.infinity,
-        child: CupertinoButton(
-          color: backgroundColor,
-          disabledColor: context.palette.surfaceAlt,
-          borderRadius: BorderRadius.circular(12),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-          onPressed: onPressed,
-          child: DefaultTextStyle(
-            style: TextStyle(
-              color: onPressed == null
-                  ? context.palette.textMuted
-                  : foregroundColor,
-              fontFamily: V15Type.bodyFamily,
-              fontSize: V15Type.body,
-              fontWeight: FontWeight.w700,
-            ),
-            child: IconTheme(
-              data: IconThemeData(
-                color: onPressed == null
-                    ? context.palette.textMuted
-                    : foregroundColor,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  icon,
-                  const SizedBox(width: 10),
-                  Flexible(child: label),
-                ],
-              ),
-            ),
+    width: double.infinity,
+    child: CupertinoButton(
+      color: backgroundColor,
+      disabledColor: context.palette.surfaceAlt,
+      borderRadius: BorderRadius.circular(V16Radius.standard),
+      padding: const EdgeInsets.symmetric(
+        horizontal: V16Space.lg,
+        vertical: V16Space.md,
+      ),
+      onPressed: onPressed,
+      child: DefaultTextStyle(
+        style: TextStyle(
+          color: onPressed == null
+              ? context.palette.textMuted
+              : foregroundColor,
+          fontFamily: V16Type.bodyFamily,
+          fontSize: V16Type.body,
+          fontWeight: V16Type.semibold,
+        ),
+        child: IconTheme(
+          data: IconThemeData(
+            color: onPressed == null
+                ? context.palette.textMuted
+                : foregroundColor,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              icon,
+              const SizedBox(width: V16Space.xs),
+              Flexible(child: label),
+            ],
           ),
         ),
-      );
+      ),
+    ),
+  );
 }

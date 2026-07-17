@@ -59,10 +59,9 @@ Future<void> main() async {
   } catch (_) {
     // لا نسمح لأي خطأ تخزين بمنع التطبيق من الفتح.
   }
-  final initialLocale = resolveStoredLocale(store.languageMode) ??
-      resolveSupportedLocale(
-        WidgetsBinding.instance.platformDispatcher.locale,
-      );
+  final initialLocale =
+      resolveStoredLocale(store.languageMode) ??
+      resolveSupportedLocale(WidgetsBinding.instance.platformDispatcher.locale);
   await AppLocalizations.load(initialLocale);
   setDefaultFormattingLocale(initialLocale);
   await NotificationService.instance.init();
@@ -84,13 +83,12 @@ Future<void> main() async {
   if (store.notificationsEnabled) {
     // ignore: unawaited_futures
     NotificationService.instance.requestPermission().then(
-          (_) => NotificationService.instance
-              .rescheduleAll(
-                store.items,
-                enabled: true,
-                privateContent: store.privateNotifications,
-              ),
-        );
+      (_) => NotificationService.instance.rescheduleAll(
+        store.items,
+        enabled: true,
+        privateContent: store.privateNotifications,
+      ),
+    );
   }
   // ignore: unawaited_futures
   RemoteCatalog.instance.load().then((_) => store.reclassifyUnknowns());
@@ -99,10 +97,10 @@ Future<void> main() async {
 }
 
 ThemeMode resolveAppThemeMode(String preference) => switch (preference) {
-      'light' => ThemeMode.light,
-      'dark' => ThemeMode.dark,
-      _ => ThemeMode.system,
-    };
+  'light' => ThemeMode.light,
+  'dark' => ThemeMode.dark,
+  _ => ThemeMode.system,
+};
 
 class IshtirakatiApp extends StatelessWidget {
   const IshtirakatiApp({super.key});
@@ -116,57 +114,62 @@ class IshtirakatiApp extends StatelessWidget {
       builder: (context, _) {
         final mode = resolveAppThemeMode(store.themeMode);
         final preferredLocale = resolveStoredLocale(store.languageMode);
-        final effectiveLocale = preferredLocale ?? resolveSupportedLocale(
-          WidgetsBinding.instance.platformDispatcher.locale,
-        );
+        final effectiveLocale =
+            preferredLocale ??
+            resolveSupportedLocale(
+              WidgetsBinding.instance.platformDispatcher.locale,
+            );
         setDefaultFormattingLocale(effectiveLocale);
         return MaterialApp(
-      onGenerateTitle: (context) => context.l10n.text('appTitle'),
-      debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
-      darkTheme: buildAppTheme(dark: true),
-      themeMode: mode,
-      locale: preferredLocale,
-      supportedLocales: AppLocalizations.supportedLocales,
-      localeResolutionCallback: (deviceLocale, _) =>
-          resolveSupportedLocale(deviceLocale),
-      localizationsDelegates: const [
-        AppLocalizationsDelegate(),
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      // إغلاق الكيبورد عند الضغط في أي مكان فارغ بالتطبيق.
-      builder: (context, child) {
-        final isDark = mode == ThemeMode.dark ||
-            (mode == ThemeMode.system &&
-                MediaQuery.platformBrightnessOf(context) == Brightness.dark);
-        SystemChrome.setSystemUIOverlayStyle(
-          SystemUiOverlayStyle(
-            statusBarColor: Colors.transparent,
-            statusBarIconBrightness:
-                isDark ? Brightness.light : Brightness.dark,
-            statusBarBrightness:
-                isDark ? Brightness.dark : Brightness.light,
-            systemNavigationBarColor:
-                isDark ? AppColors.darkBg : AppColors.card,
-            systemNavigationBarIconBrightness:
-                isDark ? Brightness.light : Brightness.dark,
-          ),
-        );
-        return AppMaterialRoot(
-          child: AppMediaQuery(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-              child: child ?? const SizedBox.shrink(),
-            ),
-          ),
-        );
-      },
-      home: store.hasOnboarded
-          ? const LockGate(child: RootShell())
-          : const OnboardingScreen(),
+          onGenerateTitle: (context) => context.l10n.text('appTitle'),
+          debugShowCheckedModeBanner: false,
+          theme: buildAppTheme(),
+          darkTheme: buildAppTheme(dark: true),
+          themeMode: mode,
+          locale: preferredLocale,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localeResolutionCallback:
+              (deviceLocale, _) => resolveSupportedLocale(deviceLocale),
+          localizationsDelegates: const [
+            AppLocalizationsDelegate(),
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          // إغلاق الكيبورد عند الضغط في أي مكان فارغ بالتطبيق.
+          builder: (context, child) {
+            final isDark =
+                mode == ThemeMode.dark ||
+                (mode == ThemeMode.system &&
+                    MediaQuery.platformBrightnessOf(context) ==
+                        Brightness.dark);
+            SystemChrome.setSystemUIOverlayStyle(
+              SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness:
+                    isDark ? Brightness.light : Brightness.dark,
+                statusBarBrightness:
+                    isDark ? Brightness.dark : Brightness.light,
+                systemNavigationBarColor:
+                    isDark ? AppColors.darkBg : AppColors.card,
+                systemNavigationBarIconBrightness:
+                    isDark ? Brightness.light : Brightness.dark,
+              ),
+            );
+            return AppMaterialRoot(
+              child: AppMediaQuery(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+                  child: child ?? const SizedBox.shrink(),
+                ),
+              ),
+            );
+          },
+          home:
+              store.hasOnboarded
+                  ? const LockGate(child: RootShell())
+                  : const OnboardingScreen(),
         );
       },
     );
@@ -183,7 +186,7 @@ class _RenderFailure extends StatelessWidget {
       color: p.canvas,
       child: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(V16Space.lg),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -192,17 +195,17 @@ class _RenderFailure extends StatelessWidget {
                 color: p.warning,
                 size: 36,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: V16Space.sm),
               Text(
                 tr('ui_b68f32e3329a'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: p.text,
-                  fontSize: V15Type.titleSmall,
-                  fontWeight: FontWeight.w800,
+                  fontSize: V16Type.titleSmall,
+                  fontWeight: V16Type.semibold,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: V16Space.xs),
               Text(
                 tr('ui_af2167fbbff9'),
                 textAlign: TextAlign.center,
@@ -226,8 +229,7 @@ class LockGate extends StatefulWidget {
   State<LockGate> createState() => _LockGateState();
 }
 
-class _LockGateState extends State<LockGate>
-    with WidgetsBindingObserver {
+class _LockGateState extends State<LockGate> with WidgetsBindingObserver {
   late bool _locked;
   bool _authInProgress = false;
   String? _authError;
@@ -302,8 +304,8 @@ class _LockGateState extends State<LockGate>
               width: 92,
               height: 92,
               alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                gradient: AppColors.heroGradient,
+              decoration: BoxDecoration(
+                gradient: p.heroGradient,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -312,29 +314,26 @@ class _LockGateState extends State<LockGate>
                 size: 44,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: V16Space.ml),
             Text(
               tr('ui_c3c9617192c3'),
               style: TextStyle(
-                fontSize: V15Type.title,
-                fontWeight: FontWeight.w900,
+                fontSize: V16Type.title,
+                fontWeight: V16Type.semibold,
                 color: p.text,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: V16Space.lg),
             CupertinoButton.filled(
               onPressed: _unlock,
               child: Text(tr('ui_cef85563f6a5')),
             ),
             if (_authError != null) ...[
-              const SizedBox(height: 14),
+              const SizedBox(height: V16Space.sm),
               Text(
                 _authError!,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: p.danger,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(color: p.danger, fontWeight: V16Type.semibold),
               ),
             ],
           ],
@@ -371,18 +370,15 @@ class _RootShellState extends State<RootShell> {
     setState(() => _destination = destination);
   }
 
-  Future<void> _openCommands() => showV12CommandPalette(
-        context,
-        onDestination: _select,
-      );
+  Future<void> _openCommands() =>
+      showV12CommandPalette(context, onDestination: _select);
 
   @override
   Widget build(BuildContext context) {
     final store = SubscriptionStore.instance;
     if (!store.storageHealthy) {
       return _StorageRecoveryGate(
-        message: store.storageError ??
-            tr('ui_fa44d20258ad'),
+        message: store.storageError ?? tr('ui_fa44d20258ad'),
       );
     }
     return CupertinoPageScaffold(
@@ -427,39 +423,46 @@ class _StorageRecoveryGateState extends State<_StorageRecoveryGate> {
       backgroundColor: p.canvas,
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(V16Space.lg),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(CupertinoIcons.shield_fill, size: 64, color: p.accent),
-              const SizedBox(height: 20),
+              const SizedBox(height: V16Space.ml),
               Text(
                 tr('ui_ae57be0a15db'),
                 style: TextStyle(
                   color: p.text,
-                  fontSize: V15Type.title,
-                  fontWeight: FontWeight.w900,
+                  fontSize: V16Type.title,
+                  fontWeight: V16Type.semibold,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: V16Space.sm),
               Text(
                 widget.message,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: p.textMuted, height: 1.7),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: V16Space.xs),
               Text(
-                tr('ui_93a9463ad8dc') +
-                tr('ui_d38f17269b33'),
+                tr('ui_93a9463ad8dc') + tr('ui_d38f17269b33'),
                 textAlign: TextAlign.center,
-                style: TextStyle(color: p.textMuted, fontSize: V15Type.caption, height: 1.6),
+                style: TextStyle(
+                  color: p.textMuted,
+                  fontSize: V16Type.caption,
+                  height: V16Type.bodyHeight,
+                ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: V16Space.lg),
               CupertinoButton.filled(
                 onPressed: _retrying ? null : _retry,
-                child: _retrying
-                    ? const CupertinoActivityIndicator(color: CupertinoColors.white)
-                    : Text(tr('ui_c73b9bc3f450')),
+                child:
+                    _retrying
+                        ? CupertinoActivityIndicator(
+                          color:
+                              p.isDark ? V16Colors.darkCanvas : V16Colors.white,
+                        )
+                        : Text(tr('ui_c73b9bc3f450')),
               ),
             ],
           ),

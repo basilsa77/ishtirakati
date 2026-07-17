@@ -76,10 +76,7 @@ class _ImportScreenState extends State<ImportScreen> {
       );
       // دمج: نتائج الذكاء الاصطناعي أولًا، ثم المحلي لما لم يذكره.
       final names = ai.map((c) => c.name).toSet();
-      final merged = [
-        ...ai,
-        ...local.where((c) => !names.contains(c.name)),
-      ];
+      final merged = [...ai, ...local.where((c) => !names.contains(c.name))];
       if (!mounted) return;
       setState(() {
         _aiBusy = false;
@@ -127,8 +124,8 @@ class _ImportScreenState extends State<ImportScreen> {
         title: Text(tr('ui_705db619b661')),
         content: Text(
           tr('ui_c11e01eb5eb6', {'value0': provider.localizedLabel}) +
-          tr('ui_d230610f0657') +
-          tr('ui_a4c994f880a4'),
+              tr('ui_d230610f0657') +
+              tr('ui_a4c994f880a4'),
         ),
         actions: [
           TextButton(
@@ -184,61 +181,130 @@ class _ImportScreenState extends State<ImportScreen> {
   Widget build(BuildContext context) {
     final p = context.palette;
     return Scaffold(
+      backgroundColor: p.canvas,
       appBar: AppBar(title: Text(tr('ui_c85bec9e0d7d'))),
       body: SafeArea(
         child: ListView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+          padding: const EdgeInsets.fromLTRB(
+            V16Space.ml,
+            V16Space.md,
+            V16Space.ml,
+            V16Space.xl,
+          ),
           children: [
+            AppPageIntro(
+              title: tr('ui_c85bec9e0d7d'),
+              description: tr('ui_889c860bee20') + tr('ui_cca10b08f6ad'),
+            ),
+            const SizedBox(height: V16Space.lg),
+            FadeSlideIn(
+              child: AppCard(
+                tone: AppCardTone.muted,
+                elevated: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: V16Space.xl,
+                          height: V16Space.xl,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: p.accentSoft,
+                            borderRadius: BorderRadius.circular(
+                              V16Radius.compact,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.auto_awesome_rounded,
+                            color: p.accent,
+                            size: V16Space.ml,
+                          ),
+                        ),
+                        const SizedBox(width: V16Space.sm),
+                        Expanded(
+                          child: Text(
+                            tr('ui_3063ba1543bf'),
+                            style: TextStyle(
+                              fontWeight: V16Type.semibold,
+                              fontSize: V16Type.bodySmall,
+                              color: p.text,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: V16Space.sm),
+                    Text(
+                      tr('ui_5bacebf257d7') +
+                          tr('ui_5d19772faebc') +
+                          tr('ui_5540ca8f5c45') +
+                          tr('ui_991025a8bff8') +
+                          tr('ui_6b6a00386b15'),
+                      style: TextStyle(
+                        color: p.textMuted,
+                        fontSize: V16Type.labelSmall,
+                        height: V16Type.bodyHeight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: V16Space.sm),
             AppCard(
-              color: p.accentSoft,
-              borderColor: p.accentStrong,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              tone: AppCardTone.accent,
+              semanticsLabel: tr('ui_3caf822da7ef'),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const EmailLinkScreen()),
+              ),
+              child: Row(
                 children: [
-                  Text(
-                    tr('ui_3063ba1543bf'),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: V15Type.bodySmall,
-                      color: p.text,
+                  Container(
+                    width: V16Space.xxl,
+                    height: V16Space.xxl,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: V16Colors.white.withValues(alpha: .14),
+                      borderRadius: BorderRadius.circular(V16Radius.standard),
+                    ),
+                    child: const Icon(
+                      Icons.alternate_email_rounded,
+                      color: V16Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    tr('ui_889c860bee20') +
-                    tr('ui_cca10b08f6ad') +
-                    tr('ui_5bacebf257d7') +
-                    tr('ui_5d19772faebc') +
-                    tr('ui_5540ca8f5c45') +
-                    tr('ui_991025a8bff8') +
-                    tr('ui_6b6a00386b15'),
-                    style: TextStyle(
-                      color: p.textMuted,
-                      fontSize: V15Type.labelSmall,
-                      height: 1.7,
+                  const SizedBox(width: V16Space.sm),
+                  Expanded(
+                    child: Text(
+                      tr('ui_3caf822da7ef'),
+                      style: const TextStyle(
+                        color: V16Colors.white,
+                        fontSize: V16Type.bodySmall,
+                        fontWeight: V16Type.semibold,
+                        height: V16Type.bodyHeight,
+                      ),
                     ),
+                  ),
+                  const SizedBox(width: V16Space.xs),
+                  const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: V16Colors.white,
+                    size: V16Space.md,
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 10),
-            FilledButton.icon(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const EmailLinkScreen()),
-              ),
-              icon: const Icon(Icons.alternate_email_rounded),
-              label: Text(tr('ui_3caf822da7ef')),
-            ),
-            const SizedBox(height: 10),
+            const SizedBox(height: V16Space.sm),
             AppCard(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 6,
-              ),
+              tone: AppCardTone.muted,
+              elevated: false,
+              padding: const EdgeInsets.symmetric(horizontal: V16Space.md),
               child: Theme(
-                data: Theme.of(context)
-                    .copyWith(dividerColor: Colors.transparent),
+                data: Theme.of(
+                  context,
+                ).copyWith(dividerColor: Colors.transparent),
                 child: ExpansionTile(
                   tilePadding: EdgeInsets.zero,
                   iconColor: p.accent,
@@ -246,24 +312,24 @@ class _ImportScreenState extends State<ImportScreen> {
                   title: Text(
                     tr('ui_3702f9205260'),
                     style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: V15Type.label,
+                      fontWeight: V16Type.semibold,
+                      fontSize: V16Type.label,
                       color: p.text,
                     ),
                   ),
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.only(bottom: V16Space.sm),
                       child: Text(
                         tr('ui_a3ab239ebeb0') +
-                        tr('ui_1ae11cf6e308') +
-                        tr('ui_b812c49ac2ae') +
-                        tr('ui_1d7a6a07268d') +
-                        tr('ui_22518f807c6c'),
+                            tr('ui_1ae11cf6e308') +
+                            tr('ui_b812c49ac2ae') +
+                            tr('ui_1d7a6a07268d') +
+                            tr('ui_22518f807c6c'),
                         style: TextStyle(
                           color: p.textMuted,
-                          fontSize: V15Type.labelSmall,
-                          height: 1.8,
+                          fontSize: V16Type.labelSmall,
+                          height: V16Type.bodyHeight,
                         ),
                       ),
                     ),
@@ -271,92 +337,128 @@ class _ImportScreenState extends State<ImportScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: _text,
-              maxLines: 6,
-              decoration: InputDecoration(
-                hintText: tr('ui_f8a35a86c6f3') +
-                    tr('ui_2a954cd4fda0'),
-                alignLabelWithHint: true,
+            const SizedBox(height: V16Space.md),
+            AppCard(
+              elevated: false,
+              padding: const EdgeInsets.all(V16Space.xs),
+              child: TextField(
+                controller: _text,
+                maxLines: 6,
+                decoration: InputDecoration(
+                  hintText: tr('ui_f8a35a86c6f3') + tr('ui_2a954cd4fda0'),
+                  alignLabelWithHint: true,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                ),
               ),
             ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(50),
-                    ),
-                    onPressed: _pasteFromClipboard,
-                    icon: const Icon(Icons.content_paste_rounded, size: 20),
-                    label: Text(tr('ui_91aa1adaf1ca')),
+            const SizedBox(height: V16Space.sm),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final stackActions =
+                    constraints.maxWidth < 390 ||
+                    MediaQuery.textScalerOf(context).scale(1) > 1.15;
+                final pasteButton = OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(V16Space.xxl),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(50),
-                    ),
-                    onPressed: _aiBusy ? null : _analyzeWithAi,
-                    icon: _aiBusy
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.auto_awesome_rounded, size: 20),
-                    label: Text(_aiBusy ? tr('ui_8c53372aebc9') : tr('ui_bcace51b5ecb')),
+                  onPressed: _pasteFromClipboard,
+                  icon: const Icon(
+                    Icons.content_paste_rounded,
+                    size: V16Space.ml,
                   ),
-                ),
-              ],
+                  label: Text(tr('ui_91aa1adaf1ca')),
+                );
+                final analyzeButton = FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(V16Space.xxl),
+                  ),
+                  onPressed: _aiBusy ? null : _analyzeWithAi,
+                  icon: _aiBusy
+                      ? const SizedBox.square(
+                          dimension: V16Space.ml,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: V16Colors.white,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.auto_awesome_rounded,
+                          size: V16Space.ml,
+                        ),
+                  label: Text(
+                    _aiBusy ? tr('ui_8c53372aebc9') : tr('ui_bcace51b5ecb'),
+                  ),
+                );
+                if (stackActions) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      pasteButton,
+                      const SizedBox(height: V16Space.xs),
+                      analyzeButton,
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: pasteButton),
+                    const SizedBox(width: V16Space.xs),
+                    Expanded(child: analyzeButton),
+                  ],
+                );
+              },
             ),
             if (_aiNote != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                _aiNote!,
-                style: TextStyle(
-                  color: p.textMuted,
-                  fontSize: V15Type.labelSmall,
-                  height: 1.6,
+              const SizedBox(height: V16Space.sm),
+              AppCard(
+                tone: AppCardTone.muted,
+                elevated: false,
+                padding: const EdgeInsets.all(V16Space.sm),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      color: p.accent,
+                      size: V16Space.ml,
+                    ),
+                    const SizedBox(width: V16Space.xs),
+                    Expanded(
+                      child: Text(
+                        _aiNote!,
+                        style: TextStyle(
+                          color: p.textMuted,
+                          fontSize: V16Type.labelSmall,
+                          height: V16Type.bodyHeight,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
-            const SizedBox(height: 18),
+            const SizedBox(height: V16Space.lg),
             if (_analyzed && !_aiBusy && _candidates.isEmpty)
-              AppCard(
-                child: Row(
-                  children: [
-                    Icon(Icons.search_off_rounded, color: p.textMuted, size: 26),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        tr('ui_fb5c2bdd515a') +
-                        tr('ui_0b1c98ff466f'),
-                        style: TextStyle(
-                          color: p.textMuted,
-                          height: 1.6,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              AppEmptyState(
+                icon: Icons.search_off_rounded,
+                title: tr('ui_fb5c2bdd515a'),
+                description: tr('ui_0b1c98ff466f'),
               ),
             if (_candidates.isNotEmpty) ...[
-              SectionTitle(tr('ui_edd53f935323', {'value0': _candidates.length})),
+              SectionTitle(
+                tr('ui_edd53f935323', {'value0': _candidates.length}),
+              ),
               for (final c in _candidates)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.only(bottom: V16Space.sm),
                   child: _CandidateTile(
                     candidate: c,
                     selected: _selected.contains(c.name),
-                    alreadyExists: SubscriptionStore.instance.items
-                        .any((s) => s.name == c.name),
+                    alreadyExists: SubscriptionStore.instance.items.any(
+                      (s) => s.name == c.name,
+                    ),
                     onToggle: () => setState(() {
                       if (_selected.contains(c.name)) {
                         _selected.remove(c.name);
@@ -366,11 +468,16 @@ class _ImportScreenState extends State<ImportScreen> {
                     }),
                   ),
                 ),
-              const SizedBox(height: 8),
+              const SizedBox(height: V16Space.xs),
               FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(V16Space.xxl),
+                ),
                 onPressed: _selected.isEmpty ? null : _addSelected,
                 icon: const Icon(Icons.playlist_add_check_rounded),
-                label: Text(tr('ui_a0357a01193b', {'value0': _selected.length})),
+                label: Text(
+                  tr('ui_a0357a01193b', {'value0': _selected.length}),
+                ),
               ),
             ],
           ],
@@ -407,82 +514,87 @@ class _CandidateTile extends StatelessWidget {
       if (c.anchor != null) tr('lastCharge', {'date': fmtDate(c.anchor!)}),
     ];
     return AppCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+        horizontal: V16Space.sm,
+        vertical: V16Space.xs,
+      ),
       borderColor: selected ? p.accentStrong : null,
-      child: InkWell(
-        onTap: alreadyExists ? null : onToggle,
-        child: Row(
-          children: [
-            Checkbox(
-              value: selected && !alreadyExists,
-              onChanged: alreadyExists ? null : (_) => onToggle(),
-              activeColor: p.accent,
-              checkColor: Colors.white,
+      elevated: false,
+      onTap: alreadyExists ? null : onToggle,
+      semanticsLabel: c.name,
+      child: Row(
+        children: [
+          Checkbox(
+            value: selected && !alreadyExists,
+            onChanged: alreadyExists ? null : (_) => onToggle(),
+            activeColor: p.accentStrong,
+            checkColor: Colors.white,
+          ),
+          Container(
+            width: V16Space.xxl,
+            height: V16Space.xxl,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: catColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(V16Radius.standard),
             ),
-            Container(
-              width: 42,
-              height: 42,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: catColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(13),
-              ),
-              child: Text(c.emoji, style: const TextStyle(fontSize: V15Type.title)),
+            child: Text(
+              c.emoji,
+              style: const TextStyle(fontSize: V16Type.title),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
+          ),
+          const SizedBox(width: V16Space.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: V16Space.xs,
+                  runSpacing: V16Space.xxs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      c.name,
+                      style: TextStyle(
+                        fontWeight: V16Type.semibold,
+                        fontSize: V16Type.bodySmall,
+                        color: p.text,
+                      ),
+                    ),
+                    if (alreadyExists)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: V16Space.xs,
+                          vertical: V16Space.xxs,
+                        ),
+                        decoration: BoxDecoration(
+                          color: p.warningSoft,
+                          borderRadius: BorderRadius.circular(V16Radius.pill),
+                        ),
                         child: Text(
-                          c.name,
-                          overflow: TextOverflow.ellipsis,
+                          tr('ui_6d86bf5cc6ce'),
                           style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: V15Type.bodySmall,
-                            color: p.text,
+                            fontSize: V16Type.captionSmall,
+                            fontWeight: V16Type.semibold,
+                            color: p.warning,
                           ),
                         ),
                       ),
-                      if (alreadyExists) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: p.warningSoft,
-                            borderRadius: BorderRadius.circular(9),
-                          ),
-                          child: Text(
-                            tr('ui_6d86bf5cc6ce'),
-                            style: TextStyle(
-                              fontSize: V15Type.captionSmall,
-                              fontWeight: FontWeight.w800,
-                              color: p.warning,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+                  ],
+                ),
+                const SizedBox(height: V16Space.xxs),
+                Text(
+                  details.join(' • '),
+                  style: TextStyle(
+                    color: p.textMuted,
+                    fontSize: V16Type.caption,
+                    height: V16Type.captionHeight,
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    details.join(' • '),
-                    style: TextStyle(
-                      color: p.textMuted,
-                      fontSize: V15Type.caption,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -1,8 +1,19 @@
-# اشتراكاتي 15.3.1+43
+# اشتراكاتي 16.0.0+44
 
 تطبيق Flutter عربي أولًا لإدارة الاشتراكات والأقساط والفواتير في السعودية والخليج. يعمل محليًا دون حساب، ويدعم مزامنة Firebase الاختيارية.
 
-## ما الجديد في v15
+## ما الجديد في v16
+
+- هوية «مرسى» الجديدة: لؤلؤ دافئ، أخضر بحري، ورمل هادئ مع تكافؤ كامل بين الوضعين الفاتح والداكن.
+- نظام تصميم موحد للإيقاع والمسافات والحواف والحركة والبطاقات وشارات التجديد والأرقام المالية والرسوم.
+- إعادة كساء شاشات النبض والمكتبة والتحليلات والتقويم والقرارات والإعدادات والدخول والنماذج مع حالات فراغ أوضح.
+- احترام Reduce Motion في الأرقام والحركات المشتركة، وتحسين القراءة على iPhone الصغير وiPad والنص الكبير.
+- تصحيح سقف الأقساط المحددة، ومنع ظهور دفعات بعد نهايتها، وتسعير الإنفاق التاريخي وفق السعر النافذ عند كل دفعة.
+- فصل إجماليات التقويم حسب العملة وإيقاف تعارض المزامنة مغلقًا بدل الدمج الأعمى.
+- مزامنة اسم الإصدار والبناء وملفات IPA والرموز ودليل البناء على `16.0.0+44`.
+- لا تغيير على مخطط بيانات v13 أو AES-256-GCM أو مفاتيح Keychain أو عقد Firestore المشفر.
+
+## ما أضيف في v15
 
 - واجهة عربية وإنجليزية كاملة مع تبديل فوري بين RTL وLTR وخيار اتباع لغة iPhone.
 - سلّم تايبوغرافي موحد بخط IBM Plex Sans Arabic للأحرف العربية واللاتينية، دون أحجام خطوط رقمية متناثرة.
@@ -79,7 +90,7 @@ lib/
     auth_service.dart               Firebase Auth وApp Check
     cloud_sync.dart                 مزامنة Firestore وحالتها
   screens/
-    command_center_screen.dart      الرئيسية
+    pulse_home_screen.dart          الرئيسية / النبض
     decision_center_screen.dart     مركز القرار
     subscriptions_screen.dart       المكتبة
     calendar_screen.dart            التقويم
@@ -91,9 +102,11 @@ test/                               اختبارات المنطق والترحي
 ## التشغيل والتحقق
 
 ```bash
-flutter pub get
-flutter analyze lib test --no-fatal-warnings --no-fatal-infos
+flutter pub get --enforce-lockfile
+flutter analyze lib test
 flutter test
+npm ci --ignore-scripts
+npm run test:rules
 flutter build ios --release --no-codesign --dart-define=ENABLE_FIREBASE_APP_CHECK=false
 ```
 
@@ -101,10 +114,10 @@ flutter build ios --release --no-codesign --dart-define=ENABLE_FIREBASE_APP_CHEC
 
 ## الإصدار
 
-- النسخة: `15.3.1+43`
+- النسخة: `16.0.0+44`
 - Bundle ID: `com.basil.ishtirakati`
 - الحد الأدنى في بناء CI: iOS 15
 
-التغييرات التفصيلية في [CHANGELOG.md](CHANGELOG.md).
+التغييرات التفصيلية في [CHANGELOG.md](CHANGELOG.md)، وبوابة الجهاز وTestFlight في [V16_RELEASE_CHECKLIST.md](V16_RELEASE_CHECKLIST.md).
 
 تُنفذ فحوص التحليل والاختبارات وقواعد Firestore وبناء iOS تلقائيًا في GitHub Actions عند كل رفع إلى `main`.

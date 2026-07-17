@@ -36,16 +36,20 @@ class _AiToolsScreenState extends State<AiToolsScreen> {
   Future<void> _saveAiKey() async {
     try {
       await SubscriptionStore.instance.setAiApiKey(_aiKey.text);
-    } catch (error) {
+    } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(tr('ui_c38305c72d90'))));
       return;
     }
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          _aiKey.text.trim().isEmpty ? tr('ui_38317d82302b') : tr('ui_b50e4e22cdb6'),
+          _aiKey.text.trim().isEmpty
+              ? tr('ui_38317d82302b')
+              : tr('ui_b50e4e22cdb6'),
         ),
       ),
     );
@@ -54,18 +58,16 @@ class _AiToolsScreenState extends State<AiToolsScreen> {
   Future<void> _classifyUnknowns() async {
     final store = SubscriptionStore.instance;
     if (store.aiApiKey.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(tr('ui_a4959fcedf25'))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(tr('ui_a4959fcedf25'))));
       return;
     }
     final approved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(tr('ui_eef371eb1d45')),
-        content: Text(
-          tr('ui_082d038f71f9'),
-        ),
+        content: Text(tr('ui_082d038f71f9')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -83,11 +85,26 @@ class _AiToolsScreenState extends State<AiToolsScreen> {
       final count = await store.reclassifyUnknownsWithAi();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(count == 0 ? tr('ui_d1cd2db743db') : tr('ui_50ccfb7bccbb', {'value0': count}))),
+        SnackBar(
+          content: Text(
+            count == 0
+                ? tr('ui_d1cd2db743db')
+                : tr('ui_50ccfb7bccbb', {'value0': count}),
+          ),
+        ),
       );
-    } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(tr('ui_c38305c72d90'))));
     }
+  }
+
+  Future<void> _openProviderKeyPage(String providerId) async {
+    final uri = Uri.parse(aiProviderById(providerId).keyUrl);
+    if (uri.scheme != 'https') return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   @override
@@ -102,43 +119,88 @@ class _AiToolsScreenState extends State<AiToolsScreen> {
         centerTitle: true,
         title: Text(
           tr('ui_6ec927377748'),
-          style: TextStyle(color: p.text, fontSize: V15Type.titleSmall, fontWeight: FontWeight.w900),
+          style: TextStyle(
+            color: p.text,
+            fontSize: V16Type.body,
+            fontWeight: V16Type.semibold,
+          ),
         ),
         iconTheme: IconThemeData(color: p.text),
       ),
       body: ListenableBuilder(
         listenable: store,
         builder: (context, _) => ListView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(
+            V16Space.ml,
+            V16Space.md,
+            V16Space.ml,
+            V16Space.xxl,
+          ),
           children: [
+            AppPageIntro(
+              title: tr('ui_973e33017592'),
+              description: tr('ui_19cfaabab144'),
+            ),
+            const SizedBox(height: V16Space.lg),
+            FadeSlideIn(
+              child: AppCard(
+                tone: AppCardTone.accent,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: V16Space.xxl,
+                      height: V16Space.xxl,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: V16Colors.white.withValues(alpha: .14),
+                        borderRadius: BorderRadius.circular(V16Radius.standard),
+                      ),
+                      child: const Icon(
+                        Icons.shield_outlined,
+                        color: V16Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: V16Space.sm),
+                    Expanded(
+                      child: Text(
+                        tr('ui_082d038f71f9'),
+                        style: const TextStyle(
+                          color: V16Colors.white,
+                          fontSize: V16Type.labelSmall,
+                          height: V16Type.bodyHeight,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: V16Space.sm),
             AppCard(
-              color: p.surfaceAlt,
+              elevated: false,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
-                    children: [
-                      Icon(Icons.auto_awesome_rounded, color: p.accent),
-                      const SizedBox(width: 9),
-                      Text(tr('ui_973e33017592'), style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: V15Type.bodySmall)),
-                    ],
-                  ),
-                  const SizedBox(height: 7),
-                  Text(tr('ui_19cfaabab144'), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
-                  const SizedBox(height: 14),
                   DropdownButtonFormField<String>(
                     initialValue: store.aiProvider,
                     dropdownColor: p.surface,
-                    decoration: InputDecoration(labelText: tr('ui_cc2eabfd9f3a')),
+                    decoration: InputDecoration(
+                      labelText: tr('ui_cc2eabfd9f3a'),
+                    ),
                     items: [
                       for (final provider in kAiProviders)
-                        DropdownMenuItem(value: provider.id, child: Text(provider.localizedLabel)),
+                        DropdownMenuItem(
+                          value: provider.id,
+                          child: Text(provider.localizedLabel),
+                        ),
                     ],
                     onChanged: (value) {
                       if (value != null) store.setAiProvider(value);
                     },
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: V16Space.sm),
                   TextField(
                     controller: _aiKey,
                     obscureText: !_showKey,
@@ -147,38 +209,124 @@ class _AiToolsScreenState extends State<AiToolsScreen> {
                       labelText: tr('ui_b0f1d5fd42e0'),
                       hintText: aiProviderById(store.aiProvider).hint,
                       suffixIcon: IconButton(
-                        tooltip: _showKey ? tr('ui_a4d2edd73560') : tr('ui_1832fb9316dc'),
+                        tooltip: _showKey
+                            ? tr('ui_a4d2edd73560')
+                            : tr('ui_1832fb9316dc'),
                         onPressed: () => setState(() => _showKey = !_showKey),
-                        icon: Icon(_showKey ? Icons.visibility_off_rounded : Icons.visibility_rounded),
+                        icon: Icon(
+                          _showKey
+                              ? Icons.visibility_off_rounded
+                              : Icons.visibility_rounded,
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => launchUrl(
-                            Uri.parse(aiProviderById(store.aiProvider).keyUrl),
-                            mode: LaunchMode.externalApplication,
-                          ),
-                          icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                          label: Text(tr('ui_7d7b50eb8777')),
+                  const SizedBox(height: V16Space.sm),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final stackActions =
+                          constraints.maxWidth < 340 ||
+                          MediaQuery.textScalerOf(context).scale(1) > 1.2;
+                      final keyButton = OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(V16Space.xxl),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      IconButton.filled(
-                        tooltip: tr('ui_2157a38aeffc'),
+                        onPressed: () => _openProviderKeyPage(store.aiProvider),
+                        icon: const Icon(
+                          Icons.open_in_new_rounded,
+                          size: V16Space.ml,
+                        ),
+                        label: Text(tr('ui_7d7b50eb8777')),
+                      );
+                      final saveButton = FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size.fromHeight(V16Space.xxl),
+                        ),
                         onPressed: _saveAiKey,
                         icon: const Icon(Icons.check_rounded),
+                        label: Text(tr('ui_2157a38aeffc')),
+                      );
+                      if (stackActions) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            keyButton,
+                            const SizedBox(height: V16Space.xs),
+                            saveButton,
+                          ],
+                        );
+                      }
+                      return Row(
+                        children: [
+                          Expanded(child: keyButton),
+                          const SizedBox(width: V16Space.xs),
+                          Expanded(child: saveButton),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: V16Space.sm),
+            AppCard(
+              tone: AppCardTone.muted,
+              elevated: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: V16Space.xl,
+                        height: V16Space.xl,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: p.accentSoft,
+                          borderRadius: BorderRadius.circular(
+                            V16Radius.compact,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.category_outlined,
+                          color: p.accent,
+                          size: V16Space.ml,
+                        ),
+                      ),
+                      const SizedBox(width: V16Space.sm),
+                      Expanded(
+                        child: Text(
+                          tr('ui_6e9a9b882540'),
+                          style: TextStyle(
+                            color: p.text,
+                            fontSize: V16Type.bodySmall,
+                            fontWeight: V16Type.semibold,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: V16Space.sm),
+                  Text(
+                    tr('ui_082d038f71f9'),
+                    style: TextStyle(
+                      color: p.textMuted,
+                      fontSize: V16Type.labelSmall,
+                      height: V16Type.bodyHeight,
+                    ),
+                  ),
+                  const SizedBox(height: V16Space.md),
                   OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(46)),
-                    onPressed: store.aiApiKey.trim().isEmpty ? null : _classifyUnknowns,
-                    icon: const Icon(Icons.category_rounded, size: 18),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(V16Space.xxl),
+                    ),
+                    onPressed: store.aiApiKey.trim().isEmpty
+                        ? null
+                        : _classifyUnknowns,
+                    icon: const Icon(
+                      Icons.auto_awesome_rounded,
+                      size: V16Space.ml,
+                    ),
                     label: Text(tr('ui_6e9a9b882540')),
                   ),
                 ],

@@ -1,4 +1,4 @@
-/// إعدادات الإصدار 8: مجموعات قصيرة واضحة من دون صفحات متراكبة.
+/// إعدادات الإصدار 16: مجموعات قصيرة واضحة من دون صفحات متراكبة.
 library;
 
 import 'package:flutter/cupertino.dart';
@@ -43,8 +43,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       text: budget <= 0
           ? ''
           : budget == budget.roundToDouble()
-              ? budget.toStringAsFixed(0)
-              : budget.toStringAsFixed(2),
+          ? budget.toStringAsFixed(0)
+          : budget.toStringAsFixed(2),
     );
   }
 
@@ -60,25 +60,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return ListenableBuilder(
       listenable: store,
       builder: (context, _) => ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        padding: const EdgeInsetsDirectional.fromSTEB(
+          V16Space.ml,
+          V16Space.md,
+          V16Space.ml,
+          V16Space.xl,
+        ),
         children: [
           const _SettingsIntro(),
           if (!store.storageHealthy) ...[
-            const SizedBox(height: 14),
-            AppCard(
-              color: context.palette.dangerSoft,
-              borderColor: context.palette.danger,
-              child: Text(
-                store.storageError ?? tr('ui_8fb06d4b1479'),
-                style: TextStyle(
-                  color: context.palette.danger,
-                  fontWeight: FontWeight.w800,
-                  height: 1.6,
-                ),
-              ),
+            const SizedBox(height: V16Space.md),
+            IosStatusNotice(
+              message: store.storageError ?? tr('ui_8fb06d4b1479'),
+              tone: IosStatusTone.error,
             ),
           ],
-          const SizedBox(height: 22),
+          const SizedBox(height: V16Space.lg),
           _AccountCard(
             onChanged: () => setState(() {}),
             onDeleteAccount: _confirmDeleteAccount,
@@ -92,7 +89,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 10),
           const _LanguageModeCard(),
           const SizedBox(height: 26),
-           _SettingsLabel(tr('ui_f3e1723cfe33')),
+          _SettingsLabel(tr('ui_f3e1723cfe33')),
           const SizedBox(height: 10),
           AppCard(
             padding: EdgeInsets.zero,
@@ -105,14 +102,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: store.notificationsEnabled,
                   onChanged: (value) async {
                     if (value) {
-                      final permitted = await NotificationService.instance.requestPermission();
+                      final permitted = await NotificationService.instance
+                          .requestPermission();
                       if (!permitted && context.mounted) {
                         await showCupertinoDialog<void>(
                           context: context,
                           builder: (dialogContext) => CupertinoAlertDialog(
                             title: Text(tr('ui_b6d4d093c09d')),
                             content: Text(tr('ui_7459d276bf09')),
-                            actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: Text(tr('ui_a64b3d93816b')))],
+                            actions: [
+                              CupertinoDialogAction(
+                                onPressed: () => Navigator.pop(dialogContext),
+                                child: Text(tr('ui_a64b3d93816b')),
+                              ),
+                            ],
                           ),
                         );
                       }
@@ -200,7 +203,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Center(
             child: Text(
               tr('ui_ed185d7957db'),
-              style: TextStyle(color: context.palette.textMuted, fontSize: V15Type.labelSmall, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                color: context.palette.textMuted,
+                fontSize: V16Type.labelSmall,
+                fontWeight: V16Type.semibold,
+              ),
             ),
           ),
         ],
@@ -209,8 +216,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _saveBudget() async {
-    final value = double.tryParse(
-          _budget.text.trim().replaceAll(tr('ui_bc4d631526af'), '.').replaceAll(',', '.'),
+    final value =
+        double.tryParse(
+          _budget.text
+              .trim()
+              .replaceAll(tr('ui_bc4d631526af'), '.')
+              .replaceAll(',', '.'),
         ) ??
         0;
     await SubscriptionStore.instance.setMonthlyBudget(value);
@@ -218,8 +229,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await showCupertinoDialog<void>(
       context: context,
       builder: (dialogContext) => CupertinoAlertDialog(
-        content: Text(value <= 0 ? tr('ui_46e83de05124') : tr('ui_e7311dcecd04')),
-        actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: Text(tr('ui_3ef541b90a31')))],
+        content: Text(
+          value <= 0 ? tr('ui_46e83de05124') : tr('ui_e7311dcecd04'),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(tr('ui_3ef541b90a31')),
+          ),
+        ],
       ),
     );
   }
@@ -239,7 +257,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         context: context,
         builder: (dialogContext) => CupertinoAlertDialog(
           content: Text(tr('ui_2753acf39a49')),
-          actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: Text(tr('ui_3ef541b90a31')))],
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(tr('ui_3ef541b90a31')),
+            ),
+          ],
         ),
       );
     }
@@ -290,7 +313,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         builder: (dialogContext) => CupertinoAlertDialog(
           title: Text(tr('ui_c9f721ee4fd2')),
           content: Text(message),
-          actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: Text(tr('ui_a64b3d93816b')))],
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(tr('ui_a64b3d93816b')),
+            ),
+          ],
         ),
       );
     }
@@ -301,39 +329,24 @@ class _SettingsIntro extends StatelessWidget {
   const _SettingsIntro();
 
   @override
-  Widget build(BuildContext context) {
-    final p = context.palette;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(tr('ui_5fd9563e6846'), style: TextStyle(color: p.text, fontSize: V15Type.headline, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 5),
-        Text(tr('ui_58d077f29d61'), style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall)),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => AppPageIntro(
+    title: tr('ui_5fd9563e6846'),
+    description: tr('ui_58d077f29d61'),
+  );
 }
 
 class _AccountCard extends StatelessWidget {
   final VoidCallback onChanged;
   final Future<void> Function() onDeleteAccount;
 
-  const _AccountCard({
-    required this.onChanged,
-    required this.onDeleteAccount,
-  });
+  const _AccountCard({required this.onChanged, required this.onDeleteAccount});
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
     final signedIn = AuthService.isSignedIn;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: p.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: p.stroke),
-      ),
+    return AppCard(
+      padding: const EdgeInsets.all(V16Space.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -343,7 +356,10 @@ class _AccountCard extends StatelessWidget {
                 width: 42,
                 height: 42,
                 alignment: Alignment.center,
-                decoration: BoxDecoration(color: p.accentSoft, borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(
+                  color: p.accentSoft,
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Icon(CupertinoIcons.cloud, color: p.accent, size: 21),
               ),
               const SizedBox(width: 11),
@@ -351,17 +367,27 @@ class _AccountCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(tr('ui_0458a671e96c'), style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: V15Type.bodySmall)),
+                    Text(
+                      tr('ui_0458a671e96c'),
+                      style: TextStyle(
+                        color: p.text,
+                        fontWeight: V16Type.semibold,
+                        fontSize: V16Type.bodySmall,
+                      ),
+                    ),
                     const SizedBox(height: 3),
                     Text(
                       !AuthService.isAvailable
                           ? tr('ui_0380d88f6407')
                           : signedIn
-                              ? AuthService.userEmail
-                              : tr('ui_02776b074d68'),
+                          ? AuthService.userEmail
+                          : tr('ui_02776b074d68'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: p.textMuted, fontSize: V15Type.caption),
+                      style: TextStyle(
+                        color: p.textMuted,
+                        fontSize: V16Type.caption,
+                      ),
                     ),
                   ],
                 ),
@@ -375,7 +401,9 @@ class _AccountCard extends StatelessWidget {
                   ? null
                   : () async {
                       await Navigator.of(context).push(
-                        CupertinoPageRoute(builder: (_) => const LoginScreen(fromSettings: true)),
+                        CupertinoPageRoute(
+                          builder: (_) => const LoginScreen(fromSettings: true),
+                        ),
                       );
                       onChanged();
                     },
@@ -408,12 +436,20 @@ class _AccountCard extends StatelessWidget {
                             context: context,
                             builder: (dialogContext) => CupertinoAlertDialog(
                               content: Text(error.message),
-                              actions: [CupertinoDialogAction(onPressed: () => Navigator.pop(dialogContext), child: Text(tr('ui_a64b3d93816b')))],
+                              actions: [
+                                CupertinoDialogAction(
+                                  onPressed: () => Navigator.pop(dialogContext),
+                                  child: Text(tr('ui_a64b3d93816b')),
+                                ),
+                              ],
                             ),
                           );
                         }
                       },
-                      child: Icon(CupertinoIcons.square_arrow_right, color: p.danger),
+                      child: Icon(
+                        CupertinoIcons.square_arrow_right,
+                        color: p.danger,
+                      ),
                     ),
                   ],
                 ),
@@ -421,53 +457,32 @@ class _AccountCard extends StatelessWidget {
                 ValueListenableBuilder<CloudSyncStatus>(
                   valueListenable: CloudSync.status,
                   builder: (context, status, _) {
-                    final (icon, text, color) = switch (status.phase) {
+                    final (text, tone) = switch (status.phase) {
                       CloudSyncPhase.syncing => (
-                           CupertinoIcons.arrow_2_circlepath,
-                           tr('ui_990fa33ab762'),
-                          p.accent,
-                        ),
+                        tr('ui_990fa33ab762'),
+                        IosStatusTone.info,
+                      ),
                       CloudSyncPhase.success => (
-                           CupertinoIcons.check_mark_circled,
-                          status.message ?? _syncSuccessText(status.updatedAt),
-                          p.accent,
-                        ),
+                        status.message ?? _syncSuccessText(status.updatedAt),
+                        IosStatusTone.success,
+                      ),
                       CloudSyncPhase.queued => (
-                          CupertinoIcons.clock,
-                          status.message ?? tr('cloudQueuedLocally'),
-                          p.warning,
-                        ),
+                        status.message ?? tr('cloudQueuedLocally'),
+                        IosStatusTone.queued,
+                      ),
                       CloudSyncPhase.failure => (
-                           CupertinoIcons.exclamationmark_circle,
-                           status.message ??
-                               tr('ui_9326a71f2574'),
-                          p.danger,
-                        ),
+                        status.message ?? tr('ui_9326a71f2574'),
+                        IosStatusTone.error,
+                      ),
                       CloudSyncPhase.idle => (
-                           CupertinoIcons.cloud,
-                           tr('ui_72bd581dc069'),
-                          p.textMuted,
-                        ),
+                        tr('ui_72bd581dc069'),
+                        IosStatusTone.info,
+                      ),
                     };
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Icon(icon, color: color, size: 17),
-                            const SizedBox(width: 7),
-                            Expanded(
-                              child: Text(
-                                text,
-                                style: TextStyle(
-                                  color: color,
-                                  fontSize: V15Type.caption,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                        IosStatusNotice(message: text, tone: tone),
                         if (CloudSync.internalDiagnosticsEnabled &&
                             status.operation != null) ...[
                           const SizedBox(height: 6),
@@ -475,13 +490,14 @@ class _AccountCard extends StatelessWidget {
                             tr('cloudSyncDiagnostic', {
                               'operation': status.operation ?? '-',
                               'code': status.firebaseCode ?? '-',
-                              'exists': status.documentExisted?.toString() ?? '-',
+                              'exists':
+                                  status.documentExisted?.toString() ?? '-',
                               'revision': status.revision?.toString() ?? '-',
                               'commit': kGitCommitShort,
                             }),
                             style: TextStyle(
                               color: p.textMuted,
-                              fontSize: V15Type.caption,
+                              fontSize: V16Type.caption,
                               height: 1.45,
                             ),
                           ),
@@ -491,8 +507,7 @@ class _AccountCard extends StatelessWidget {
                           ValueListenableBuilder<bool>(
                             valueListenable:
                                 FirestoreConnectionDiagnostics.running,
-                            builder: (context, running, _) =>
-                                CupertinoButton(
+                            builder: (context, running, _) => CupertinoButton(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 12,
                                 vertical: 9,
@@ -508,7 +523,8 @@ class _AccountCard extends StatelessWidget {
                                     const CupertinoActivityIndicator()
                                   else
                                     Icon(
-                                      CupertinoIcons.antenna_radiowaves_left_right,
+                                      CupertinoIcons
+                                          .antenna_radiowaves_left_right,
                                       color: p.accent,
                                       size: 18,
                                     ),
@@ -519,8 +535,8 @@ class _AccountCard extends StatelessWidget {
                                         : tr('firestoreDiagnosticButton'),
                                     style: TextStyle(
                                       color: p.accent,
-                                      fontSize: V15Type.caption,
-                                      fontWeight: FontWeight.w700,
+                                      fontSize: V16Type.caption,
+                                      fontWeight: V16Type.semibold,
                                     ),
                                   ),
                                 ],
@@ -528,7 +544,8 @@ class _AccountCard extends StatelessWidget {
                             ),
                           ),
                           ValueListenableBuilder<
-                              FirestoreConnectionDiagnostic?>(
+                            FirestoreConnectionDiagnostic?
+                          >(
                             valueListenable:
                                 FirestoreConnectionDiagnostics.lastResult,
                             builder: (context, result, _) {
@@ -551,14 +568,21 @@ class _AccountCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 CupertinoButton(
                   onPressed: onDeleteAccount,
-                  child: Text(tr('ui_70f341498d46'), style: TextStyle(color: p.danger)),
+                  child: Text(
+                    tr('ui_70f341498d46'),
+                    style: TextStyle(color: p.danger),
+                  ),
                 ),
               ],
             ),
           const SizedBox(height: 12),
           Text(
             tr('ui_87621ec0d18d'),
-            style: TextStyle(color: p.textMuted, fontSize: V15Type.caption, height: 1.6),
+            style: TextStyle(
+              color: p.textMuted,
+              fontSize: V16Type.caption,
+              height: V16Type.captionHeight,
+            ),
           ),
           ValueListenableBuilder<String?>(
             valueListenable: AuthService.appCheckWarning,
@@ -566,23 +590,9 @@ class _AccountCard extends StatelessWidget {
               if (warning == null) return const SizedBox.shrink();
               return Padding(
                 padding: const EdgeInsets.only(top: 10),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.gpp_maybe_rounded, color: p.danger, size: 18),
-                    const SizedBox(width: 7),
-                    Expanded(
-                      child: Text(
-                        warning,
-                        style: TextStyle(
-                          color: p.danger,
-                          fontSize: V15Type.caption,
-                          fontWeight: FontWeight.w700,
-                          height: 1.5,
-                        ),
-                      ),
-                    ),
-                  ],
+                child: IosStatusNotice(
+                  message: warning,
+                  tone: IosStatusTone.error,
                 ),
               );
             },
@@ -626,8 +636,8 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
             tr('firestoreDiagnosticEnvironmentTitle'),
             style: TextStyle(
               color: p.text,
-              fontSize: V15Type.bodySmall,
-              fontWeight: FontWeight.w800,
+              fontSize: V16Type.bodySmall,
+              fontWeight: V16Type.semibold,
             ),
           ),
           const SizedBox(height: 6),
@@ -649,7 +659,8 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
           ),
           _DiagnosticLine(
             label: tr('firestoreDiagnosticSdkVersions'),
-            value: 'core $firebaseCoreVersion | auth $firebaseAuthVersion | '
+            value:
+                'core $firebaseCoreVersion | auth $firebaseAuthVersion | '
                 'firestore $cloudFirestoreVersion | '
                 'app-check $firebaseAppCheckVersion | iOS $firebaseIosSdkVersion',
           ),
@@ -662,12 +673,11 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
             value: tr('firestoreDiagnosticFeatureFlagsValue', {
               'offline': _yesNo(FirebaseBuildConfig.offlineQueueEnabled),
               'rest': _yesNo(FirebaseBuildConfig.restFallbackEnabled),
-              'firstCreate':
-                  _yesNo(FirebaseBuildConfig.restFirstCreateEnabled),
-              'restUpdate':
-                  _yesNo(FirebaseBuildConfig.restUpdateFallbackEnabled),
-              'appCheckDebug':
-                  _yesNo(FirebaseBuildConfig.appCheckDebugEnabled),
+              'firstCreate': _yesNo(FirebaseBuildConfig.restFirstCreateEnabled),
+              'restUpdate': _yesNo(
+                FirebaseBuildConfig.restUpdateFallbackEnabled,
+              ),
+              'appCheckDebug': _yesNo(FirebaseBuildConfig.appCheckDebugEnabled),
             }),
           ),
           _DiagnosticLine(
@@ -688,8 +698,8 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
             tr('firestoreDiagnosticRestTitle'),
             style: TextStyle(
               color: p.text,
-              fontSize: V15Type.bodySmall,
-              fontWeight: FontWeight.w800,
+              fontSize: V16Type.bodySmall,
+              fontWeight: V16Type.semibold,
             ),
           ),
           const SizedBox(height: 6),
@@ -726,8 +736,8 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
             tr('firestoreDiagnosticNativeTitle'),
             style: TextStyle(
               color: p.text,
-              fontSize: V15Type.bodySmall,
-              fontWeight: FontWeight.w800,
+              fontSize: V16Type.bodySmall,
+              fontWeight: V16Type.semibold,
             ),
           ),
           const SizedBox(height: 6),
@@ -766,8 +776,8 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
             value: native.succeeded
                 ? tr('firestoreDiagnosticServerConfirmed')
                 : sync.delivery == CloudSyncDelivery.queuedLocally
-                    ? tr('firestoreDiagnosticQueuedLocally')
-                    : tr('firestoreDiagnosticFailed'),
+                ? tr('firestoreDiagnosticQueuedLocally')
+                : tr('firestoreDiagnosticFailed'),
           ),
           _DiagnosticLine(
             label: tr('firestoreDiagnosticPendingWrites'),
@@ -793,7 +803,7 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
               native.safeMessage!,
               style: TextStyle(
                 color: p.textMuted,
-                fontSize: V15Type.caption,
+                fontSize: V16Type.caption,
                 height: 1.45,
               ),
             ),
@@ -803,8 +813,8 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
             _diagnosticConclusion(result),
             style: TextStyle(
               color: p.accent,
-              fontSize: V15Type.caption,
-              fontWeight: FontWeight.w700,
+              fontSize: V16Type.caption,
+              fontWeight: V16Type.semibold,
               height: 1.45,
             ),
           ),
@@ -817,32 +827,24 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
       value ? tr('firestoreDiagnosticYes') : tr('firestoreDiagnosticNo');
 
   String _restOutcomeText(FirestoreRestOutcome outcome) => switch (outcome) {
-        FirestoreRestOutcome.success => tr('firestoreDiagnosticRest200'),
-        FirestoreRestOutcome.missingDocument =>
-          tr('firestoreDiagnosticRest404'),
-        FirestoreRestOutcome.unauthenticated =>
-          tr('firestoreDiagnosticRest401'),
-        FirestoreRestOutcome.permissionDenied =>
-          tr('firestoreDiagnosticRest403'),
-        FirestoreRestOutcome.invalidTarget =>
-          tr('firestoreDiagnosticRest400'),
-        FirestoreRestOutcome.rateLimited =>
-          tr('firestoreDiagnosticRest429'),
-        FirestoreRestOutcome.serviceFailure =>
-          tr('firestoreDiagnosticRest5xx'),
-        FirestoreRestOutcome.dnsFailure => tr('firestoreDiagnosticDnsFailed'),
-        FirestoreRestOutcome.socketFailure =>
-          tr('firestoreDiagnosticSocketFailed'),
-        FirestoreRestOutcome.tlsFailure => tr('firestoreDiagnosticTlsFailed'),
-        FirestoreRestOutcome.timeout => tr('firestoreDiagnosticTimedOut'),
-        FirestoreRestOutcome.clientFailure =>
-          tr('firestoreDiagnosticClientFailed'),
-        FirestoreRestOutcome.noUser => tr('firestoreDiagnosticNoUser'),
-        FirestoreRestOutcome.tokenFailure =>
-          tr('firestoreDiagnosticTokenFailed'),
-        FirestoreRestOutcome.unexpectedFailure =>
-          tr('firestoreDiagnosticUnexpected'),
-      };
+    FirestoreRestOutcome.success => tr('firestoreDiagnosticRest200'),
+    FirestoreRestOutcome.missingDocument => tr('firestoreDiagnosticRest404'),
+    FirestoreRestOutcome.unauthenticated => tr('firestoreDiagnosticRest401'),
+    FirestoreRestOutcome.permissionDenied => tr('firestoreDiagnosticRest403'),
+    FirestoreRestOutcome.invalidTarget => tr('firestoreDiagnosticRest400'),
+    FirestoreRestOutcome.rateLimited => tr('firestoreDiagnosticRest429'),
+    FirestoreRestOutcome.serviceFailure => tr('firestoreDiagnosticRest5xx'),
+    FirestoreRestOutcome.dnsFailure => tr('firestoreDiagnosticDnsFailed'),
+    FirestoreRestOutcome.socketFailure => tr('firestoreDiagnosticSocketFailed'),
+    FirestoreRestOutcome.tlsFailure => tr('firestoreDiagnosticTlsFailed'),
+    FirestoreRestOutcome.timeout => tr('firestoreDiagnosticTimedOut'),
+    FirestoreRestOutcome.clientFailure => tr('firestoreDiagnosticClientFailed'),
+    FirestoreRestOutcome.noUser => tr('firestoreDiagnosticNoUser'),
+    FirestoreRestOutcome.tokenFailure => tr('firestoreDiagnosticTokenFailed'),
+    FirestoreRestOutcome.unexpectedFailure => tr(
+      'firestoreDiagnosticUnexpected',
+    ),
+  };
 
   String _diagnosticConclusion(FirestoreConnectionDiagnostic result) {
     final restReachedFirestore = result.rest.httpStatus != null;
@@ -885,10 +887,7 @@ class _DiagnosticLine extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(
-                color: p.textMuted,
-                fontSize: V15Type.caption,
-              ),
+              style: TextStyle(color: p.textMuted, fontSize: V16Type.caption),
             ),
           ),
           const SizedBox(width: 8),
@@ -898,8 +897,8 @@ class _DiagnosticLine extends StatelessWidget {
               textAlign: TextAlign.end,
               style: TextStyle(
                 color: p.text,
-                fontSize: V15Type.caption,
-                fontWeight: FontWeight.w700,
+                fontSize: V16Type.caption,
+                fontWeight: V16Type.semibold,
               ),
             ),
           ),
@@ -916,9 +915,13 @@ class _SettingsLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(
-        text,
-        style: TextStyle(color: context.palette.textMuted, fontSize: V15Type.caption, fontWeight: FontWeight.w900),
-      );
+    text,
+    style: TextStyle(
+      color: context.palette.textMuted,
+      fontSize: V16Type.caption,
+      fontWeight: V16Type.semibold,
+    ),
+  );
 }
 
 class _SettingsSwitch extends StatelessWidget {
@@ -949,9 +952,22 @@ class _SettingsSwitch extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: V15Type.label)),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: p.text,
+                    fontWeight: V16Type.semibold,
+                    fontSize: V16Type.label,
+                  ),
+                ),
                 const SizedBox(height: 3),
-                Text(detail, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
+                Text(
+                  detail,
+                  style: TextStyle(
+                    color: p.textMuted,
+                    fontSize: V16Type.caption,
+                  ),
+                ),
               ],
             ),
           ),
@@ -995,9 +1011,22 @@ class _SettingsAction extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: V15Type.label)),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: p.text,
+                      fontWeight: V16Type.semibold,
+                      fontSize: V16Type.label,
+                    ),
+                  ),
                   const SizedBox(height: 3),
-                  Text(detail, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
+                  Text(
+                    detail,
+                    style: TextStyle(
+                      color: p.textMuted,
+                      fontSize: V16Type.caption,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1027,34 +1056,59 @@ class _BudgetCard extends StatelessWidget {
             children: [
               Icon(Icons.pie_chart_outline_rounded, color: p.accent),
               const SizedBox(width: 9),
-              Text(tr('ui_b6775a5543d9'), style: TextStyle(color: p.text, fontSize: V15Type.bodySmall, fontWeight: FontWeight.w900)),
+              Text(
+                tr('ui_b6775a5543d9'),
+                style: TextStyle(
+                  color: p.text,
+                  fontSize: V16Type.bodySmall,
+                  fontWeight: V16Type.semibold,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 7),
-          Text(tr('ui_bf208c21fb03'), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
+          Text(
+            tr('ui_bf208c21fb03'),
+            style: TextStyle(color: p.textMuted, fontSize: V16Type.caption),
+          ),
           const SizedBox(height: 15),
           Row(
             children: [
               Expanded(
                 child: CupertinoTextField(
                   controller: controller,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   textDirection: TextDirection.ltr,
                   placeholder: '0',
                   suffix: Padding(
                     padding: const EdgeInsetsDirectional.only(end: 12),
-                    child: Text(currencySymbols[currency] ?? currency, style: TextStyle(color: p.textMuted)),
+                    child: Text(
+                      currencySymbols[currency] ?? currency,
+                      style: TextStyle(color: p.textMuted),
+                    ),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
-                  decoration: BoxDecoration(color: p.surfaceAlt, borderRadius: BorderRadius.circular(11), border: Border.all(color: p.stroke)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: p.surfaceAlt,
+                    borderRadius: BorderRadius.circular(11),
+                    border: Border.all(color: p.stroke),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
               CupertinoButton(
                 padding: const EdgeInsets.all(11),
-                color: p.accent,
+                color: p.accentStrong,
                 onPressed: onSave,
-                child: const Icon(CupertinoIcons.check_mark, color: CupertinoColors.white),
+                child: const Icon(
+                  CupertinoIcons.check_mark,
+                  color: CupertinoColors.white,
+                ),
               ),
             ],
           ),
@@ -1074,7 +1128,10 @@ class _AboutCard extends StatelessWidget {
       padding: EdgeInsets.zero,
       child: Column(
         children: [
-          _AboutLine(label: tr('ui_d83483faf7f9'), value: tr('ui_64e2da14cf04')),
+          _AboutLine(
+            label: tr('ui_d83483faf7f9'),
+            value: tr('ui_64e2da14cf04'),
+          ),
           Divider(height: 1, color: p.stroke),
           _AboutLine(label: tr('ui_f14158b9c061'), value: kAppVersion),
           Divider(height: 1, color: p.stroke),
@@ -1096,8 +1153,21 @@ class _AboutCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
                 children: [
-                  Expanded(child: Text(tr('ui_23a13bc51d58'), style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: V15Type.labelSmall))),
-                  Icon(CupertinoIcons.arrow_up_right_square, color: p.textMuted, size: 18),
+                  Expanded(
+                    child: Text(
+                      tr('ui_23a13bc51d58'),
+                      style: TextStyle(
+                        color: p.text,
+                        fontWeight: V16Type.semibold,
+                        fontSize: V16Type.labelSmall,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    CupertinoIcons.arrow_up_right_square,
+                    color: p.textMuted,
+                    size: 18,
+                  ),
                 ],
               ),
             ),
@@ -1121,9 +1191,19 @@ class _AboutLine extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
-          Text(label, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
+          Text(
+            label,
+            style: TextStyle(color: p.textMuted, fontSize: V16Type.caption),
+          ),
           const Spacer(),
-          Text(value, style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: V15Type.labelSmall)),
+          Text(
+            value,
+            style: TextStyle(
+              color: p.text,
+              fontWeight: V16Type.semibold,
+              fontSize: V16Type.labelSmall,
+            ),
+          ),
         ],
       ),
     );
@@ -1142,16 +1222,26 @@ class _ThemeModeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(context.l10n.text('settingsAppearanceTitle'), style: TextStyle(color: p.text, fontSize: V15Type.label, fontWeight: FontWeight.w900)),
+          Text(
+            context.l10n.text('settingsAppearanceTitle'),
+            style: TextStyle(
+              color: p.text,
+              fontSize: V16Type.label,
+              fontWeight: V16Type.semibold,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(context.l10n.text('settingsAppearanceDescription'), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
+          Text(
+            context.l10n.text('settingsAppearanceDescription'),
+            style: TextStyle(color: p.textMuted, fontSize: V16Type.caption),
+          ),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: CupertinoSlidingSegmentedControl<String>(
               groupValue: store.themeMode,
               backgroundColor: p.surfaceAlt,
-              thumbColor: p.accent,
+              thumbColor: p.accentStrong,
               children: {
                 'system': _ThemeModeOption(
                   label: context.l10n.text('themeSystem'),
@@ -1195,17 +1285,14 @@ class _LanguageModeCard extends StatelessWidget {
             context.l10n.text('language'),
             style: TextStyle(
               color: p.text,
-              fontSize: V15Type.label,
-              fontWeight: FontWeight.w900,
+              fontSize: V16Type.label,
+              fontWeight: V16Type.semibold,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             context.l10n.text('languageDescription'),
-            style: TextStyle(
-              color: p.textMuted,
-              fontSize: V15Type.caption,
-            ),
+            style: TextStyle(color: p.textMuted, fontSize: V16Type.caption),
           ),
           const SizedBox(height: 12),
           SizedBox(
@@ -1213,7 +1300,7 @@ class _LanguageModeCard extends StatelessWidget {
             child: CupertinoSlidingSegmentedControl<String>(
               groupValue: store.languageMode,
               backgroundColor: p.surfaceAlt,
-              thumbColor: p.accent,
+              thumbColor: p.accentStrong,
               children: {
                 'system': _LanguageModeOption(
                   label: context.l10n.text('languageSystem'),
@@ -1247,20 +1334,20 @@ class _LanguageModeOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            label,
-            maxLines: 1,
-            style: TextStyle(
-              color: selected ? CupertinoColors.white : context.palette.text,
-              fontSize: V15Type.caption,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+    padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+    child: FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(
+        label,
+        maxLines: 1,
+        style: TextStyle(
+          color: selected ? CupertinoColors.white : context.palette.text,
+          fontSize: V16Type.caption,
+          fontWeight: V16Type.semibold,
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _ThemeModeOption extends StatelessWidget {
@@ -1276,35 +1363,31 @@ class _ThemeModeOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 14,
-                color: selected
-                    ? CupertinoColors.white
-                    : context.palette.textMuted,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                maxLines: 1,
-                style: TextStyle(
-                  color: selected
-                      ? CupertinoColors.white
-                      : context.palette.text,
-                  fontSize: V15Type.caption,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 14,
+            color: selected ? CupertinoColors.white : context.palette.textMuted,
           ),
-        ),
-      );
+          const SizedBox(width: 4),
+          Text(
+            label,
+            maxLines: 1,
+            style: TextStyle(
+              color: selected ? CupertinoColors.white : context.palette.text,
+              fontSize: V16Type.caption,
+              fontWeight: V16Type.semibold,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 /// إدارة البيانات: حذف السجل من الجهاز.
@@ -1329,9 +1412,22 @@ class _DataCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(tr('ui_e70886198cca'), style: TextStyle(color: p.danger, fontWeight: FontWeight.w800, fontSize: V15Type.label)),
+                  Text(
+                    tr('ui_e70886198cca'),
+                    style: TextStyle(
+                      color: p.danger,
+                      fontWeight: V16Type.semibold,
+                      fontSize: V16Type.label,
+                    ),
+                  ),
                   const SizedBox(height: 3),
-                  Text(tr('ui_a5571e3ecfb5'), style: TextStyle(color: p.danger.withValues(alpha: .75), fontSize: V15Type.caption)),
+                  Text(
+                    tr('ui_a5571e3ecfb5'),
+                    style: TextStyle(
+                      color: p.danger.withValues(alpha: .75),
+                      fontSize: V16Type.caption,
+                    ),
+                  ),
                 ],
               ),
             ),
