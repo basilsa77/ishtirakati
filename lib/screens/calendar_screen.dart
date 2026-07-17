@@ -1,4 +1,4 @@
-/// تقويم الدفعات في v11.
+/// تقويم الدفعات بهوية v16.
 library;
 
 import 'package:flutter/cupertino.dart';
@@ -24,7 +24,11 @@ class CalendarPage extends StatelessWidget {
         border: Border(bottom: BorderSide(color: p.stroke)),
         middle: Text(
           tr('ui_43268af638e5'),
-          style: TextStyle(color: p.text, fontSize: V15Type.titleSmall, fontWeight: FontWeight.w900),
+          style: TextStyle(
+            color: p.text,
+            fontSize: V16Type.titleSmall,
+            fontWeight: V16Type.semibold,
+          ),
         ),
       ),
       child: const SafeArea(top: false, child: CalendarScreen()),
@@ -41,10 +45,28 @@ class CalendarScreen extends StatefulWidget {
 
 class _CalendarScreenState extends State<CalendarScreen> {
   List<String> get _months => [
-    tr('ui_bc40bf9bf5db'), tr('ui_4c9195d55893'), tr('ui_121f3712ae7c'), tr('ui_b5021be42c23'), tr('ui_e490a80977c5'), tr('ui_f6c57592aa1d'),
-    tr('ui_7f5c6765af36'), tr('ui_47bea73f4ca8'), tr('ui_339eb2be7171'), tr('ui_128ed0f7c924'), tr('ui_0b699e61fe99'), tr('ui_c22ea1f7f156'),
+    tr('ui_bc40bf9bf5db'),
+    tr('ui_4c9195d55893'),
+    tr('ui_121f3712ae7c'),
+    tr('ui_b5021be42c23'),
+    tr('ui_e490a80977c5'),
+    tr('ui_f6c57592aa1d'),
+    tr('ui_7f5c6765af36'),
+    tr('ui_47bea73f4ca8'),
+    tr('ui_339eb2be7171'),
+    tr('ui_128ed0f7c924'),
+    tr('ui_0b699e61fe99'),
+    tr('ui_c22ea1f7f156'),
   ];
-  List<String> get _weekdays => [tr('ui_56750292f58c'), tr('ui_cb92a8b00c69'), tr('ui_e57c96ba8aea'), tr('ui_36a9d753b0bd'), tr('ui_84d816dcc533'), tr('ui_51c9a584ad13'), tr('ui_861183a44bf3')];
+  List<String> get _weekdays => [
+    tr('ui_56750292f58c'),
+    tr('ui_cb92a8b00c69'),
+    tr('ui_e57c96ba8aea'),
+    tr('ui_36a9d753b0bd'),
+    tr('ui_84d816dcc533'),
+    tr('ui_51c9a584ad13'),
+    tr('ui_861183a44bf3'),
+  ];
 
   late DateTime _month;
   bool _calendarView = false;
@@ -63,28 +85,58 @@ class _CalendarScreenState extends State<CalendarScreen> {
       listenable: store,
       builder: (context, _) {
         final byDay = <int, List<Subscription>>{};
-        for (final subscription in store.active) {
-          for (final date in subscription.renewalsInMonth(_month.year, _month.month)) {
+        // Keep completed finite installments visible in historical months.
+        // renewalsInMonth() itself prevents occurrences after the final payment.
+        for (final subscription in store.items.where(
+          (item) => !item.isPaused,
+        )) {
+          for (final date in subscription.renewalsInMonth(
+            _month.year,
+            _month.month,
+          )) {
             byDay.putIfAbsent(date.day, () => []).add(subscription);
           }
         }
-        final currency = store.dominantCurrency;
-        final total = byDay.values
-            .expand((items) => items)
-            .where((item) => item.currency == currency)
-            .fold<double>(0, (sum, item) => sum + item.price);
+        final totals = <String, double>{};
+        for (final entry in byDay.entries) {
+          final date = DateTime(_month.year, _month.month, entry.key);
+          for (final item in entry.value) {
+            totals.update(
+              item.currency,
+              (value) => value + item.priceAt(date),
+              ifAbsent: () => item.priceAt(date),
+            );
+          }
+        }
+        final dominantCurrency = store.dominantCurrency;
+        if (totals.isEmpty) totals[dominantCurrency] = 0;
+        final orderedEntries =
+            totals.entries.toList()..sort((first, second) {
+              if (first.key == dominantCurrency) return -1;
+              if (second.key == dominantCurrency) return 1;
+              return first.key.compareTo(second.key);
+            });
+        final orderedTotals = Map<String, double>.fromEntries(orderedEntries);
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          padding: const EdgeInsets.fromLTRB(
+            V16Space.lg,
+            V16Space.md,
+            V16Space.lg,
+            V16Space.xl,
+          ),
           children: [
-            _CalendarHeader(total: total, currency: currency, itemCount: byDay.values.expand((items) => items).length),
-            const SizedBox(height: 18),
+            _CalendarHeader(
+              totals: orderedTotals,
+              itemCount: byDay.values.expand((items) => items).length,
+            ),
+            const SizedBox(height: V16Space.lg),
             Semantics(
               label: tr('ui_30e4cbf695ec'),
               child: CupertinoSlidingSegmentedControl<bool>(
                 groupValue: _calendarView,
                 backgroundColor: context.palette.surfaceAlt,
-                thumbColor: context.palette.accent,
+                thumbColor: context.palette.accentStrong,
                 children: {
                   false: _CalendarViewOption(
                     key: const Key('renewals-timeline-option'),
@@ -104,40 +156,55 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 },
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: V16Space.lg),
             _MonthControl(
               label: '${_months[_month.month - 1]} ${_month.year}',
-              onPrevious: () => setState(() => _month = DateTime(_month.year, _month.month - 1)),
-              onNext: () => setState(() => _month = DateTime(_month.year, _month.month + 1)),
+              onPrevious:
+                  () => setState(
+                    () => _month = DateTime(_month.year, _month.month - 1),
+                  ),
+              onNext:
+                  () => setState(
+                    () => _month = DateTime(_month.year, _month.month + 1),
+                  ),
               onToday: () {
                 final today = DateTime.now();
                 setState(() => _month = DateTime(today.year, today.month));
               },
             ),
             if (_calendarView) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: V16Space.sm),
               _CalendarGrid(
                 key: const Key('renewals-calendar-grid'),
                 month: _month,
                 weekdays: _weekdays,
                 entries: byDay,
-                onOpen: (day, subscriptions) =>
-                    _openDay(context, day, subscriptions),
+                onOpen:
+                    (day, subscriptions) =>
+                        _openDay(context, day, subscriptions),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: V16Space.lg),
             ] else
-              const SizedBox(height: 24),
-            Text(tr('ui_fd07cb92b0fe'), style: TextStyle(color: context.palette.text, fontSize: V15Type.titleSmall, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 5),
-            Text(byDay.isEmpty ? tr('ui_cfe0939cd3d2') : tr('ui_221f5f83bb44'), style: TextStyle(color: context.palette.textMuted, fontSize: V15Type.labelSmall)),
-            const SizedBox(height: 12),
+              const SizedBox(height: V16Space.lg),
+            SectionTitle(tr('ui_fd07cb92b0fe')),
+            Text(
+              byDay.isEmpty ? tr('ui_cfe0939cd3d2') : tr('ui_221f5f83bb44'),
+              style: TextStyle(
+                color: context.palette.textMuted,
+                fontSize: V16Type.labelSmall,
+              ),
+            ),
+            const SizedBox(height: V16Space.sm),
             if (byDay.isEmpty)
               const _CalendarEmpty()
             else
               for (final day in (byDay.keys.toList()..sort()))
                 for (final subscription in byDay[day]!) ...[
-                  _CalendarPayment(day: day, subscription: subscription),
-                  const SizedBox(height: 9),
+                  _CalendarPayment(
+                    date: DateTime(_month.year, _month.month, day),
+                    subscription: subscription,
+                  ),
+                  const SizedBox(height: V16Space.sm),
                 ],
           ],
         );
@@ -145,60 +212,128 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  void _openDay(BuildContext context, int day, List<Subscription> subscriptions) {
+  void _openDay(
+    BuildContext context,
+    int day,
+    List<Subscription> subscriptions,
+  ) {
+    final renewalDate = DateTime(_month.year, _month.month, day);
     showCupertinoModalPopup<void>(
       context: context,
       builder: (sheetContext) {
         final p = sheetContext.palette;
         return DraggableScrollableSheet(
-            expand: false,
-            initialChildSize: .52,
-            minChildSize: .32,
-            maxChildSize: .9,
-            builder: (context, controller) => SafeArea(
-            top: false,
-            child: Container(
-              decoration: BoxDecoration(color: p.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
-              child: ListView.separated(
-                controller: controller,
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-                itemCount: subscriptions.length + 1,
-                separatorBuilder: (_, index) => index == 0 ? const SizedBox(height: 14) : Divider(color: p.stroke, height: 1),
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Center(child: Container(width: 38, height: 4, decoration: BoxDecoration(color: p.stroke, borderRadius: BorderRadius.circular(99)))),
-                        const SizedBox(height: 18),
-                        Text(tr('ui_122244edc329', {'value0': day}), style: TextStyle(color: p.text, fontSize: V15Type.titleSmall, fontWeight: FontWeight.w900)),
-                      ],
-                    );
-                  }
-                  final subscription = subscriptions[index - 1];
-                  return CupertinoButton(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    onPressed: () {
-                      Navigator.pop(sheetContext);
-                      showSubscriptionDetails(context, subscription);
-                    },
-                    child: Row(
-                      children: [
-                        ServiceAvatar(name: subscription.name, emoji: subscription.emoji, manageUrl: subscription.manageUrl, iconUrl: subscription.iconUrl, tint: categoryColor(subscription.category), size: 42),
-                        const SizedBox(width: 10),
-                        Expanded(child: Text(subscription.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontWeight: FontWeight.w800))),
-                        const SizedBox(width: 8),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 96),
-                          child: Text(fmtMoneyWithCurrency(subscription.price, subscription.currency), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.accent, fontWeight: FontWeight.w900)),
-                        ),
-                      ],
+          expand: false,
+          initialChildSize: .52,
+          minChildSize: .32,
+          maxChildSize: .9,
+          builder:
+              (context, controller) => SafeArea(
+                top: false,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: p.surface,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(V16Radius.signature),
                     ),
-                  );
-                },
+                  ),
+                  child: ListView.separated(
+                    controller: controller,
+                    padding: const EdgeInsets.fromLTRB(
+                      V16Space.lg,
+                      V16Space.md,
+                      V16Space.lg,
+                      V16Space.lg,
+                    ),
+                    itemCount: subscriptions.length + 1,
+                    separatorBuilder:
+                        (_, index) =>
+                            index == 0
+                                ? const SizedBox(height: V16Space.md)
+                                : Divider(color: p.stroke, height: 1),
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Center(
+                              child: Container(
+                                width: 38,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: p.stroke,
+                                  borderRadius: BorderRadius.circular(
+                                    V16Radius.pill,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: V16Space.lg),
+                            Text(
+                              tr('ui_122244edc329', {'value0': day}),
+                              style: TextStyle(
+                                color: p.text,
+                                fontSize: V16Type.titleSmall,
+                                fontWeight: V16Type.semibold,
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+                      final subscription = subscriptions[index - 1];
+                      return CupertinoButton(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: V16Space.xs,
+                        ),
+                        onPressed: () {
+                          Navigator.pop(sheetContext);
+                          showSubscriptionDetails(context, subscription);
+                        },
+                        child: Row(
+                          children: [
+                            ServiceAvatar(
+                              name: subscription.name,
+                              emoji: subscription.emoji,
+                              manageUrl: subscription.manageUrl,
+                              iconUrl: subscription.iconUrl,
+                              tint: categoryColor(subscription.category),
+                              size: 42,
+                            ),
+                            const SizedBox(width: V16Space.sm),
+                            Expanded(
+                              child: Text(
+                                subscription.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: p.text,
+                                  fontWeight: V16Type.semibold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: V16Space.xs),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 96),
+                              child: Text(
+                                fmtMoneyWithCurrency(
+                                  subscription.priceAt(renewalDate),
+                                  subscription.currency,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: p.accent,
+                                  fontWeight: V16Type.semibold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ),
-            ),
-            ),
         );
       },
     );
@@ -219,62 +354,106 @@ class _CalendarViewOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: selected
-                    ? CupertinoColors.white
-                    : context.palette.textMuted,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: selected
-                      ? CupertinoColors.white
-                      : context.palette.text,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
+    padding: const EdgeInsets.symmetric(vertical: V16Space.xs),
+    child: FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 16,
+            color: selected ? CupertinoColors.white : context.palette.textMuted,
           ),
-        ),
-      );
+          const SizedBox(width: V16Space.xs),
+          Text(
+            label,
+            style: TextStyle(
+              color: selected ? CupertinoColors.white : context.palette.text,
+              fontWeight: V16Type.semibold,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _CalendarHeader extends StatelessWidget {
-  final double total;
-  final String currency;
+  final Map<String, double> totals;
   final int itemCount;
 
-  const _CalendarHeader({required this.total, required this.currency, required this.itemCount});
+  const _CalendarHeader({required this.totals, required this.itemCount});
 
   @override
   Widget build(BuildContext context) {
-    final p = context.palette;
+    final countLabel = Text(
+      tr('ui_c594d3d42dde', {'value0': itemCount}),
+      style: const TextStyle(
+        color: V16Colors.white,
+        fontWeight: V16Type.semibold,
+        fontSize: V16Type.labelSmall,
+      ),
+    );
+    final amounts = Wrap(
+      spacing: V16Space.sm,
+      runSpacing: V16Space.xxs,
+      children: [
+        for (final entry in totals.entries)
+          AnimatedMoney(
+            value: entry.value,
+            currency: entry.key,
+            style: const TextStyle(
+              color: V16Colors.white,
+              fontWeight: V16Type.semibold,
+            ),
+          ),
+      ],
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(tr('ui_43268af638e5'), style: TextStyle(color: p.text, fontSize: V15Type.headlineSmall, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 5),
-        Text(tr('ui_dfba2e3d71cb'), style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall)),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(17),
-          decoration: BoxDecoration(color: p.surfaceAlt, borderRadius: BorderRadius.circular(21)),
-          child: Row(
-            children: [
-              Icon(Icons.event_available_rounded, color: p.accent),
-              const SizedBox(width: 10),
-              Expanded(child: Text(tr('ui_c594d3d42dde', {'value0': itemCount}), style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: V15Type.labelSmall))),
-              Text(fmtMoney(total, currency), style: TextStyle(color: p.accent, fontWeight: FontWeight.w900)),
-            ],
+        AppPageIntro(
+          title: tr('ui_43268af638e5'),
+          description: tr('ui_dfba2e3d71cb'),
+        ),
+        const SizedBox(height: V16Space.md),
+        AppCard(
+          tone: AppCardTone.accent,
+          padding: const EdgeInsets.all(V16Space.lg),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final stack =
+                  constraints.maxWidth < 360 ||
+                  MediaQuery.textScalerOf(context).scale(1) > 1.3;
+              final heading = Row(
+                children: [
+                  const Icon(
+                    Icons.event_available_rounded,
+                    color: V16Colors.white,
+                  ),
+                  const SizedBox(width: V16Space.sm),
+                  Expanded(child: countLabel),
+                ],
+              );
+              if (stack) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    heading,
+                    const SizedBox(height: V16Space.sm),
+                    amounts,
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: heading),
+                  const SizedBox(width: V16Space.sm),
+                  Flexible(child: amounts),
+                ],
+              );
+            },
           ),
         ),
       ],
@@ -288,7 +467,12 @@ class _MonthControl extends StatelessWidget {
   final VoidCallback onNext;
   final VoidCallback onToday;
 
-  const _MonthControl({required this.label, required this.onPrevious, required this.onNext, required this.onToday});
+  const _MonthControl({
+    required this.label,
+    required this.onPrevious,
+    required this.onNext,
+    required this.onToday,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -296,13 +480,23 @@ class _MonthControl extends StatelessWidget {
     return Row(
       children: [
         CupertinoButton(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(V16Space.xs),
           onPressed: onNext,
           child: Icon(CupertinoIcons.chevron_right, color: p.text),
         ),
-        Expanded(child: Text(label, textAlign: TextAlign.center, style: TextStyle(color: p.text, fontSize: V15Type.titleSmall, fontWeight: FontWeight.w900))),
+        Expanded(
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: p.text,
+              fontSize: V16Type.titleSmall,
+              fontWeight: V16Type.semibold,
+            ),
+          ),
+        ),
         CupertinoButton(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(V16Space.xs),
           onPressed: onPrevious,
           child: Icon(CupertinoIcons.chevron_left, color: p.text),
         ),
@@ -333,42 +527,95 @@ class _CalendarGrid extends StatelessWidget {
     final days = DateTime(month.year, month.month + 1, 0).day;
     final today = DateTime.now();
     return AppCard(
-      padding: const EdgeInsets.all(13),
+      padding: const EdgeInsets.all(V16Space.md),
       child: Column(
         children: [
           Row(
             children: [
               for (final weekday in weekdays)
-                Expanded(child: Center(child: Text(weekday, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption, fontWeight: FontWeight.w800)))),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      weekday,
+                      style: TextStyle(
+                        color: p.textMuted,
+                        fontSize: V16Type.caption,
+                        fontWeight: V16Type.semibold,
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
-          const SizedBox(height: 9),
+          const SizedBox(height: V16Space.sm),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7, mainAxisSpacing: 6, crossAxisSpacing: 6, childAspectRatio: .87),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7,
+              mainAxisSpacing: 6,
+              crossAxisSpacing: 6,
+              childAspectRatio: .87,
+            ),
             itemCount: first + days,
             itemBuilder: (context, index) {
               if (index < first) return const SizedBox();
               final day = index - first + 1;
               final subscriptions = entries[day] ?? const <Subscription>[];
-              final todaySelected = today.year == month.year && today.month == month.month && today.day == day;
+              final todaySelected =
+                  today.year == month.year &&
+                  today.month == month.month &&
+                  today.day == day;
               return GestureDetector(
-                onTap: subscriptions.isEmpty ? null : () => onOpen(day, subscriptions),
+                onTap:
+                    subscriptions.isEmpty
+                        ? null
+                        : () => onOpen(day, subscriptions),
                 behavior: HitTestBehavior.opaque,
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
+                  duration:
+                      reduceMotion(context) ? Duration.zero : V16Motion.quick,
+                  curve: V16Motion.standardCurve,
                   decoration: BoxDecoration(
-                    color: todaySelected ? p.accent : subscriptions.isNotEmpty ? p.accentSoft : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
+                    color:
+                        todaySelected
+                            ? p.accentStrong
+                            : subscriptions.isNotEmpty
+                            ? p.accentSoft
+                            : Colors.transparent,
+                    borderRadius: BorderRadius.circular(V16Radius.compact),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('$day', style: TextStyle(color: todaySelected ? Colors.white : subscriptions.isNotEmpty ? p.accent : p.text, fontSize: V15Type.caption, fontWeight: FontWeight.w900)),
+                      Text(
+                        '$day',
+                        style: TextStyle(
+                          color:
+                              todaySelected
+                                  ? Colors.white
+                                  : subscriptions.isNotEmpty
+                                  ? p.accent
+                                  : p.text,
+                          fontSize: V16Type.caption,
+                          fontWeight: V16Type.semibold,
+                        ),
+                      ),
                       if (subscriptions.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Container(width: 5, height: 5, decoration: BoxDecoration(color: todaySelected ? Colors.white : categoryColor(subscriptions.first.category), shape: BoxShape.circle)),
+                        const SizedBox(height: V16Space.xxs),
+                        Container(
+                          width: 5,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color:
+                                todaySelected
+                                    ? Colors.white
+                                    : categoryColor(
+                                      subscriptions.first.category,
+                                    ),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
                       ],
                     ],
                   ),
@@ -383,45 +630,72 @@ class _CalendarGrid extends StatelessWidget {
 }
 
 class _CalendarPayment extends StatelessWidget {
-  final int day;
+  final DateTime date;
   final Subscription subscription;
 
-  const _CalendarPayment({required this.day, required this.subscription});
+  const _CalendarPayment({required this.date, required this.subscription});
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    return CupertinoButton(
-      onPressed: () => showSubscriptionDetails(context, subscription),
-      padding: EdgeInsets.zero,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(13),
-        decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(20), border: Border.all(color: p.stroke)),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(color: p.accentSoft, borderRadius: BorderRadius.circular(13)),
-              child: Text('$day', style: TextStyle(color: p.accent, fontWeight: FontWeight.w900)),
+    final day = date.day;
+    return AppCard(
+      onTap: () => showSubscriptionDetails(context, subscription),
+      padding: const EdgeInsets.all(V16Space.md),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: p.accentSoft,
+              borderRadius: BorderRadius.circular(V16Radius.compact),
             ),
-            const SizedBox(width: 10),
-            ServiceAvatar(name: subscription.name, emoji: subscription.emoji, manageUrl: subscription.manageUrl, iconUrl: subscription.iconUrl, tint: categoryColor(subscription.category), size: 40),
-            const SizedBox(width: 10),
-            Expanded(child: Text(subscription.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: V15Type.label))),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 92),
-              child: Text(
-                fmtMoneyWithCurrency(subscription.price, subscription.currency),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: p.accent, fontWeight: FontWeight.w900, fontSize: V15Type.labelSmall),
+            child: Text(
+              '$day',
+              style: TextStyle(color: p.accent, fontWeight: V16Type.semibold),
+            ),
+          ),
+          const SizedBox(width: V16Space.sm),
+          ServiceAvatar(
+            name: subscription.name,
+            emoji: subscription.emoji,
+            manageUrl: subscription.manageUrl,
+            iconUrl: subscription.iconUrl,
+            tint: categoryColor(subscription.category),
+            size: 40,
+          ),
+          const SizedBox(width: V16Space.sm),
+          Expanded(
+            child: Text(
+              subscription.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: p.text,
+                fontWeight: V16Type.semibold,
+                fontSize: V16Type.label,
               ),
             ),
-          ],
-        ),
+          ),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 92),
+            child: Text(
+              fmtMoneyWithCurrency(
+                subscription.priceAt(date),
+                subscription.currency,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: p.accent,
+                fontWeight: V16Type.semibold,
+                fontSize: V16Type.labelSmall,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -432,17 +706,10 @@ class _CalendarEmpty extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final p = context.palette;
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: p.surfaceAlt, borderRadius: BorderRadius.circular(18)),
-      child: Row(
-        children: [
-          Icon(CupertinoIcons.calendar_badge_minus, color: p.textMuted),
-          const SizedBox(width: 10),
-          Expanded(child: Text(tr('ui_d880c697cfa5'), style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall))),
-        ],
-      ),
+    return AppEmptyState(
+      icon: CupertinoIcons.calendar_badge_minus,
+      title: tr('ui_cfe0939cd3d2'),
+      description: tr('ui_d880c697cfa5'),
     );
   }
 }

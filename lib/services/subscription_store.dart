@@ -18,11 +18,9 @@ import 'cloud_sync.dart';
 import 'secure_data_codec.dart';
 
 class SubscriptionStore extends ChangeNotifier {
-  SubscriptionStore._({
-    SecureDataCodec? dataCodec,
-    SecureKeyStore? secretStore,
-  })  : _dataCodec = dataCodec ?? SecureDataCodec(),
-        _secretStore = secretStore ?? const IosSecureKeyStore();
+  SubscriptionStore._({SecureDataCodec? dataCodec, SecureKeyStore? secretStore})
+    : _dataCodec = dataCodec ?? SecureDataCodec(),
+      _secretStore = secretStore ?? const IosSecureKeyStore();
 
   @visibleForTesting
   SubscriptionStore.testing({
@@ -190,21 +188,18 @@ class SubscriptionStore extends ChangeNotifier {
     await prefs.remove(_legacySubsKey);
     // إعادة جدولة الإشعارات مع كل تغيير (لا ننتظرها).
     // ignore: unawaited_futures
-    NotificationService.instance
-        .rescheduleAll(
-          _items,
-          enabled: _notificationsEnabled,
-          privateContent: _privateNotifications,
-        );
+    NotificationService.instance.rescheduleAll(
+      _items,
+      enabled: _notificationsEnabled,
+      privateContent: _privateNotifications,
+    );
     // مزامنة سحابية مؤجلة إن كان المستخدم مسجلًا.
     CloudSync.schedulePush();
   }
 
   void _ensureWritable() {
     if (!_storageHealthy) {
-      throw SecureDataException(
-        _storageError ?? tr('secureStorageLocked'),
-      );
+      throw SecureDataException(_storageError ?? tr('secureStorageLocked'));
     }
   }
 
@@ -267,12 +262,11 @@ class SubscriptionStore extends ChangeNotifier {
     _notificationsEnabled = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_notifKey, value);
-    await NotificationService.instance
-        .rescheduleAll(
-          _items,
-          enabled: value,
-          privateContent: _privateNotifications,
-        );
+    await NotificationService.instance.rescheduleAll(
+      _items,
+      enabled: value,
+      privateContent: _privateNotifications,
+    );
     notifyListeners();
   }
 
@@ -300,8 +294,7 @@ class SubscriptionStore extends ChangeNotifier {
           ...old.priceHistory,
           PriceChange(oldPrice: old.price, changedAt: DateTime.now()),
         ];
-      } else if (sub.priceHistory.isEmpty &&
-          old.priceHistory.isNotEmpty) {
+      } else if (sub.priceHistory.isEmpty && old.priceHistory.isNotEmpty) {
         sub.priceHistory = old.priceHistory;
       }
       // النماذج القديمة لا تحمل إحصائيات الاستخدام، فلا نفقدها عند التعديل.
@@ -352,7 +345,11 @@ class SubscriptionStore extends ChangeNotifier {
         .map((s) => s.name)
         .toList();
     if (names.isEmpty || _aiApiKey.trim().isEmpty) return 0;
-    final categories = await AiExtractor.classifyNames(names, _aiApiKey, providerId: _aiProvider);
+    final categories = await AiExtractor.classifyNames(
+      names,
+      _aiApiKey,
+      providerId: _aiProvider,
+    );
     var changed = 0;
     for (final sub in _items) {
       final category = categories[sub.name];
@@ -536,8 +533,7 @@ class SubscriptionStore extends ChangeNotifier {
   List<Subscription> get active =>
       _items.where((s) => !s.isPaused && !s.isCompleted()).toList();
 
-  List<Subscription> get paused =>
-      _items.where((s) => s.isPaused).toList();
+  List<Subscription> get paused => _items.where((s) => s.isPaused).toList();
 
   /// إجمالي شهري لكل عملة (النشطة فقط).
   Map<String, double> monthlyTotals() {
@@ -577,12 +573,12 @@ class SubscriptionStore extends ChangeNotifier {
 
   /// التجديدات القادمة خلال [withinDays] يومًا، مرتبة بالأقرب.
   List<Subscription> upcoming({int withinDays = 30, DateTime? from}) {
-    final list = active
-        .where((s) => s.daysUntilRenewal(from) <= withinDays)
-        .toList()
-      ..sort(
-        (a, b) => a.daysUntilRenewal(from).compareTo(b.daysUntilRenewal(from)),
-      );
+    final list =
+        active.where((s) => s.daysUntilRenewal(from) <= withinDays).toList()
+          ..sort(
+            (a, b) =>
+                a.daysUntilRenewal(from).compareTo(b.daysUntilRenewal(from)),
+          );
     return list;
   }
 
@@ -598,7 +594,7 @@ class SubscriptionStore extends ChangeNotifier {
       final d = DateTime(ref.year, ref.month - i, 1);
       var total = 0.0;
       for (final s in _items.where((s) => s.currency == currency)) {
-        total += s.paymentsInMonth(d.year, d.month) * s.price;
+        total += s.spendingInMonth(d.year, d.month);
       }
       out.add(MapEntry(localizedDate(d, skeleton: 'MMM'), total));
     }

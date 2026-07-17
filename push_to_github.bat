@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=15.3.1"
-set "COMMIT_MESSAGE=v15.3.1+43: run REST-first cloud sync for internal iOS builds"
+set "RELEASE_VERSION=16.0.0"
+set "COMMIT_MESSAGE=v16.0.0+44: ship Gulf Aurora design system and financial fixes"
 
 git init
 git config user.name "basilsa77"

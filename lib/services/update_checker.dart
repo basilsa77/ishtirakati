@@ -2,35 +2,39 @@
 /// ويخبر المستخدم إن توفرت نسخة أجدد من المثبتة لديه.
 library;
 
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../l10n/app_localizations.dart';
 
 /// نسخة التطبيق الحالية — تُحدَّث مع كل إصدار.
-const String kAppVersion = '15.3.1';
-const String kAppBuildNumber = '43';
+const String kAppVersion = '16.0.0';
+const String kAppBuildNumber = '44';
 const String kAppBuildLabel = '$kAppVersion ($kAppBuildNumber)';
 const String kGitCommit = String.fromEnvironment(
   'GIT_COMMIT',
   defaultValue: 'local',
 );
-String get kGitCommitShort => kGitCommit.length <= 7
-    ? kGitCommit
-    : kGitCommit.substring(0, 7);
+String get kGitCommitShort =>
+    kGitCommit.length <= 7 ? kGitCommit : kGitCommit.substring(0, 7);
 String get kAppBuildMode => kReleaseMode
     ? tr('buildRelease')
     : kProfileMode
-        ? tr('buildProfile')
-        : tr('buildDebug');
+    ? tr('buildProfile')
+    : tr('buildDebug');
 
 const String _pubspecUrl =
     'https://raw.githubusercontent.com/basilsa77/ishtirakati/main/pubspec.yaml';
+const int _maxPubspecBytes = 16 * 1024;
 
 /// يستخرج "X.Y.Z" من محتوى pubspec — دالة نقية قابلة للاختبار.
 String? extractVersion(String pubspecContent) {
-  final m = RegExp(r'^version:\s*(\d+\.\d+\.\d+)', multiLine: true)
-      .firstMatch(pubspecContent);
+  final m = RegExp(
+    r'^version:\s*(\d+\.\d+\.\d+)',
+    multiLine: true,
+  ).firstMatch(pubspecContent);
   return m?.group(1);
 }
 
@@ -59,8 +63,10 @@ class UpdateChecker {
       final res = await http
           .get(Uri.parse(_pubspecUrl))
           .timeout(const Duration(seconds: 10));
-      if (res.statusCode != 200) return;
-      final remote = extractVersion(res.body);
+      if (res.statusCode != 200 || res.bodyBytes.length > _maxPubspecBytes) {
+        return;
+      }
+      final remote = extractVersion(utf8.decode(res.bodyBytes));
       if (remote != null && isNewerVersion(remote, kAppVersion)) {
         newVersion.value = remote;
       }

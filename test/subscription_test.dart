@@ -46,14 +46,8 @@ void main() {
         cycle: BillingCycle.monthly,
         anchor: DateTime(2026, 1, 31),
       );
-      expect(
-        s.nextRenewal(DateTime(2026, 2, 10)),
-        DateTime(2026, 2, 28),
-      );
-      expect(
-        s.nextRenewal(DateTime(2026, 3, 1)),
-        DateTime(2026, 3, 31),
-      );
+      expect(s.nextRenewal(DateTime(2026, 2, 10)), DateTime(2026, 2, 28));
+      expect(s.nextRenewal(DateTime(2026, 3, 1)), DateTime(2026, 3, 31));
     });
 
     test('التجديد اليوم يُحسب اليوم وليس الدورة القادمة', () {
@@ -61,22 +55,13 @@ void main() {
         cycle: BillingCycle.monthly,
         anchor: DateTime(2026, 1, 15),
       );
-      expect(
-        s.nextRenewal(DateTime(2026, 3, 15)),
-        DateTime(2026, 3, 15),
-      );
+      expect(s.nextRenewal(DateTime(2026, 3, 15)), DateTime(2026, 3, 15));
       expect(s.daysUntilRenewal(DateTime(2026, 3, 15)), 0);
     });
 
     test('تاريخ بداية في المستقبل يُعاد كما هو', () {
-      final s = _sub(
-        cycle: BillingCycle.monthly,
-        anchor: DateTime(2027, 5, 1),
-      );
-      expect(
-        s.nextRenewal(DateTime(2026, 7, 7)),
-        DateTime(2027, 5, 1),
-      );
+      final s = _sub(cycle: BillingCycle.monthly, anchor: DateTime(2027, 5, 1));
+      expect(s.nextRenewal(DateTime(2026, 7, 7)), DateTime(2027, 5, 1));
     });
 
     test('أسبوعي: يقفز بمضاعفات ٧ أيام من نقطة البداية', () {
@@ -84,21 +69,12 @@ void main() {
         cycle: BillingCycle.weekly,
         anchor: DateTime(2026, 7, 1), // الأربعاء
       );
-      expect(
-        s.nextRenewal(DateTime(2026, 7, 7)),
-        DateTime(2026, 7, 8),
-      );
+      expect(s.nextRenewal(DateTime(2026, 7, 7)), DateTime(2026, 7, 8));
     });
 
     test('سنوي: من 2024-02-29 إلى 2025-02-28', () {
-      final s = _sub(
-        cycle: BillingCycle.yearly,
-        anchor: DateTime(2024, 2, 29),
-      );
-      expect(
-        s.nextRenewal(DateTime(2024, 6, 1)),
-        DateTime(2025, 2, 28),
-      );
+      final s = _sub(cycle: BillingCycle.yearly, anchor: DateTime(2024, 2, 29));
+      expect(s.nextRenewal(DateTime(2024, 6, 1)), DateTime(2025, 2, 28));
     });
   });
 
@@ -169,12 +145,27 @@ void main() {
     });
 
     test('بداية مستقبلية: صفر دفعات', () {
-      final s = _sub(
-        cycle: BillingCycle.yearly,
-        anchor: DateTime(2027, 1, 1),
-      );
+      final s = _sub(cycle: BillingCycle.yearly, anchor: DateTime(2027, 1, 1));
       expect(s.paymentsMade(DateTime(2026, 7, 7)), 0);
       expect(s.totalSpent(DateTime(2026, 7, 7)), 0);
+    });
+
+    test('إجمالي المدفوع يستخدم السعر التاريخي لكل دفعة', () {
+      final s =
+          _sub(
+              cycle: BillingCycle.monthly,
+              anchor: DateTime(2026, 1, 15),
+              price: 80,
+            )
+            ..priceHistory = [
+              PriceChange(oldPrice: 50, changedAt: DateTime(2026, 3, 1)),
+            ];
+
+      expect(s.priceAt(DateTime(2026, 2, 15)), 50);
+      expect(s.priceAt(DateTime(2026, 3, 15)), 80);
+      expect(s.spendingInMonth(2026, 2), 50);
+      expect(s.spendingInMonth(2026, 3), 80);
+      expect(s.totalSpent(DateTime(2026, 4, 20)), closeTo(260, 0.001));
     });
   });
 }

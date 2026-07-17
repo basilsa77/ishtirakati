@@ -23,12 +23,12 @@ Future<T?> showIosPicker<T>({
             child: Row(
               children: [
                 SizedBox(
-                  width: 24,
+                  width: V16Space.lg,
                   child: value == selected
                       ? const Icon(CupertinoIcons.check_mark, size: 18)
                       : null,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: V16Space.xs),
                 Expanded(child: Text(label(value), textAlign: TextAlign.start)),
               ],
             ),
@@ -96,35 +96,50 @@ class IosPickerRow extends StatelessWidget {
         child: Container(
           width: double.infinity,
           constraints: const BoxConstraints(minHeight: 58),
-          padding: const EdgeInsetsDirectional.fromSTEB(14, 9, 12, 9),
+          padding: const EdgeInsetsDirectional.fromSTEB(
+            V16Space.md,
+            V16Space.xs,
+            V16Space.sm,
+            V16Space.xs,
+          ),
           decoration: BoxDecoration(
             color: p.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(V16Radius.standard),
             border: Border.all(color: p.stroke),
           ),
           child: Row(
             children: [
               if (icon != null) ...[
                 Icon(icon, color: p.accent, size: 20),
-                const SizedBox(width: 10),
+                const SizedBox(width: V16Space.sm),
               ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(label, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
-                    const SizedBox(height: 2),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: p.textMuted,
+                        fontSize: V16Type.caption,
+                      ),
+                    ),
+                    const SizedBox(height: V16Space.xxs),
                     Text(
                       value,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: p.text, fontSize: V15Type.bodySmall, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        color: p.text,
+                        fontSize: V16Type.bodySmall,
+                        fontWeight: V16Type.semibold,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: V16Space.xs),
               Icon(CupertinoIcons.chevron_left, color: p.textMuted, size: 17),
             ],
           ),
@@ -173,8 +188,18 @@ class IosTextField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsetsDirectional.only(start: 3, bottom: 6),
-          child: Text(label, style: TextStyle(color: p.textMuted, fontSize: V15Type.labelSmall, fontWeight: FontWeight.w600)),
+          padding: const EdgeInsetsDirectional.only(
+            start: V16Space.xxs,
+            bottom: V16Space.xs,
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: p.textMuted,
+              fontSize: V16Type.labelSmall,
+              fontWeight: V16Type.semibold,
+            ),
+          ),
         ),
         CupertinoTextField(
           controller: controller,
@@ -190,12 +215,18 @@ class IosTextField extends StatelessWidget {
           suffix: suffix,
           onSubmitted: onSubmitted,
           clearButtonMode: OverlayVisibilityMode.editing,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-          style: TextStyle(color: p.text, fontSize: V15Type.body),
-          placeholderStyle: TextStyle(color: p.textMuted, fontSize: V15Type.body),
+          padding: const EdgeInsets.symmetric(
+            horizontal: V16Space.md,
+            vertical: V16Space.sm,
+          ),
+          style: TextStyle(color: p.text, fontSize: V16Type.body),
+          placeholderStyle: TextStyle(
+            color: p.textMuted,
+            fontSize: V16Type.body,
+          ),
           decoration: BoxDecoration(
             color: p.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(V16Radius.standard),
             border: Border.all(color: p.stroke),
           ),
         ),
@@ -204,40 +235,93 @@ class IosTextField extends StatelessWidget {
   }
 }
 
+enum IosStatusTone { info, success, queued, error }
+
 class IosStatusNotice extends StatelessWidget {
   final String message;
   final bool error;
+  final IosStatusTone tone;
   final VoidCallback? onRetry;
 
   const IosStatusNotice({
     super.key,
     required this.message,
     this.error = false,
+    this.tone = IosStatusTone.success,
     this.onRetry,
   });
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    final color = error ? p.danger : p.accent;
-    final background = error ? p.dangerSoft : p.accentSoft;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 10, 10),
-      decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(12)),
-      child: Row(
-        children: [
-          Icon(error ? CupertinoIcons.exclamationmark_circle : CupertinoIcons.check_mark_circled, color: color, size: 19),
-          const SizedBox(width: 9),
-          Expanded(child: Text(message, style: TextStyle(color: color, fontSize: V15Type.labelSmall, fontWeight: FontWeight.w600))),
-          if (onRetry != null)
-            CupertinoButton(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              minimumSize: const Size(32, 32),
-              onPressed: onRetry,
-              child: Text(tr('ui_14d5786f2e64'), style: const TextStyle(fontSize: V15Type.labelSmall)),
+    final effectiveTone = error ? IosStatusTone.error : tone;
+    final (color, background, icon) = switch (effectiveTone) {
+      IosStatusTone.info => (
+        p.isDark ? V16Colors.blueNight : V16Colors.blueDeep,
+        (p.isDark ? V16Colors.blueNight : V16Colors.blueDeep).withValues(
+          alpha: .12,
+        ),
+        CupertinoIcons.info_circle,
+      ),
+      IosStatusTone.success => (
+        p.accent,
+        p.accentSoft,
+        CupertinoIcons.check_mark_circled,
+      ),
+      IosStatusTone.queued => (p.warning, p.warningSoft, CupertinoIcons.clock),
+      IosStatusTone.error => (
+        p.danger,
+        p.dangerSoft,
+        CupertinoIcons.exclamationmark_circle,
+      ),
+    };
+    return Semantics(
+      liveRegion: true,
+      label: message,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsetsDirectional.fromSTEB(
+          V16Space.sm,
+          V16Space.xs,
+          V16Space.xs,
+          V16Space.xs,
+        ),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(V16Radius.standard),
+          border: Border.all(color: color.withValues(alpha: .2)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 19),
+            const SizedBox(width: V16Space.xs),
+            Expanded(
+              child: ExcludeSemantics(
+                child: Text(
+                  message,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: V16Type.labelSmall,
+                    fontWeight: V16Type.semibold,
+                  ),
+                ),
+              ),
             ),
-        ],
+            if (onRetry != null)
+              CupertinoButton(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: V16Space.xs,
+                  vertical: V16Space.xxs,
+                ),
+                minimumSize: const Size(32, 32),
+                onPressed: onRetry,
+                child: Text(
+                  tr('ui_14d5786f2e64'),
+                  style: const TextStyle(fontSize: V16Type.labelSmall),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

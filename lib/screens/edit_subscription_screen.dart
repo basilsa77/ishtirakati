@@ -22,8 +22,7 @@ class EditSubscriptionScreen extends StatefulWidget {
   const EditSubscriptionScreen({super.key, this.existing});
 
   @override
-  State<EditSubscriptionScreen> createState() =>
-      _EditSubscriptionScreenState();
+  State<EditSubscriptionScreen> createState() => _EditSubscriptionScreenState();
 }
 
 class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
@@ -69,9 +68,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     super.initState();
     final e = widget.existing;
     _name = TextEditingController(text: e?.name ?? '');
-    _price = TextEditingController(
-      text: e == null ? '' : e.price.toString(),
-    );
+    _price = TextEditingController(text: e == null ? '' : e.price.toString());
     _notes = TextEditingController(text: e?.notes ?? '');
     _url = TextEditingController(text: e?.manageUrl ?? '');
     _emoji = e?.emoji ?? '🔖';
@@ -89,8 +86,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
       _reminderDays = 3;
     }
     _trialOn = e?.trialEndDate != null;
-    _trialEnd =
-        e?.trialEndDate ?? DateTime.now().add(const Duration(days: 7));
+    _trialEnd = e?.trialEndDate ?? DateTime.now().add(const Duration(days: 7));
     _isFamily = e?.isFamily ?? false;
     _autoRenews = e?.autoRenews ?? true;
     _isEssential = e?.isEssential ?? false;
@@ -133,8 +129,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     setState(() {
       _name.text = r.name;
       _emoji = r.emoji;
-      _category =
-          kCategories.contains(r.category) ? r.category : 'أخرى';
+      _category = kCategories.contains(r.category) ? r.category : 'أخرى';
       if (_url.text.trim().isEmpty) _url.text = r.manageUrl;
       if (_price.text.trim().isEmpty && r.priceHint != null) {
         _price.text = r.priceHint.toString();
@@ -145,100 +140,104 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   Future<void> _openPresetPicker() async {
     await showCupertinoModalPopup<void>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(ctx).height * .78),
-          child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-               Text(
-                tr('ui_b0ae1da4a56b'),
-                style: TextStyle(
-                  fontSize: V15Type.titleSmall,
-                  fontWeight: FontWeight.w900,
-                  color: ctx.palette.text,
+      builder:
+          (ctx) => SafeArea(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(ctx).height * .78,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tr('ui_b0ae1da4a56b'),
+                      style: TextStyle(
+                        fontSize: V16Type.titleSmall,
+                        fontWeight: V16Type.semibold,
+                        color: ctx.palette.text,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            // خدمات القاعدة المحدّثة عن بُعد (بأسعار تقريبية).
+                            for (final r in RemoteCatalog.instance.services)
+                              InkWell(
+                                borderRadius: BorderRadius.circular(14),
+                                onTap: () {
+                                  _applyRemote(r);
+                                  Navigator.pop(ctx);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 9,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: ctx.palette.accentSoft,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: ctx.palette.accentStrong,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    r.priceHint == null
+                                        ? '${r.emoji} ${r.name}'
+                                        : '${r.emoji} ${r.name} • ${fmtMoney(r.priceHint!, 'SAR')}',
+                                    style: TextStyle(
+                                      fontWeight: V16Type.semibold,
+                                      fontSize: V16Type.label,
+                                      color: ctx.palette.text,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            for (final p in kPresets)
+                              if (RemoteCatalog.instance.byName(p.name) == null)
+                                InkWell(
+                                  borderRadius: BorderRadius.circular(14),
+                                  onTap: () {
+                                    _applyPreset(p);
+                                    Navigator.pop(ctx);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 9,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: ctx.palette.surfaceAlt,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: ctx.palette.stroke,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '${p.emoji} ${p.name}',
+                                      style: TextStyle(
+                                        fontWeight: V16Type.semibold,
+                                        fontSize: V16Type.label,
+                                        color: ctx.palette.text,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              Flexible(
-                child: SingleChildScrollView(
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      // خدمات القاعدة المحدّثة عن بُعد (بأسعار تقريبية).
-                      for (final r in RemoteCatalog.instance.services)
-                        InkWell(
-                          borderRadius: BorderRadius.circular(14),
-                          onTap: () {
-                            _applyRemote(r);
-                            Navigator.pop(ctx);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 9,
-                            ),
-                            decoration: BoxDecoration(
-                              color: ctx.palette.accentSoft,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: ctx.palette.accentStrong,
-                              ),
-                            ),
-                            child: Text(
-                              r.priceHint == null
-                                  ? '${r.emoji} ${r.name}'
-                                  : '${r.emoji} ${r.name} • ${fmtMoney(r.priceHint!, 'SAR')}',
-                               style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: V15Type.label,
-                                color: ctx.palette.text,
-                              ),
-                            ),
-                          ),
-                        ),
-                      for (final p in kPresets)
-                        if (RemoteCatalog.instance.byName(p.name) == null)
-                        InkWell(
-                          borderRadius: BorderRadius.circular(14),
-                          onTap: () {
-                            _applyPreset(p);
-                            Navigator.pop(ctx);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 9,
-                            ),
-                            decoration: BoxDecoration(
-                              color: ctx.palette.surfaceAlt,
-                              borderRadius: BorderRadius.circular(14),
-                              border:
-                                  Border.all(color: ctx.palette.stroke),
-                            ),
-                            child: Text(
-                              '${p.emoji} ${p.name}',
-                               style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: V15Type.label,
-                                color: ctx.palette.text,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -253,36 +252,43 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     var selected = initial;
     return showCupertinoModalPopup<DateTime>(
       context: context,
-      builder: (sheetContext) => Container(
-        height: 330,
-        color: sheetContext.palette.surface,
-        child: SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              Row(
+      builder:
+          (sheetContext) => Container(
+            height: 330,
+            color: sheetContext.palette.surface,
+            child: SafeArea(
+              top: false,
+              child: Column(
                 children: [
-                  CupertinoButton(onPressed: () => Navigator.pop(sheetContext), child: Text(tr('ui_9a30dc2a96b8'))),
-                  const Spacer(),
-                  CupertinoButton(
-                    onPressed: () => Navigator.pop(sheetContext, selected),
-                    child: Text(tr('ui_3ef541b90a31'), style: const TextStyle(fontWeight: FontWeight.w700)),
+                  Row(
+                    children: [
+                      CupertinoButton(
+                        onPressed: () => Navigator.pop(sheetContext),
+                        child: Text(tr('ui_9a30dc2a96b8')),
+                      ),
+                      const Spacer(),
+                      CupertinoButton(
+                        onPressed: () => Navigator.pop(sheetContext, selected),
+                        child: Text(
+                          tr('ui_3ef541b90a31'),
+                          style: const TextStyle(fontWeight: V16Type.semibold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Expanded(
+                    child: CupertinoDatePicker(
+                      mode: CupertinoDatePickerMode.date,
+                      initialDateTime: initial,
+                      minimumDate: DateTime(2015),
+                      maximumDate: DateTime(2100),
+                      onDateTimeChanged: (value) => selected = value,
+                    ),
                   ),
                 ],
               ),
-              Expanded(
-                child: CupertinoDatePicker(
-                  mode: CupertinoDatePickerMode.date,
-                  initialDateTime: initial,
-                  minimumDate: DateTime(2015),
-                  maximumDate: DateTime(2100),
-                  onDateTimeChanged: (value) => selected = value,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -305,70 +311,94 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     }
     await showCupertinoModalPopup<void>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(ctx).height * .78),
-          child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-               Text(
-                tr('ui_9c9b613d8fbc'),
-                style: TextStyle(
-                  fontSize: V15Type.titleSmall,
-                  fontWeight: FontWeight.w900,
-                  color: ctx.palette.text,
+      builder:
+          (ctx) => SafeArea(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(ctx).height * .78,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tr('ui_9c9b613d8fbc'),
+                      style: TextStyle(
+                        fontSize: V16Type.titleSmall,
+                        fontWeight: V16Type.semibold,
+                        color: ctx.palette.text,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    for (final r in results.take(5))
+                      CupertinoButton(
+                        padding: const EdgeInsets.symmetric(vertical: 7),
+                        onPressed: () {
+                          setState(() {
+                            _name.text = r.name;
+                            _iconUrl = r.iconUrl;
+                          });
+                          Navigator.pop(ctx);
+                        },
+                        child: Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child:
+                                  r.iconUrl.isEmpty
+                                      ? const SizedBox(width: 44, height: 44)
+                                      : Image.network(
+                                        r.iconUrl,
+                                        width: 44,
+                                        height: 44,
+                                        errorBuilder:
+                                            (_, __, ___) => const SizedBox(
+                                              width: 44,
+                                              height: 44,
+                                            ),
+                                      ),
+                            ),
+                            const SizedBox(width: 11),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    r.name,
+                                    style: TextStyle(
+                                      color: ctx.palette.text,
+                                      fontWeight: V16Type.semibold,
+                                      fontSize: V16Type.bodySmall,
+                                    ),
+                                  ),
+                                  if (r.seller.isNotEmpty) ...[
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      r.seller,
+                                      style: TextStyle(
+                                        color: ctx.palette.textMuted,
+                                        fontSize: V16Type.caption,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              CupertinoIcons.chevron_left,
+                              color: ctx.palette.textMuted,
+                              size: 17,
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              for (final r in results.take(5))
-                CupertinoButton(
-                  padding: const EdgeInsets.symmetric(vertical: 7),
-                  onPressed: () {
-                    setState(() {
-                      _name.text = r.name;
-                      _iconUrl = r.iconUrl;
-                    });
-                    Navigator.pop(ctx);
-                  },
-                  child: Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: r.iconUrl.isEmpty
-                            ? const SizedBox(width: 44, height: 44)
-                            : Image.network(
-                                r.iconUrl,
-                                width: 44,
-                                height: 44,
-                                errorBuilder: (_, __, ___) =>
-                                    const SizedBox(width: 44, height: 44),
-                              ),
-                      ),
-                      const SizedBox(width: 11),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(r.name, style: TextStyle(color: ctx.palette.text, fontWeight: FontWeight.w800, fontSize: V15Type.bodySmall)),
-                        if (r.seller.isNotEmpty) ...[
-                          const SizedBox(height: 3),
-                          Text(r.seller, style: TextStyle(color: ctx.palette.textMuted, fontSize: V15Type.caption)),
-                        ],
-                      ],
-                    ),
-                  ),
-                  Icon(CupertinoIcons.chevron_left, color: ctx.palette.textMuted, size: 17),
-                    ],
-                  ),
-                ),
-            ],
+            ),
           ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -380,12 +410,17 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   Future<void> _save() async {
     final name = _name.text.trim();
     final price = double.tryParse(
-      _price.text.trim().replaceAll(tr('ui_bc4d631526af'), '.').replaceAll(',', '.'),
+      _price.text
+          .trim()
+          .replaceAll(tr('ui_bc4d631526af'), '.')
+          .replaceAll(',', '.'),
     );
     if (name.isEmpty || price == null || price <= 0) {
-      setState(() => _formError = name.isEmpty
-          ? tr('ui_b045235121d4')
-          : tr('ui_1a28a98d1b31'));
+      setState(
+        () =>
+            _formError =
+                name.isEmpty ? tr('ui_b045235121d4') : tr('ui_1a28a98d1b31'),
+      );
       return;
     }
     final manageUrl = _normalizedManageUrl(_url.text.trim());
@@ -394,7 +429,8 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
       return;
     }
     final sub = Subscription(
-      id: widget.existing?.id ??
+      id:
+          widget.existing?.id ??
           DateTime.now().microsecondsSinceEpoch.toString(),
       name: _name.text.trim(),
       emoji: _emoji.trim().isEmpty ? '🔖' : _emoji.trim(),
@@ -418,9 +454,10 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
       lastReviewedAt: widget.existing?.lastReviewedAt,
       iconUrl: _iconUrl,
       kind: _kind,
-      totalInstallments: _kind == PaymentKind.installment
-          ? int.tryParse(_installments.text.trim())
-          : null,
+      totalInstallments:
+          _kind == PaymentKind.installment
+              ? int.tryParse(_installments.text.trim())
+              : null,
     );
     await SubscriptionStore.instance.upsert(sub);
     HapticFeedback.mediumImpact();
@@ -443,16 +480,16 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   }
 
   String _paymentLabel(String value) => switch (value) {
-        'غير محدد' => tr('ui_dd9f417e000b'),
-        'بطاقة مدى' => tr('ui_b5f0807ace71'),
-        'بطاقة ائتمانية' => tr('ui_eba8a86b7df5'),
-        'Apple Pay' => 'Apple Pay',
-        'STC Pay' => 'STC Pay',
-        'PayPal' => 'PayPal',
-        'رصيد المتجر' => tr('ui_71467661edb7'),
-        'أخرى' => tr('ui_46537a09b0bd'),
-        _ => value,
-      };
+    'غير محدد' => tr('ui_dd9f417e000b'),
+    'بطاقة مدى' => tr('ui_b5f0807ace71'),
+    'بطاقة ائتمانية' => tr('ui_eba8a86b7df5'),
+    'Apple Pay' => 'Apple Pay',
+    'STC Pay' => 'STC Pay',
+    'PayPal' => 'PayPal',
+    'رصيد المتجر' => tr('ui_71467661edb7'),
+    'أخرى' => tr('ui_46537a09b0bd'),
+    _ => value,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -469,40 +506,80 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
         child: Form(
           key: _formKey,
           child: ListView(
-            keyboardDismissBehavior:
-                ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: const EdgeInsetsDirectional.fromSTEB(
+              V16Space.ml,
+              V16Space.md,
+              V16Space.ml,
+              V16Space.xl,
+            ),
             children: [
-              CupertinoSlidingSegmentedControl<PaymentKind>(
-                groupValue: _kind,
-                backgroundColor: p.surface,
-                thumbColor: p.accent,
-                children: {
-                  for (final kind in PaymentKind.values)
-                    kind: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        localizedPaymentKind(kind.name),
-                        style: TextStyle(
-                          color: _kind == kind ? Colors.white : p.textMuted,
-                          fontWeight: FontWeight.w800,
-                          fontSize: V15Type.labelSmall,
-                        ),
+              AppPageIntro(
+                title:
+                    isEditing ? tr('ui_f6005bd9a851') : tr('ui_1d2163f7ccc0'),
+              ),
+              const SizedBox(height: V16Space.md),
+              AppCard(
+                tone: AppCardTone.muted,
+                elevated: false,
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: CupertinoSlidingSegmentedControl<PaymentKind>(
+                        groupValue: _kind,
+                        backgroundColor: p.surface,
+                        thumbColor: p.accentStrong,
+                        children: {
+                          for (final kind in PaymentKind.values)
+                            kind: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: V16Space.xs,
+                              ),
+                              child: Text(
+                                localizedPaymentKind(kind.name),
+                                style: TextStyle(
+                                  color:
+                                      _kind == kind
+                                          ? V16Colors.white
+                                          : p.textMuted,
+                                  fontWeight: V16Type.semibold,
+                                  fontSize: V16Type.labelSmall,
+                                ),
+                              ),
+                            ),
+                        },
+                        onValueChanged: (value) {
+                          if (value != null) {
+                            setState(() => _kind = value);
+                          }
+                        },
                       ),
                     ),
-                },
-                onValueChanged: (value) {
-                  if (value != null) setState(() => _kind = value);
-                },
-              ),
-              const SizedBox(height: 14),
-              if (!isEditing && _kind == PaymentKind.subscription)
-                CupertinoButton(
-                  color: p.accentSoft,
-                  onPressed: _openPresetPicker,
-                  child: Text(tr('ui_d44a8c5f24e0')),
+                    if (!isEditing && _kind == PaymentKind.subscription) ...[
+                      const SizedBox(height: V16Space.sm),
+                      SizedBox(
+                        width: double.infinity,
+                        child: CupertinoButton(
+                          color: p.accentSoft,
+                          borderRadius: BorderRadius.circular(
+                            V16Radius.standard,
+                          ),
+                          onPressed: _openPresetPicker,
+                          child: Text(
+                            tr('ui_d44a8c5f24e0'),
+                            style: TextStyle(
+                              color: p.accentStrong,
+                              fontWeight: V16Type.semibold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              const SizedBox(height: 14),
+              ),
+              const SizedBox(height: V16Space.md),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -525,12 +602,13 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                       textInputAction: TextInputAction.next,
                       placeholder: tr('ui_a9ad2049b6fc'),
                       suffix: CupertinoButton(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          onPressed: _searching ? null : _smartSearch,
-                          child: _searching
-                              ? const CupertinoActivityIndicator()
-                              : const Icon(CupertinoIcons.search, size: 20),
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        onPressed: _searching ? null : _smartSearch,
+                        child:
+                            _searching
+                                ? const CupertinoActivityIndicator()
+                                : const Icon(CupertinoIcons.search, size: 20),
+                      ),
                     ),
                   ),
                 ],
@@ -565,7 +643,9 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                           values: currencySymbols.keys.toList(),
                           label: (value) => '${currencySymbols[value]}  $value',
                         );
-                        if (selected != null) setState(() => _currency = selected);
+                        if (selected != null) {
+                          setState(() => _currency = selected);
+                        }
                       },
                     ),
                   ),
@@ -574,10 +654,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               const SizedBox(height: 16),
               Text(
                 tr('ui_d23a4e4bb3c4'),
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: p.text,
-                ),
+                style: TextStyle(fontWeight: V16Type.semibold, color: p.text),
               ),
               const SizedBox(height: 8),
               SingleChildScrollView(
@@ -588,8 +665,17 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   children: {
                     for (final c in BillingCycle.values)
                       c: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-                        child: Text(localizedBillingCycle(c.name), style: TextStyle(color: p.text, fontWeight: FontWeight.w700)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 7,
+                        ),
+                        child: Text(
+                          localizedBillingCycle(c.name),
+                          style: TextStyle(
+                            color: p.text,
+                            fontWeight: V16Type.semibold,
+                          ),
+                        ),
                       ),
                   },
                   onValueChanged: (value) {
@@ -659,18 +745,20 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                     values: kReminderOptions.keys.toList(),
                     label: (value) => kReminderOptions[value]!,
                   );
-                  if (selected != null) setState(() => _reminderDays = selected);
+                  if (selected != null) {
+                    setState(() => _reminderDays = selected);
+                  }
                 },
               ),
               const SizedBox(height: 8),
               if (_kind == PaymentKind.subscription)
-              _CupertinoSwitchRow(
-                key: const Key('trial-switch-row'),
-                value: _trialOn,
-                onChanged: (v) => setState(() => _trialOn = v),
-                title: tr('ui_b9cd5ab32273'),
-                detail: tr('ui_8388c8ca89cc'),
-              ),
+                _CupertinoSwitchRow(
+                  key: const Key('trial-switch-row'),
+                  value: _trialOn,
+                  onChanged: (v) => setState(() => _trialOn = v),
+                  title: tr('ui_b9cd5ab32273'),
+                  detail: tr('ui_8388c8ca89cc'),
+                ),
               if (_trialOn) ...[
                 IosPickerRow(
                   label: tr('ui_c8d22f8f1c31'),
@@ -700,95 +788,88 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                         tr('ui_761a6a29fab7'),
                         style: TextStyle(
                           color: p.textMuted,
-                          fontSize: V15Type.label,
+                          fontSize: V16Type.label,
                         ),
                       ),
                     ),
                     CupertinoButton(
                       padding: const EdgeInsets.all(8),
-                      onPressed: _famCount <= 2
-                          ? null
-                          : () => setState(() => _famCount--),
-                      child: Icon(
-                        CupertinoIcons.minus_circle,
-                        color: p.accent,
-                      ),
+                      onPressed:
+                          _famCount <= 2
+                              ? null
+                              : () => setState(() => _famCount--),
+                      child: Icon(CupertinoIcons.minus_circle, color: p.accent),
                     ),
                     Text(
                       '$_famCount',
                       style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: V15Type.titleSmall,
+                        fontWeight: V16Type.semibold,
+                        fontSize: V16Type.titleSmall,
                         color: p.text,
                       ),
                     ),
                     CupertinoButton(
                       padding: const EdgeInsets.all(8),
-                      onPressed: _famCount >= 20
-                          ? null
-                          : () => setState(() => _famCount++),
-                      child: Icon(
-                        CupertinoIcons.plus_circle,
-                        color: p.accent,
-                      ),
+                      onPressed:
+                          _famCount >= 20
+                              ? null
+                              : () => setState(() => _famCount++),
+                      child: Icon(CupertinoIcons.plus_circle, color: p.accent),
                     ),
                   ],
                 ),
-              const SizedBox(height: 8),
-              CupertinoFormSection.insetGrouped(
-                backgroundColor: Colors.transparent,
-                header: Text(
-                  tr('ui_52eb86ecb12d'),
-                  style: TextStyle(color: p.textMuted),
+              const SizedBox(height: V16Space.md),
+              Text(
+                tr('ui_52eb86ecb12d'),
+                style: TextStyle(
+                  color: p.textMuted,
+                  fontSize: V16Type.labelSmall,
+                  fontWeight: V16Type.semibold,
                 ),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    child: _CupertinoSwitchRow(
+              ),
+              const SizedBox(height: V16Space.xs),
+              AppCard(
+                elevated: false,
+                padding: const EdgeInsets.all(V16Space.md),
+                child: Column(
+                  children: [
+                    _CupertinoSwitchRow(
                       title: tr('ui_805776c9a492'),
                       detail: tr('ui_d7b5a2799c4c'),
                       value: _autoRenews,
-                      onChanged: (value) =>
-                          setState(() => _autoRenews = value),
+                      onChanged: (value) => setState(() => _autoRenews = value),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    child: _CupertinoSwitchRow(
+                    Divider(height: 1, color: p.stroke),
+                    _CupertinoSwitchRow(
                       title: tr('ui_8fb8496b5a8d'),
                       detail: tr('ui_5bf69c56b1dd'),
                       value: _isEssential,
-                      onChanged: (value) =>
-                          setState(() => _isEssential = value),
+                      onChanged:
+                          (value) => setState(() => _isEssential = value),
                     ),
-                  ),
-                  CupertinoTextFormFieldRow(
-                    key: const Key('plan-name-field'),
-                    controller: _planName,
-                    placeholder: tr('ui_94e61467b1ae'),
-                    style: TextStyle(
-                      color: p.text,
-                      fontSize: V15Type.body,
-                      height: 1.35,
+                    Divider(height: 1, color: p.stroke),
+                    const SizedBox(height: V16Space.sm),
+                    IosTextField(
+                      key: const Key('plan-name-field'),
+                      controller: _planName,
+                      label: tr('ui_94e61467b1ae'),
+                      placeholder: tr('ui_94e61467b1ae'),
+                      textInputAction: TextInputAction.next,
                     ),
-                    placeholderStyle: TextStyle(
-                      color: p.textMuted,
-                      fontSize: V15Type.body,
-                      height: 1.35,
-                    ),
-                    textAlign: TextAlign.end,
-                  ),
-                ],
+                  ],
+                ),
               ),
               if (isEditing)
                 CupertinoButton(
-                  onPressed: () => Navigator.of(context).push(
-                    CupertinoPageRoute(
-                      builder: (_) => PlanComparisonScreen(
-                        subscription: widget.existing!,
+                  onPressed:
+                      () => Navigator.of(context).push(
+                        CupertinoPageRoute(
+                          builder:
+                              (_) => PlanComparisonScreen(
+                                subscription: widget.existing!,
+                              ),
+                        ),
                       ),
-                    ),
-                  ),
                   child: Text(tr('ui_0cfaa1166988')),
                 ),
               const SizedBox(height: 8),
@@ -817,19 +898,28 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                 ),
               ],
               if (_formError != null) ...[
-                const SizedBox(height: 12),
-                IosStatusNotice(message: _formError!, error: true),
+                const SizedBox(height: V16Space.sm),
+                IosStatusNotice(
+                  message: _formError!,
+                  tone: IosStatusTone.error,
+                ),
               ],
-              const SizedBox(height: 18),
+              const SizedBox(height: V16Space.lg),
               CupertinoButton.filled(
                 onPressed: _save,
-                child: Text(isEditing ? tr('ui_6c03d6737c2f') : tr('ui_5c849a4aae0d')),
+                borderRadius: BorderRadius.circular(V16Radius.standard),
+                child: Text(
+                  isEditing ? tr('ui_6c03d6737c2f') : tr('ui_5c849a4aae0d'),
+                ),
               ),
               if (isEditing) ...[
                 const SizedBox(height: 8),
                 CupertinoButton(
                   onPressed: _delete,
-                  child: Text(tr('ui_8a56ced490fc'), style: TextStyle(color: p.danger)),
+                  child: Text(
+                    tr('ui_8a56ced490fc'),
+                    style: TextStyle(color: p.danger),
+                  ),
                 ),
               ],
             ],
@@ -839,6 +929,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     );
   }
 }
+
 class _CupertinoSwitchRow extends StatelessWidget {
   final String title;
   final String detail;
@@ -870,9 +961,9 @@ class _CupertinoSwitchRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: p.text,
-                    fontSize: V15Type.body,
+                    fontSize: V16Type.body,
                     height: 1.3,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: V16Type.semibold,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -882,7 +973,7 @@ class _CupertinoSwitchRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: p.textMuted,
-                    fontSize: V15Type.caption,
+                    fontSize: V16Type.caption,
                     height: 1.35,
                   ),
                 ),
@@ -900,4 +991,3 @@ class _CupertinoSwitchRow extends StatelessWidget {
     );
   }
 }
-

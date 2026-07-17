@@ -1,9 +1,25 @@
+import 'dart:io';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ishtirakati/services/cloud_sync.dart';
 import 'package:ishtirakati/services/firestore_rest_fallback.dart';
 
 void main() {
+  test('revision conflicts fail closed instead of blind pull-then-push', () {
+    final source = File('lib/services/cloud_sync.dart').readAsStringSync();
+    final start = source.indexOf('static Future<CloudSyncResult> syncNow()');
+    final end = source.indexOf('static Future<void> deleteRemoteData()', start);
+    expect(start, greaterThanOrEqualTo(0));
+    expect(end, greaterThan(start));
+    final syncNow = source.substring(start, end);
+    expect(syncNow, isNot(contains('return restoreAndPush()')));
+    expect(
+      syncNow,
+      contains('CloudSyncResult.failed(CloudSyncFailure.conflict)'),
+    );
+  });
+
   group('cloud revision conflict protection', () {
     test('first upload is allowed when no remote document exists', () {
       expect(
@@ -58,52 +74,56 @@ void main() {
       expect(CloudSync.isRetryableFirebaseCode('not-found'), isFalse);
     });
 
-    test('revision zero goes directly to first create without a server probe',
-        () async {
-      var firstCreateCalls = 0;
-      var transactionCalls = 0;
-      final outcome = await CloudSync.writeWithoutPreflightRead(
-        localRevision: 0,
-        firstCreate: () async {
-          firstCreateCalls++;
-          return const CloudSyncWriteOutcome(
-            operation: CloudSyncWriteOperation.firstCreate,
-            documentExisted: false,
-            revision: 1,
-          );
-        },
-        transactionUpdate: () async {
-          transactionCalls++;
-          throw StateError('transaction must not run');
-        },
-      );
-
-      expect(firstCreateCalls, 1);
-      expect(transactionCalls, 0);
-      expect(outcome.operation, CloudSyncWriteOperation.firstCreate);
-      expect(outcome.documentExisted, isFalse);
-      expect(outcome.revision, 1);
-    });
-
-    test('first-create failure is not hidden by a transaction fallback',
-        () async {
-      var transactionCalls = 0;
-      await expectLater(
-        CloudSync.writeWithoutPreflightRead(
+    test(
+      'revision zero goes directly to first create without a server probe',
+      () async {
+        var firstCreateCalls = 0;
+        var transactionCalls = 0;
+        final outcome = await CloudSync.writeWithoutPreflightRead(
           localRevision: 0,
-          firstCreate: () async => throw FirebaseException(
-            plugin: 'cloud_firestore',
-            code: 'unavailable',
-          ),
+          firstCreate: () async {
+            firstCreateCalls++;
+            return const CloudSyncWriteOutcome(
+              operation: CloudSyncWriteOperation.firstCreate,
+              documentExisted: false,
+              revision: 1,
+            );
+          },
           transactionUpdate: () async {
             transactionCalls++;
             throw StateError('transaction must not run');
           },
-        ),
-        throwsA(isA<FirebaseException>()),
-      );
-      expect(transactionCalls, 0);
-    });
+        );
+
+        expect(firstCreateCalls, 1);
+        expect(transactionCalls, 0);
+        expect(outcome.operation, CloudSyncWriteOperation.firstCreate);
+        expect(outcome.documentExisted, isFalse);
+        expect(outcome.revision, 1);
+      },
+    );
+
+    test(
+      'first-create failure is not hidden by a transaction fallback',
+      () async {
+        var transactionCalls = 0;
+        await expectLater(
+          CloudSync.writeWithoutPreflightRead(
+            localRevision: 0,
+            firstCreate: () async => throw FirebaseException(
+              plugin: 'cloud_firestore',
+              code: 'unavailable',
+            ),
+            transactionUpdate: () async {
+              transactionCalls++;
+              throw StateError('transaction must not run');
+            },
+          ),
+          throwsA(isA<FirebaseException>()),
+        );
+        expect(transactionCalls, 0);
+      },
+    );
 
     test('existing cloud document stays on transaction update', () async {
       var firstCreateCalls = 0;
@@ -131,68 +151,73 @@ void main() {
       expect(outcome.revision, 5);
     });
 
-    test('REST-first create bypasses Native before any pending write',
-        () async {
-      var restCalls = 0;
-      var nativeCalls = 0;
-      final outcome = await CloudSync.writeWithTransportPolicy(
-        localRevision: 0,
-        restFirstCreateEnabled: true,
-        restUpdateEnabled: true,
-        restFirstCreate: () async {
-          restCalls++;
-          return const CloudSyncWriteOutcome(
-            operation: CloudSyncWriteOperation.firstCreate,
-            documentExisted: false,
-            revision: 1,
-            restHttpStatus: 200,
-            restOutcome: 'serverConfirmed',
-          );
-        },
-        nativeFirstCreate: () async {
-          nativeCalls++;
-          throw StateError('Native first-create must not run');
-        },
-        restUpdate: () async => throw StateError('update must not run'),
-        nativeUpdate: () async => throw StateError('update must not run'),
-      );
+    test(
+      'REST-first create bypasses Native before any pending write',
+      () async {
+        var restCalls = 0;
+        var nativeCalls = 0;
+        final outcome = await CloudSync.writeWithTransportPolicy(
+          localRevision: 0,
+          restFirstCreateEnabled: true,
+          restUpdateEnabled: true,
+          restFirstCreate: () async {
+            restCalls++;
+            return const CloudSyncWriteOutcome(
+              operation: CloudSyncWriteOperation.firstCreate,
+              documentExisted: false,
+              revision: 1,
+              restHttpStatus: 200,
+              restOutcome: 'serverConfirmed',
+            );
+          },
+          nativeFirstCreate: () async {
+            nativeCalls++;
+            throw StateError('Native first-create must not run');
+          },
+          restUpdate: () async => throw StateError('update must not run'),
+          nativeUpdate: () async => throw StateError('update must not run'),
+        );
 
-      expect(restCalls, 1);
-      expect(nativeCalls, 0);
-      expect(outcome.delivery, CloudSyncDelivery.serverConfirmed);
-      expect(outcome.hasPendingWrites, isFalse);
-      expect(outcome.restHttpStatus, 200);
-    });
+        expect(restCalls, 1);
+        expect(nativeCalls, 0);
+        expect(outcome.delivery, CloudSyncDelivery.serverConfirmed);
+        expect(outcome.hasPendingWrites, isFalse);
+        expect(outcome.restHttpStatus, 200);
+      },
+    );
 
-    test('REST update policy bypasses Native for confirmed revisions',
-        () async {
-      var restCalls = 0;
-      var nativeCalls = 0;
-      final outcome = await CloudSync.writeWithTransportPolicy(
-        localRevision: 1,
-        restFirstCreateEnabled: true,
-        restUpdateEnabled: true,
-        restFirstCreate: () async => throw StateError('create must not run'),
-        nativeFirstCreate: () async => throw StateError('create must not run'),
-        restUpdate: () async {
-          restCalls++;
-          return const CloudSyncWriteOutcome(
-            operation: CloudSyncWriteOperation.restUpdate,
-            documentExisted: true,
-            revision: 2,
-            restHttpStatus: 200,
-          );
-        },
-        nativeUpdate: () async {
-          nativeCalls++;
-          throw StateError('Native update must not run');
-        },
-      );
+    test(
+      'REST update policy bypasses Native for confirmed revisions',
+      () async {
+        var restCalls = 0;
+        var nativeCalls = 0;
+        final outcome = await CloudSync.writeWithTransportPolicy(
+          localRevision: 1,
+          restFirstCreateEnabled: true,
+          restUpdateEnabled: true,
+          restFirstCreate: () async => throw StateError('create must not run'),
+          nativeFirstCreate: () async =>
+              throw StateError('create must not run'),
+          restUpdate: () async {
+            restCalls++;
+            return const CloudSyncWriteOutcome(
+              operation: CloudSyncWriteOperation.restUpdate,
+              documentExisted: true,
+              revision: 2,
+              restHttpStatus: 200,
+            );
+          },
+          nativeUpdate: () async {
+            nativeCalls++;
+            throw StateError('Native update must not run');
+          },
+        );
 
-      expect(restCalls, 1);
-      expect(nativeCalls, 0);
-      expect(outcome.revision, 2);
-    });
+        expect(restCalls, 1);
+        expect(nativeCalls, 0);
+        expect(outcome.revision, 2);
+      },
+    );
 
     test('disabled REST flags preserve the Native paths', () async {
       var nativeFirstCalls = 0;
@@ -305,40 +330,34 @@ void main() {
   group('cloud synchronization preflight', () {
     test('requires an authenticated Firebase user', () {
       expect(
-        CloudSync.preflightFailure(
-          signedIn: false,
-          storageHealthy: true,
-        ),
+        CloudSync.preflightFailure(signedIn: false, storageHealthy: true),
         CloudSyncFailure.unauthenticated,
       );
     });
 
     test('blocks synchronization when Keychain-backed storage is locked', () {
       expect(
-        CloudSync.preflightFailure(
-          signedIn: true,
-          storageHealthy: false,
-        ),
+        CloudSync.preflightFailure(signedIn: true, storageHealthy: false),
         CloudSyncFailure.storageLocked,
       );
     });
 
     test('allows synchronization only after both checks pass', () {
       expect(
-        CloudSync.preflightFailure(
-          signedIn: true,
-          storageHealthy: true,
-        ),
+        CloudSync.preflightFailure(signedIn: true, storageHealthy: true),
         CloudSyncFailure.none,
       );
     });
   });
 
   group('cloud schema migration compatibility', () {
-    test('accepts unversioned and v1 legacy documents for one-way migration', () {
-      expect(CloudSync.isSupportedCloudSchema(null), isTrue);
-      expect(CloudSync.isSupportedCloudSchema(1), isTrue);
-    });
+    test(
+      'accepts unversioned and v1 legacy documents for one-way migration',
+      () {
+        expect(CloudSync.isSupportedCloudSchema(null), isTrue);
+        expect(CloudSync.isSupportedCloudSchema(1), isTrue);
+      },
+    );
 
     test('accepts encrypted v2 and rejects unknown formats', () {
       expect(CloudSync.isSupportedCloudSchema(2), isTrue);
