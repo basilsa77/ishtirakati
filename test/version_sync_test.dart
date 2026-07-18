@@ -24,7 +24,7 @@ void main() {
     expect(kAppBuildNumber, match.group(2));
   });
 
-  test('v16 metadata and CI artifact names stay synchronized', () {
+  test('release metadata and CI artifact names stay synchronized', () {
     const release = '$kAppVersion+$kAppBuildNumber';
     const artifact = 'Ishtirakati-$kAppVersion-build$kAppBuildNumber';
     final readme = File('README.md').readAsStringSync();
