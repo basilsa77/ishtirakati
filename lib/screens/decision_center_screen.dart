@@ -124,7 +124,10 @@ class _DecisionHero extends StatelessWidget {
     final detail =
         total == 0
             ? tr('ui_92a21744db1f')
-            : tr('ui_23f338c9231e', {'value0': total, 'value1': urgent});
+            : tr('v17ReviewSummary', {
+              'reviews': localizedPlural('v17ReviewCount', total),
+              'urgent': localizedPlural('v17UrgentReviewCount', urgent),
+            });
     return Semantics(
       container: true,
       label: '${tr('ui_2374a9a65ea0')}. $detail',
@@ -158,7 +161,7 @@ class _DecisionHero extends StatelessWidget {
                 ],
               );
               final count = Text(
-                '$total',
+                localizedInteger(total),
                 style: const TextStyle(
                   color: V16Colors.white,
                   fontSize: V16Type.headline,

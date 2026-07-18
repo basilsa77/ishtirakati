@@ -84,7 +84,7 @@ class _ImportScreenState extends State<ImportScreen> {
           ..clear()
           ..addAll(merged.map((c) => c.name));
         _analyzed = true;
-        _aiNote = tr('ui_b1cd86d7fe54', {'value0': ai.length});
+        _aiNote = localizedPlural('v17AiAnalyzedSubscriptionCount', ai.length);
       });
     } on AiExtractionException catch (e) {
       if (!mounted) return;
@@ -171,7 +171,7 @@ class _ImportScreenState extends State<ImportScreen> {
         content: Text(
           count == 0
               ? tr('ui_f0317810d9ff')
-              : tr('ui_0eb9a89cc403', {'value0': count}),
+              : localizedPlural('v17SubscriptionAddedCount', count),
         ),
       ),
     );
@@ -450,7 +450,10 @@ class _ImportScreenState extends State<ImportScreen> {
               ),
             if (_candidates.isNotEmpty) ...[
               SectionTitle(
-                tr('ui_edd53f935323', {'value0': _candidates.length}),
+                localizedPlural(
+                  'v17SubscriptionDiscoveredCount',
+                  _candidates.length,
+                ),
               ),
               for (final c in _candidates)
                 Padding(
@@ -479,7 +482,9 @@ class _ImportScreenState extends State<ImportScreen> {
                 onPressed: _selected.isEmpty ? null : _addSelected,
                 icon: const Icon(Icons.playlist_add_check_rounded),
                 label: Text(
-                  tr('ui_a0357a01193b', {'value0': _selected.length}),
+                  tr('ui_a0357a01193b', {
+                    'value0': localizedInteger(_selected.length),
+                  }),
                 ),
               ),
             ],

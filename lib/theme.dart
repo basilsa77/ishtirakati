@@ -998,7 +998,7 @@ class AppMetricTile extends StatelessWidget {
   }
 }
 
-String fmtDate(DateTime d) => localizedDate(d);
+String fmtDate(DateTime d) => formatLongDate(d);
 
 /// أيقونة الخدمة: الشعار الرسمي إن عُرف نطاقها، وإلا رمز تطبيق محايد.
 class ServiceAvatar extends StatelessWidget {

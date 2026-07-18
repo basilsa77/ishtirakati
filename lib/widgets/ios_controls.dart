@@ -5,6 +5,52 @@ import 'package:flutter/services.dart';
 import '../l10n/app_localizations.dart';
 import '../theme.dart';
 
+/// The shared high-contrast segmented control used by compact iOS forms.
+class AppSegmentedControl<T extends Object> extends StatelessWidget {
+  final T groupValue;
+  final Map<T, String> labels;
+  final ValueChanged<T?> onValueChanged;
+
+  const AppSegmentedControl({
+    super.key,
+    required this.groupValue,
+    required this.labels,
+    required this.onValueChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return CupertinoSlidingSegmentedControl<T>(
+      groupValue: groupValue,
+      backgroundColor: p.surfaceAlt,
+      thumbColor: p.accentStrong,
+      padding: const EdgeInsets.all(V16Space.xxs),
+      children: {
+        for (final entry in labels.entries)
+          entry.key: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: V16Space.sm,
+              vertical: V16Space.xs,
+            ),
+            child: Text(
+              entry.value,
+              key: ValueKey<String>('app-segment-${entry.key}'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: groupValue == entry.key ? V16Colors.white : p.text,
+                fontSize: V16Type.labelSmall,
+                fontWeight: V16Type.semibold,
+              ),
+            ),
+          ),
+      },
+      onValueChanged: onValueChanged,
+    );
+  }
+}
+
 Future<T?> showIosModalSheet<T>({
   required BuildContext context,
   required String title,

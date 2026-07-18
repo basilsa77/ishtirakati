@@ -18,6 +18,7 @@ import '../services/spending_history.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
 import '../widgets/potential_duplicate_badge.dart';
+import '../widgets/service_name_text.dart';
 import 'financial_review_screen.dart';
 
 class InsightsScreen extends StatelessWidget {
@@ -139,7 +140,7 @@ class ForecastCard extends StatelessWidget {
         .map((item) {
           return '${_monthName(item.month.month)} '
               '${fmtMoneyWithCurrency(item.total, snapshot.currency)}, '
-              '${tr('ui_4e55769aaac7', {'value0': item.paymentCount})}';
+              '${localizedPlural('v17PaymentCount', item.paymentCount)}';
         })
         .join('. ');
     return AppChartSurface(
@@ -209,9 +210,10 @@ class ForecastCard extends StatelessWidget {
                         FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            tr('ui_4e55769aaac7', {
-                              'value0': item.paymentCount,
-                            }),
+                            localizedPlural(
+                              'v17PaymentCount',
+                              item.paymentCount,
+                            ),
                             maxLines: 1,
                             style: TextStyle(
                               color: p.textMuted,
@@ -336,7 +338,7 @@ class _MetricsGrid extends StatelessWidget {
       ),
       AppMetricTile(
         label: tr('ui_2bf7132fc74f'),
-        value: tr('ui_81b71fad9298', {'value0': upcoming}),
+        value: localizedPlural('v17RenewalCount', upcoming),
         icon: CupertinoIcons.timer,
       ),
     ];
@@ -382,7 +384,7 @@ class _InsightHero extends StatelessWidget {
     return Semantics(
       container: true,
       label:
-          '${tr('ui_d7c496f31754')}: $totalLabel. ${tr('ui_f916d7d0556e', {'value0': categories})}',
+          '${tr('ui_d7c496f31754')}: $totalLabel. ${localizedPlural('v17CategoryCount', categories)}',
       child: AppCard(
         tone: AppCardTone.accent,
         padding: const EdgeInsets.all(V16Space.lg),
@@ -413,7 +415,7 @@ class _InsightHero extends StatelessWidget {
                 ],
               );
               final categoryLabel = Text(
-                tr('ui_f916d7d0556e', {'value0': categories}),
+                localizedPlural('v17CategoryCount', categories),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: V16Colors.white,
@@ -510,7 +512,7 @@ class _DistributionCardState extends State<DistributionCard> {
     final semanticParts = distribution.expandedEntries
         .map(
           (entry) =>
-              '${localizedCategory(entry.category)} ${entry.percentage}%',
+              '${localizedCategory(entry.category)} ${localizedPercent(entry.percentage)}',
         )
         .join('. ');
     return AppChartSurface(
@@ -586,7 +588,9 @@ class _DistributionCardState extends State<DistributionCard> {
                         ),
                       ),
                       Text(
-                        tr('ui_bb234490a0b0', {'value0': entry.percentage}),
+                        tr('ui_bb234490a0b0', {
+                          'value0': localizedInteger(entry.percentage),
+                        }),
                         style: TextStyle(
                           color: p.textMuted,
                           fontSize: V16Type.caption,
@@ -606,7 +610,10 @@ class _DistributionCardState extends State<DistributionCard> {
                     child: Text(
                       _expanded
                           ? tr('v17ShowFewerCategories')
-                          : tr('v17MoreCategories', {'count': hiddenCount}),
+                          : localizedPlural(
+                            'v17AdditionalCategoryCount',
+                            hiddenCount,
+                          ),
                       style: TextStyle(
                         color: p.accent,
                         fontSize: V16Type.caption,
@@ -762,8 +769,8 @@ class SpendingHistoryCard extends StatelessWidget {
         .map(
           (item) =>
               item.hasAmount
-                  ? '${localizedDate(item.month, skeleton: 'MMM')} ${fmtMoneyWithCurrency(item.amount!, currency)}'
-                  : '${localizedDate(item.month, skeleton: 'MMM')} ${tr('v17PaymentHistoryUnavailable')}',
+                  ? '${formatMonthAbbreviation(item.month)} ${fmtMoneyWithCurrency(item.amount!, currency)}'
+                  : '${formatMonthAbbreviation(item.month)} ${tr('v17PaymentHistoryUnavailable')}',
         )
         .join('. ');
     return AppChartSurface(
@@ -806,7 +813,7 @@ class SpendingHistoryCard extends StatelessWidget {
                       ),
                       const SizedBox(height: V16Space.xs),
                       Text(
-                        localizedDate(history[index].month, skeleton: 'MMM'),
+                        formatMonthAbbreviation(history[index].month),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -890,7 +897,7 @@ class _TopServiceRow extends StatelessWidget {
         Semantics(
           container: true,
           label:
-              '$rank. ${subscription.name}. ${fmtMoneyWithCurrency(subscription.monthlyCost, subscription.currency)}',
+              '${localizedInteger(rank)}. ${subscription.name}. ${fmtMoneyWithCurrency(subscription.monthlyCost, subscription.currency)}',
           child: ExcludeSemantics(
             child: AppCard(
               elevated: false,
@@ -909,7 +916,7 @@ class _TopServiceRow extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     child: Text(
-                      '$rank',
+                      localizedInteger(rank),
                       style: TextStyle(
                         color: rank == 1 ? p.warning : p.textMuted,
                         fontSize: V16Type.caption,
@@ -931,10 +938,8 @@ class _TopServiceRow extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          subscription.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        ServiceNameText(
+                          name: subscription.name,
                           style: TextStyle(
                             color: p.text,
                             fontSize: V16Type.label,

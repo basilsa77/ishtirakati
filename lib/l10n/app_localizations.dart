@@ -201,7 +201,35 @@ class AppLocalizations {
       locale.languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr;
 
   String text(String key, [Map<String, Object?> values = const {}]) {
-    var result = _messages[key] ?? key;
+    final message = _messages[key] ?? key;
+    final count = values['count'];
+    if (count is num) {
+      final branches = _parseIcuPlural(message);
+      if (branches != null) {
+        final selected =
+            count == 0 && branches['zero'] != null
+                ? branches['zero']!
+                : Intl.plural(
+                  count,
+                  zero: branches['zero'],
+                  one: branches['one'],
+                  two: branches['two'],
+                  few: branches['few'],
+                  many: branches['many'],
+                  other: branches['other']!,
+                  locale: locale.languageCode,
+                );
+        return _interpolate(
+          selected.replaceAll('#', integer(count)),
+          <String, Object?>{...values, 'count': integer(count)},
+        );
+      }
+    }
+    return _interpolate(message, values);
+  }
+
+  String _interpolate(String message, Map<String, Object?> values) {
+    var result = message;
     for (final entry in values.entries) {
       result = result.replaceAll('{${entry.key}}', '${entry.value ?? ''}');
     }
@@ -213,6 +241,9 @@ class AppLocalizations {
     required num count,
     Map<String, Object?> values = const {},
   }) {
+    if (_parseIcuPlural(_messages[key] ?? '') != null) {
+      return text(key, <String, Object?>{'count': count, ...values});
+    }
     final suffix =
         count == 0
             ? 'Zero'
@@ -225,12 +256,19 @@ class AppLocalizations {
   }
 
   String decimal(num value, {int? decimalDigits}) {
+    // en_US is intentional: every number painted by Flutter uses 0-9 in both
+    // supported languages, independently of the device numbering system.
     final formatter = NumberFormat.decimalPatternDigits(
-      locale: locale.languageCode == 'ar' ? 'ar_SA' : 'en_SA',
+      locale: 'en_US',
       decimalDigits: decimalDigits,
     );
     return _latinDigits(formatter.format(value));
   }
+
+  String integer(num value) => decimal(value, decimalDigits: 0);
+
+  String percent(num value, {int decimalDigits = 0}) =>
+      '${decimal(value, decimalDigits: decimalDigits)}%';
 
   String money(num value, String currency, {int decimalDigits = 2}) {
     final number = decimal(value, decimalDigits: decimalDigits);
@@ -239,28 +277,100 @@ class AppLocalizations {
   }
 
   String compactNumber(num value) {
-    final localeName = locale.languageCode == 'ar' ? 'ar_SA' : 'en_US';
-    return _latinDigits(NumberFormat.compact(locale: localeName).format(value));
+    return _latinDigits(NumberFormat.compact(locale: 'en_US').format(value));
   }
 
   String date(DateTime value, {String skeleton = 'yMMMd'}) {
     final localeName = locale.languageCode == 'ar' ? 'ar_SA' : 'en_SA';
+    _ensureDateLocale(localeName);
+    return _latinDigits(
+      DateFormat(skeleton, localeName).format(value.toLocal()),
+    );
+  }
+
+  String longDate(DateTime value) =>
+      DateFormat('dd/MM/yyyy', 'en_US').format(value.toLocal());
+
+  String shortDate(DateTime value) {
+    final localeName = locale.languageCode == 'ar' ? 'ar_SA' : 'en_US';
+    _ensureDateLocale(localeName);
+    final pattern = locale.languageCode == 'ar' ? 'd MMMM' : 'MMM d';
+    return _latinDigits(
+      DateFormat(pattern, localeName).format(value.toLocal()),
+    );
+  }
+
+  String monthYear(DateTime value) {
+    final localeName = locale.languageCode == 'ar' ? 'ar_SA' : 'en_US';
+    _ensureDateLocale(localeName);
+    return _latinDigits(
+      DateFormat('MMMM yyyy', localeName).format(value.toLocal()),
+    );
+  }
+
+  String monthAbbreviation(DateTime value) {
+    final localeName = locale.languageCode == 'ar' ? 'ar_SA' : 'en_US';
+    _ensureDateLocale(localeName);
+    return _latinDigits(DateFormat('MMM', localeName).format(value.toLocal()));
+  }
+
+  static void _ensureDateLocale(String localeName) {
     if (_initializedDateLocales.add(localeName)) {
       // The local Intl registrar installs symbols synchronously; its returned
       // future is already completed. This also keeps pure services testable
       // when they format a date before the Flutter localization delegate runs.
       initializeDateFormatting(localeName);
     }
-    return _latinDigits(DateFormat(skeleton, localeName).format(value));
   }
 
   static String _latinDigits(String value) {
     const eastern = '٠١٢٣٤٥٦٧٨٩';
+    const persian = '۰۱۲۳۴۵۶۷۸۹';
     var result = value;
     for (var index = 0; index < eastern.length; index++) {
       result = result.replaceAll(eastern[index], '$index');
+      result = result.replaceAll(persian[index], '$index');
     }
     return result;
+  }
+
+  static Map<String, String>? _parseIcuPlural(String message) {
+    final header = RegExp(r'^\s*\{count\s*,\s*plural\s*,').firstMatch(message);
+    if (header == null) return null;
+    final branches = <String, String>{};
+    var index = header.end;
+    while (index < message.length) {
+      while (index < message.length &&
+          (message[index].trim().isEmpty || message[index] == ',')) {
+        index += 1;
+      }
+      if (index >= message.length || message[index] == '}') break;
+      final selectorStart = index;
+      while (index < message.length &&
+          message[index].trim().isNotEmpty &&
+          message[index] != '{') {
+        index += 1;
+      }
+      final selector = message.substring(selectorStart, index);
+      while (index < message.length && message[index].trim().isEmpty) {
+        index += 1;
+      }
+      if (selector.isEmpty ||
+          index >= message.length ||
+          message[index] != '{') {
+        return null;
+      }
+      final contentStart = ++index;
+      var depth = 1;
+      while (index < message.length && depth > 0) {
+        if (message[index] == '{') depth += 1;
+        if (message[index] == '}') depth -= 1;
+        index += 1;
+      }
+      if (depth != 0) return null;
+      branches[selector] = message.substring(contentStart, index - 1);
+    }
+    return branches.containsKey('other') ? branches : null;
   }
 
   static Future<AppLocalizations> load(Locale locale) async {
@@ -292,11 +402,34 @@ bool get isEnglishLocale =>
 String localizedNumber(num value, {int? decimalDigits}) =>
     AppLocalizations._current.decimal(value, decimalDigits: decimalDigits);
 
+String localizedInteger(num value) => AppLocalizations._current.integer(value);
+
+String localizedPercent(num value, {int decimalDigits = 0}) =>
+    AppLocalizations._current.percent(value, decimalDigits: decimalDigits);
+
+String localizedPlural(
+  String key,
+  num count, [
+  Map<String, Object?> values = const {},
+]) => AppLocalizations._current.plural(key, count: count, values: values);
+
 String localizedCompactNumber(num value) =>
     AppLocalizations._current.compactNumber(value);
 
 String localizedDate(DateTime value, {String skeleton = 'yMd'}) =>
     AppLocalizations._current.date(value, skeleton: skeleton);
+
+String formatLongDate(DateTime value) =>
+    AppLocalizations._current.longDate(value);
+
+String formatShortDate(DateTime value) =>
+    AppLocalizations._current.shortDate(value);
+
+String formatMonthYear(DateTime value) =>
+    AppLocalizations._current.monthYear(value);
+
+String formatMonthAbbreviation(DateTime value) =>
+    AppLocalizations._current.monthAbbreviation(value);
 
 class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   const AppLocalizationsDelegate();
@@ -334,9 +467,11 @@ void setDefaultFormattingLocale(Locale locale) {
 
 String latinDigits(String value) {
   const eastern = '٠١٢٣٤٥٦٧٨٩';
+  const persian = '۰۱۲۳۴۵۶۷۸۹';
   var result = value;
   for (var index = 0; index < eastern.length; index++) {
     result = result.replaceAll(eastern[index], '$index');
+    result = result.replaceAll(persian[index], '$index');
   }
   return result;
 }
@@ -372,10 +507,5 @@ String localizedCategory(String value) => tr(switch (value) {
 String localizedDaysAfter(int days) {
   if (days <= 0) return tr('commonToday');
   if (days == 1) return tr('commonTomorrow');
-  if (isEnglishLocale) {
-    return tr('daysAfter', {'days': days});
-  }
-  if (days == 2) return tr('daysAfterTwo', {'days': days});
-  if (days <= 10) return tr('daysAfterFew', {'days': days});
-  return tr('daysAfterMany', {'days': days});
+  return localizedPlural('v17DaysAfterCount', days);
 }

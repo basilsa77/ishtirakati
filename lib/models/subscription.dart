@@ -1,7 +1,8 @@
 /// نموذج بيانات الاشتراك وحسابات التجديد والتكاليف.
 library;
 
-import '../l10n/app_localizations.dart' show isEnglishLocale, localizedNumber;
+import '../l10n/app_localizations.dart'
+    show formatShortDate, isEnglishLocale, localizedNumber;
 import 'subscription_schema.dart';
 
 /// دورة الفوترة.
@@ -43,7 +44,7 @@ extension BillingCycleX on BillingCycle {
   String get labelAr => switch (this) {
     BillingCycle.weekly => 'أسبوعي',
     BillingCycle.monthly => 'شهري',
-    BillingCycle.quarterly => 'كل ٣ أشهر',
+    BillingCycle.quarterly => 'كل 3 أشهر',
     BillingCycle.yearly => 'سنوي',
   };
 
@@ -376,7 +377,7 @@ class Subscription {
       '${kind.labelAr} ${cycle.labelAr}',
       if (paymentMethod != 'غير محدد' && paymentMethod.trim().isNotEmpty)
         paymentMethod.trim(),
-      'التجديد ${renewal.day}/${renewal.month}',
+      'التجديد ${formatShortDate(renewal)}',
     ];
     return parts.join(' · ');
   }

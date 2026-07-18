@@ -91,9 +91,7 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
       if (result.matched == 0) {
         setState(() {
           _busy = false;
-          _error =
-              tr('ui_aad9d5636c67', {'value0': result.scanned}) +
-              tr('ui_24cd4330e1b3');
+          _error = localizedPlural('v17EmailScanNoMatches', result.scanned);
         });
         return;
       }

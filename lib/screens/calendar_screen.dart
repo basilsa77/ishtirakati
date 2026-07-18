@@ -10,6 +10,7 @@ import '../services/financial_assistant.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
 import '../widgets/potential_duplicate_badge.dart';
+import '../widgets/service_name_text.dart';
 import 'financial_review_screen.dart';
 import 'subscriptions_screen.dart';
 
@@ -47,20 +48,6 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  List<String> get _months => [
-    tr('ui_bc40bf9bf5db'),
-    tr('ui_4c9195d55893'),
-    tr('ui_121f3712ae7c'),
-    tr('ui_b5021be42c23'),
-    tr('ui_e490a80977c5'),
-    tr('ui_f6c57592aa1d'),
-    tr('ui_7f5c6765af36'),
-    tr('ui_47bea73f4ca8'),
-    tr('ui_339eb2be7171'),
-    tr('ui_128ed0f7c924'),
-    tr('ui_0b699e61fe99'),
-    tr('ui_c22ea1f7f156'),
-  ];
   List<String> get _weekdays => [
     tr('ui_56750292f58c'),
     tr('ui_cb92a8b00c69'),
@@ -165,7 +152,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
             const SizedBox(height: V16Space.lg),
             _MonthControl(
-              label: '${_months[_month.month - 1]} ${_month.year}',
+              label: formatMonthYear(_month),
               onPrevious:
                   () => setState(
                     () => _month = DateTime(_month.year, _month.month - 1),
@@ -285,7 +272,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             ),
                             const SizedBox(height: V16Space.lg),
                             Text(
-                              tr('ui_122244edc329', {'value0': day}),
+                              tr('v17PaymentsForDate', {
+                                'date': formatShortDate(renewalDate),
+                              }),
                               style: TextStyle(
                                 color: p.text,
                                 fontSize: V16Type.titleSmall,
@@ -321,10 +310,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                 ),
                                 const SizedBox(width: V16Space.sm),
                                 Expanded(
-                                  child: Text(
-                                    subscription.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                  child: ServiceNameText(
+                                    name: subscription.name,
                                     style: TextStyle(
                                       color: p.text,
                                       fontWeight: V16Type.semibold,
@@ -450,7 +437,7 @@ class RenewalsSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final countLabel = Text(
-      tr('ui_c594d3d42dde', {'value0': itemCount}),
+      localizedPlural('v17PaymentsThisMonthCount', itemCount),
       key: const Key('renewals-summary-count'),
       style: const TextStyle(
         color: V16Colors.white,
@@ -637,7 +624,7 @@ class _CalendarGrid extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        '$day',
+                        localizedInteger(day),
                         style: TextStyle(
                           color:
                               todaySelected
@@ -709,7 +696,7 @@ class _CalendarPayment extends StatelessWidget {
                   borderRadius: BorderRadius.circular(V16Radius.compact),
                 ),
                 child: Text(
-                  '$day',
+                  localizedInteger(day),
                   style: TextStyle(
                     color: p.accent,
                     fontWeight: V16Type.semibold,
@@ -727,10 +714,8 @@ class _CalendarPayment extends StatelessWidget {
               ),
               const SizedBox(width: V16Space.sm),
               Expanded(
-                child: Text(
-                  subscription.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: ServiceNameText(
+                  name: subscription.name,
                   style: TextStyle(
                     color: p.text,
                     fontWeight: V16Type.semibold,

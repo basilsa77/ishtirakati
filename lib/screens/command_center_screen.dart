@@ -11,6 +11,7 @@ import '../services/device_greeting.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
 import '../widgets/potential_duplicate_badge.dart';
+import '../widgets/service_name_text.dart';
 import 'calendar_screen.dart';
 import 'decision_center_screen.dart';
 import 'edit_subscription_screen.dart';
@@ -90,7 +91,10 @@ class CommandCenterScreen extends StatelessWidget {
               detail:
                   upcoming.isEmpty
                       ? tr('ui_917c39cede7a')
-                      : tr('ui_43d451ae8a86', {'value0': upcoming.length}),
+                      : localizedPlural(
+                        'v17TransactionCountNext21Days',
+                        upcoming.length,
+                      ),
             ),
             const SizedBox(height: 12),
             if (upcoming.isEmpty)
@@ -159,13 +163,13 @@ class _CashFlowRibbon extends StatelessWidget {
           _CashFlowTile(
             icon: Icons.calendar_view_month_rounded,
             label: tr('ui_bafefb4c4f56'),
-            value: tr('ui_6417e1b91d28', {'value0': snapshot.dueIn30Days}),
+            value: localizedPlural('v17PaymentCount', snapshot.dueIn30Days),
           ),
           if (snapshot.trialsEndingSoon > 0)
             _CashFlowTile(
               icon: Icons.hourglass_bottom_rounded,
               label: tr('ui_4a6f3033071e'),
-              value: '${snapshot.trialsEndingSoon}',
+              value: localizedInteger(snapshot.trialsEndingSoon),
               warning: true,
             ),
         ];
@@ -299,7 +303,7 @@ class _DecisionPreview extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      tr('ui_1443ecd0c584', {'value0': total}),
+                      localizedPlural('v17ReviewCountPrioritySorted', total),
                       style: TextStyle(
                         color: p.textMuted,
                         fontSize: V15Type.caption,
@@ -402,7 +406,7 @@ class _DashboardGreeting extends StatelessWidget {
             borderRadius: BorderRadius.circular(17),
           ),
           child: Text(
-            '$activeCount',
+            localizedInteger(activeCount),
             style: TextStyle(
               color: p.accent,
               fontSize: V15Type.titleSmall,
@@ -520,7 +524,7 @@ class _CommitmentHero extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  tr('ui_2a2f74d1bc3a', {'value0': (ratio * 100).round()}),
+                  localizedPercent((ratio * 100).round()),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
@@ -730,10 +734,8 @@ class _RenewalCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        sub.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      ServiceNameText(
+                        name: sub.name,
                         style: TextStyle(
                           color: p.text,
                           fontWeight: FontWeight.w900,
@@ -742,9 +744,7 @@ class _RenewalCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        tr('ui_109022fb0f10', {
-                          'value0': sub.daysUntilRenewal(),
-                        }),
+                        localizedDaysAfter(sub.daysUntilRenewal()),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -814,12 +814,12 @@ class _PulseGrid extends StatelessWidget {
             _PulseTile(
               icon: Icons.notifications_active_outlined,
               label: tr('ui_027ea1355212'),
-              value: '$upcoming',
+              value: localizedInteger(upcoming),
             ),
             _PulseTile(
               icon: Icons.visibility_off_outlined,
               label: tr('ui_fa5641bf64f8'),
-              value: '$unused',
+              value: localizedInteger(unused),
             ),
             _PulseTile(
               icon: Icons.savings_outlined,

@@ -14,6 +14,7 @@ import '../services/safe_url.dart';
 import '../theme.dart';
 import '../widgets/ios_controls.dart';
 import '../widgets/potential_duplicate_badge.dart';
+import '../widgets/service_name_text.dart';
 import 'edit_subscription_screen.dart';
 import 'financial_review_screen.dart';
 import 'import_screen.dart';
@@ -190,7 +191,7 @@ class _LibraryHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppPageIntro(
       title: tr('ui_17cbe710ffe6'),
-      description: tr('ui_82171abee2e6', {'value0': total}),
+      description: localizedPlural('v17ActiveSubscriptionCount', total),
       trailing: Wrap(
         spacing: V16Space.xs,
         children: [
@@ -476,10 +477,8 @@ class _SubscriptionRow extends StatelessWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              subscription.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            child: ServiceNameText(
+                              name: subscription.name,
                               style: TextStyle(
                                 color: p.text,
                                 fontWeight: V16Type.semibold,
@@ -631,7 +630,7 @@ class _LibraryEmpty extends StatelessWidget {
 String _renewalText(int days) {
   if (days <= 0) return tr('ui_2422f71e7f4e');
   if (days == 1) return tr('commonTomorrow');
-  return tr('ui_68300aba1efe', {'value0': days});
+  return localizedDaysAfter(days);
 }
 
 Future<void> showSubscriptionDetails(
@@ -693,10 +692,9 @@ Future<void> showSubscriptionDetails(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                sub.name,
+                              ServiceNameText(
+                                name: sub.name,
                                 maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: p.text,
                                   fontSize: V16Type.titleSmall,

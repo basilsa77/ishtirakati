@@ -632,24 +632,12 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               const SizedBox(height: 8),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                child: CupertinoSlidingSegmentedControl<BillingCycle>(
+                child: AppSegmentedControl<BillingCycle>(
+                  key: const Key('full-form-cycle-segments'),
                   groupValue: _cycle,
-                  thumbColor: p.surface,
-                  children: {
+                  labels: {
                     for (final c in BillingCycle.values)
-                      c: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 7,
-                        ),
-                        child: Text(
-                          localizedBillingCycle(c.name),
-                          style: TextStyle(
-                            color: p.text,
-                            fontWeight: V16Type.semibold,
-                          ),
-                        ),
-                      ),
+                      c: localizedBillingCycle(c.name),
                   },
                   onValueChanged: (value) {
                     if (value != null) setState(() => _cycle = value);
@@ -774,7 +762,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                       child: Icon(CupertinoIcons.minus_circle, color: p.accent),
                     ),
                     Text(
-                      '$_famCount',
+                      localizedInteger(_famCount),
                       style: TextStyle(
                         fontWeight: V16Type.semibold,
                         fontSize: V16Type.titleSmall,

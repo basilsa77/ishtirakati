@@ -9,6 +9,7 @@ import '../services/renewal_window.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
 import '../widgets/potential_duplicate_badge.dart';
+import '../widgets/service_name_text.dart';
 import 'financial_review_screen.dart';
 import 'quick_add_sheet.dart';
 import 'subscriptions_screen.dart' show showSubscriptionDetails;
@@ -177,7 +178,7 @@ class _PulseHeader extends StatelessWidget {
     return AppPageIntro(
       eyebrow: greeting,
       title: tr('ui_e33b470d27ac'),
-      description: tr('ui_d286a8d930ae', {'value0': activeCount}),
+      description: localizedPlural('v17ActiveCommitmentCount', activeCount),
       trailing: actions,
     );
   }
@@ -243,7 +244,10 @@ class RenewalSummaryCard extends StatelessWidget {
       label:
           summary.isEmpty
               ? tr('ui_50680a15e64f')
-              : tr('ui_0714259fe05e', {'value0': summary.paymentCount}),
+              : localizedPlural(
+                'v17RenewalCountNext30Days',
+                summary.paymentCount,
+              ),
       child: AppCard(
         key: const Key('next-30-days-summary'),
         padding: const EdgeInsets.all(V16Space.lg),
@@ -284,9 +288,10 @@ class RenewalSummaryCard extends StatelessWidget {
                         Text(
                           upcoming.isEmpty
                               ? tr('ui_500c004577c2')
-                              : tr('ui_46bcb22bca02', {
-                                'value0': summary.paymentCount,
-                              }),
+                              : localizedPlural(
+                                'v17DiscountCountNext30Days',
+                                summary.paymentCount,
+                              ),
                           style: TextStyle(
                             color: context.palette.textMuted,
                             fontSize: V16Type.caption,
@@ -339,11 +344,7 @@ class RenewalSummaryCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              item.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                            ServiceNameText(name: item.name),
                             if (duplicateGroupsBySubscriptionId[item.id]
                                 case final group?) ...[
                               const SizedBox(height: V16Space.xxs),
@@ -400,7 +401,7 @@ class _DecisionColumn extends StatelessWidget {
         detail:
             upcoming.isEmpty
                 ? tr('ui_918e81b61c22')
-                : tr('ui_04f46fabefa1', {'value0': paymentCount}),
+                : localizedPlural('v17OperationCountNext30Days', paymentCount),
         onTap: onOpenLibrary,
       ),
       const SizedBox(height: V16Space.sm),
@@ -429,7 +430,7 @@ class _LeakageBand extends StatelessWidget {
       label:
           reviews == 0
               ? tr('ui_6614ee580a9b')
-              : tr('ui_414fcd139acc', {'value0': reviews}),
+              : localizedPlural('v17SubscriptionReviewCount', reviews),
       child: AppCard(
         tone: reviews == 0 ? AppCardTone.muted : AppCardTone.danger,
         elevated: reviews > 0,
@@ -456,7 +457,7 @@ class _LeakageBand extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '$reviews',
+                  localizedInteger(reviews),
                   style: TextStyle(
                     color: context.palette.danger,
                     fontWeight: V16Type.semibold,
@@ -483,9 +484,15 @@ class _LeakageBand extends StatelessWidget {
             if (snapshot.duplicateGroups.isNotEmpty) ...[
               const SizedBox(height: V16Space.xs),
               Text(
-                tr('ui_45afc79a51a9', {
-                  'value0': snapshot.duplicateCandidateCount,
-                  'value1': snapshot.duplicateGroups.length,
+                tr('v17PotentialDuplicateSummary', {
+                  'subscriptions': localizedPlural(
+                    'v17PotentialDuplicateSubscriptionCount',
+                    snapshot.duplicateCandidateCount,
+                  ),
+                  'services': localizedPlural(
+                    'v17ServiceCount',
+                    snapshot.duplicateGroups.length,
+                  ),
                 }),
                 style: TextStyle(
                   color: context.palette.text,
@@ -502,7 +509,9 @@ class _LeakageBand extends StatelessWidget {
                   horizontal: V16Space.md,
                   vertical: V16Space.sm,
                 ),
-                child: Text(tr('ui_cd7ce5a9fe89', {'value0': reviews})),
+                child: Text(
+                  localizedPlural('v17IndicatorReviewCount', reviews),
+                ),
               ),
             ],
           ],
@@ -571,9 +580,8 @@ class _RenewalLine extends StatelessWidget {
       children: [
         Semantics(
           button: true,
-          label: tr('ui_a8ac629bd984', {
-            'value0': subscription.name,
-            'value1': days,
+          label: localizedPlural('v17SubscriptionRenewsInDays', days, {
+            'name': subscription.name,
           }),
           child: CupertinoButton(
             onPressed: () => showSubscriptionDetails(context, subscription),
@@ -596,10 +604,8 @@ class _RenewalLine extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          subscription.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        ServiceNameText(
+                          name: subscription.name,
                           style: TextStyle(
                             color: context.palette.text,
                             fontWeight: V16Type.semibold,

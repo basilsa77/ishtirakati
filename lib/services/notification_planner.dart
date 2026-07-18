@@ -42,7 +42,7 @@ abstract final class NotificationPlanner {
                   privateContent
                       ? tr('notificationTrialPrivateBody')
                       : tr('notificationTrialBody', {
-                        'date': localizedDate(trial),
+                        'date': formatLongDate(trial),
                       }),
               priority: 120,
             ),

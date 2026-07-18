@@ -745,7 +745,7 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
           ),
           _DiagnosticLine(
             label: tr('firestoreDiagnosticDuration'),
-            value: '${rest.elapsed.inMilliseconds} ms',
+            value: '${localizedInteger(rest.elapsed.inMilliseconds)} ms',
           ),
           _DiagnosticLine(
             label: tr('firestoreDiagnosticResult'),
@@ -798,7 +798,7 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
           ),
           _DiagnosticLine(
             label: tr('firestoreDiagnosticAttempts'),
-            value: '${native.attemptCount}',
+            value: localizedInteger(native.attemptCount),
           ),
           _DiagnosticLine(
             label: tr('firestoreDiagnosticNativeResult'),
@@ -818,7 +818,7 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
           ),
           _DiagnosticLine(
             label: tr('firestoreDiagnosticDuration'),
-            value: '${native.elapsed.inMilliseconds} ms',
+            value: '${localizedInteger(native.elapsed.inMilliseconds)} ms',
           ),
           _DiagnosticLine(
             label: tr('firestoreDiagnosticSyncRestStatus'),
