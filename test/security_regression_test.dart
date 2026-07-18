@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:ishtirakati/services/account_deletion_service.dart';
 import 'package:ishtirakati/services/ai_consent_service.dart';
+import 'package:ishtirakati/services/email_identity_store.dart';
 import 'package:ishtirakati/services/safe_url.dart';
 import 'package:ishtirakati/services/secure_data_codec.dart';
 import 'package:ishtirakati/services/subscription_store.dart';
@@ -51,6 +52,26 @@ class _DeletionCodec extends SecureDataCodec {
   Future<void> deleteAllKeys() async {
     deleted = true;
   }
+}
+
+class _DeletionEmailKeychain implements EmailIdentityKeychain {
+  String? canonical = 'owner@example.com';
+  final List<String> legacy = ['legacy@example.com'];
+
+  @override
+  Future<void> deleteCanonical() async => canonical = null;
+
+  @override
+  Future<void> deleteLegacy() async => legacy.clear();
+
+  @override
+  Future<String?> readCanonical() async => canonical;
+
+  @override
+  Future<List<String>> readLegacy() async => List.of(legacy);
+
+  @override
+  Future<void> writeCanonical(String email) async => canonical = email;
 }
 
 void main() {
@@ -218,18 +239,25 @@ void main() {
   });
 
   test('مسح الحساب المحلي يصفر المفاتيح والتفضيلات', () async {
-    SharedPreferences.setMockInitialValues({'sensitive': 'value'});
+    SharedPreferences.setMockInitialValues({
+      'sensitive': 'value',
+      EmailIdentityStore.legacyPreferenceKey: 'legacy@example.com',
+    });
     final codec = _DeletionCodec();
     final secretStore = _FakeKeyStore(values: ['ai-key']);
+    final emailKeychain = _DeletionEmailKeychain();
     final store = SubscriptionStore.testing(
       dataCodec: codec,
       secretStore: secretStore,
+      emailIdentityStore: EmailIdentityStore(keychain: emailKeychain),
     );
 
     await store.clearLocalForAccountDeletion();
 
     expect(codec.deleted, isTrue);
     expect(secretStore.deleted, isTrue);
+    expect(emailKeychain.canonical, isNull);
+    expect(emailKeychain.legacy, isEmpty);
     expect((await SharedPreferences.getInstance()).getKeys(), isEmpty);
     expect(store.aiApiKey, isEmpty);
     expect(store.hasOnboarded, isFalse);

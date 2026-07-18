@@ -15,18 +15,28 @@ import 'ai_extractor.dart';
 import 'notification_service.dart';
 import 'remote_catalog.dart';
 import 'cloud_sync.dart';
+import 'email_identity_store.dart';
 import 'secure_data_codec.dart';
 
 class SubscriptionStore extends ChangeNotifier {
-  SubscriptionStore._({SecureDataCodec? dataCodec, SecureKeyStore? secretStore})
-    : _dataCodec = dataCodec ?? SecureDataCodec(),
-      _secretStore = secretStore ?? const IosSecureKeyStore();
+  SubscriptionStore._({
+    SecureDataCodec? dataCodec,
+    SecureKeyStore? secretStore,
+    EmailIdentityStore? emailIdentityStore,
+  }) : _dataCodec = dataCodec ?? SecureDataCodec(),
+       _secretStore = secretStore ?? const IosSecureKeyStore(),
+       _emailIdentityStore = emailIdentityStore ?? EmailIdentityStore.instance;
 
   @visibleForTesting
   SubscriptionStore.testing({
     SecureDataCodec? dataCodec,
     SecureKeyStore? secretStore,
-  }) : this._(dataCodec: dataCodec, secretStore: secretStore);
+    EmailIdentityStore? emailIdentityStore,
+  }) : this._(
+         dataCodec: dataCodec,
+         secretStore: secretStore,
+         emailIdentityStore: emailIdentityStore,
+       );
 
   static final SubscriptionStore instance = SubscriptionStore._();
 
@@ -65,6 +75,7 @@ class SubscriptionStore extends ChangeNotifier {
   bool _storageHealthy = true;
   final SecureDataCodec _dataCodec;
   final SecureKeyStore _secretStore;
+  final EmailIdentityStore _emailIdentityStore;
 
   List<Subscription> get items => List.unmodifiable(_items);
   String get defaultCurrency => _defaultCurrency;
@@ -509,6 +520,7 @@ class SubscriptionStore extends ChangeNotifier {
   /// يمحو بيانات هذا التثبيت بعد نجاح حذف الحساب والسحابة.
   Future<void> clearLocalForAccountDeletion() async {
     await NotificationService.instance.cancelAll();
+    await _emailIdentityStore.forget();
     await _dataCodec.deleteAllKeys();
     await _secretStore.deleteAll(_aiKeyKey);
     final prefs = await SharedPreferences.getInstance();
