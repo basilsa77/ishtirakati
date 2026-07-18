@@ -202,18 +202,18 @@ extension AppPaletteVisuals on AppPalette {
 
 /// ألوان مميزة لكل تصنيف (تُستخدم في الرسوم والقوائم).
 const Map<String, Color> kCategoryColors = {
-  'ترفيه ومشاهدة': Color(0xFFFF7A85),
-  'موسيقى وبودكاست': Color(0xFFB388FF),
-  'إنتاجية وذكاء اصطناعي': Color(0xFF2EE6A8),
-  'ألعاب': Color(0xFF64B5F6),
-  'رياضة وصحة': Color(0xFFFFB74D),
-  'تعليم': Color(0xFF4DD0E1),
-  'تسوق وتوصيل': Color(0xFFF48FB1),
-  'اتصالات وإنترنت': Color(0xFF81C784),
-  'تخزين سحابي': Color(0xFF90A4AE),
-  'مالية وفواتير': Color(0xFFFFD166),
-  'أخبار ومجلات': Color(0xFF8AB4F8),
-  'أخرى': Color(0xFFE9C46A),
+  'ترفيه ومشاهدة': Color(0xFFD1495B),
+  'موسيقى وبودكاست': Color(0xFF7B2CBF),
+  'إنتاجية وذكاء اصطناعي': Color(0xFF00876C),
+  'ألعاب': Color(0xFF2F6FED),
+  'رياضة وصحة': Color(0xFFE07A00),
+  'تعليم': Color(0xFF008FA3),
+  'تسوق وتوصيل': Color(0xFFC13C82),
+  'اتصالات وإنترنت': Color(0xFF4C8C2B),
+  'تخزين سحابي': Color(0xFF6B7280),
+  'مالية وفواتير': Color(0xFFB59B00),
+  'أخبار ومجلات': Color(0xFF5B5BD6),
+  'أخرى': Color(0xFF5D4037),
 };
 
 Color categoryColor(String category) =>

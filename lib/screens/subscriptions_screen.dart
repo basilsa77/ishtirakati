@@ -8,11 +8,14 @@ import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../data/presets.dart';
 import '../models/subscription.dart';
+import '../services/financial_assistant.dart';
 import '../services/subscription_store.dart';
 import '../services/safe_url.dart';
 import '../theme.dart';
 import '../widgets/ios_controls.dart';
+import '../widgets/potential_duplicate_badge.dart';
 import 'edit_subscription_screen.dart';
+import 'financial_review_screen.dart';
 import 'import_screen.dart';
 import 'quick_add_sheet.dart';
 
@@ -44,6 +47,10 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       listenable: store,
       builder: (context, _) {
         final subscriptions = _filtered(store);
+        final duplicateGroupsBySubscriptionId =
+            FinancialAssistant.indexDuplicateGroupsBySubscriptionId(
+              FinancialAssistant.findDuplicateGroups(store.items),
+            );
         return CustomScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           slivers: [
@@ -129,8 +136,12 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                   separatorBuilder:
                       (_, __) => const SizedBox(height: V16Space.sm),
                   itemBuilder:
-                      (context, index) =>
-                          _SubscriptionRow(subscription: subscriptions[index]),
+                      (context, index) => _SubscriptionRow(
+                        subscription: subscriptions[index],
+                        duplicateGroup:
+                            duplicateGroupsBySubscriptionId[subscriptions[index]
+                                .id],
+                      ),
                 ),
               ),
           ],
@@ -419,8 +430,9 @@ class _FilterChip extends StatelessWidget {
 
 class _SubscriptionRow extends StatelessWidget {
   final Subscription subscription;
+  final DuplicateSubscriptionGroup? duplicateGroup;
 
-  const _SubscriptionRow({required this.subscription});
+  const _SubscriptionRow({required this.subscription, this.duplicateGroup});
 
   @override
   Widget build(BuildContext context) {
@@ -440,100 +452,116 @@ class _SubscriptionRow extends StatelessWidget {
       ),
       confirmDismiss: (_) => _confirmDelete(context, subscription.name),
       onDismissed: (_) => store.remove(subscription.id),
-      child: AppCard(
-        onTap: () => showSubscriptionDetails(context, subscription),
-        padding: const EdgeInsets.all(V16Space.md),
-        child: Row(
-          children: [
-            ServiceAvatar(
-              name: subscription.name,
-              emoji: subscription.emoji,
-              manageUrl: subscription.manageUrl,
-              iconUrl: subscription.iconUrl,
-              tint: categoryColor(subscription.category),
-              size: 50,
-            ),
-            const SizedBox(width: V16Space.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppCard(
+            onTap: () => showSubscriptionDetails(context, subscription),
+            padding: const EdgeInsets.all(V16Space.md),
+            child: Row(
+              children: [
+                ServiceAvatar(
+                  name: subscription.name,
+                  emoji: subscription.emoji,
+                  manageUrl: subscription.manageUrl,
+                  iconUrl: subscription.iconUrl,
+                  tint: categoryColor(subscription.category),
+                  size: 50,
+                ),
+                const SizedBox(width: V16Space.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          subscription.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: p.text,
-                            fontWeight: V16Type.semibold,
-                            fontSize: V16Type.bodySmall,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              subscription.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: p.text,
+                                fontWeight: V16Type.semibold,
+                                fontSize: V16Type.bodySmall,
+                              ),
+                            ),
                           ),
+                          if (subscription.isPaused)
+                            _StatePill(
+                              text: tr('ui_e858894dedb7'),
+                              color: p.warning,
+                              background: p.warningSoft,
+                            ),
+                          if (subscription.isTrialActive())
+                            _StatePill(
+                              text: tr('ui_87a9108dad6d'),
+                              color: p.danger,
+                              background: p.dangerSoft,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: V16Space.xxs),
+                      Text(
+                        '${localizedCategory(subscription.category)} · '
+                        '${localizedBillingCycle(subscription.cycle.name)}',
+                        style: TextStyle(
+                          color: p.textMuted,
+                          fontSize: V16Type.caption,
                         ),
                       ),
-                      if (subscription.isPaused)
-                        _StatePill(
-                          text: tr('ui_e858894dedb7'),
-                          color: p.warning,
-                          background: p.warningSoft,
-                        ),
-                      if (subscription.isTrialActive())
-                        _StatePill(
-                          text: tr('ui_87a9108dad6d'),
-                          color: p.danger,
-                          background: p.dangerSoft,
+                      const SizedBox(height: V16Space.xs),
+                      if (!subscription.isPaused)
+                        RenewalBadge(days: subscription.daysUntilRenewal())
+                      else
+                        Text(
+                          tr('ui_0494e50b7138'),
+                          style: TextStyle(
+                            color: p.textMuted,
+                            fontSize: V16Type.caption,
+                            fontWeight: V16Type.semibold,
+                          ),
                         ),
                     ],
                   ),
-                  const SizedBox(height: V16Space.xxs),
-                  Text(
-                    '${localizedCategory(subscription.category)} · '
-                    '${localizedBillingCycle(subscription.cycle.name)}',
-                    style: TextStyle(
-                      color: p.textMuted,
-                      fontSize: V16Type.caption,
-                    ),
-                  ),
-                  const SizedBox(height: V16Space.xs),
-                  if (!subscription.isPaused)
-                    RenewalBadge(days: subscription.daysUntilRenewal())
-                  else
-                    Text(
-                      tr('ui_0494e50b7138'),
-                      style: TextStyle(
-                        color: p.textMuted,
-                        fontSize: V16Type.caption,
-                        fontWeight: V16Type.semibold,
+                ),
+                const SizedBox(width: V16Space.xs),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 92),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        fmtMoneyWithCurrency(
+                          subscription.price,
+                          subscription.currency,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: p.accent,
+                          fontWeight: V16Type.semibold,
+                          fontSize: V16Type.label,
+                        ),
                       ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(width: V16Space.xs),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 92),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    fmtMoneyWithCurrency(
-                      subscription.price,
-                      subscription.currency,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: p.accent,
-                      fontWeight: V16Type.semibold,
-                      fontSize: V16Type.label,
-                    ),
+                    ],
                   ),
-                ],
+                ),
+              ],
+            ),
+          ),
+          if (duplicateGroup case final group?)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(
+                top: V16Space.xs,
+                start: V16Space.md,
+              ),
+              child: PotentialDuplicateBadge(
+                key: ValueKey('duplicate-badge-${subscription.id}'),
+                onTap: () => openPotentialDuplicateReview(context, group),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

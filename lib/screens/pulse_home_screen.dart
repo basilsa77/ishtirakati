@@ -5,8 +5,10 @@ import '../l10n/app_localizations.dart';
 import '../models/subscription.dart';
 import '../services/financial_assistant.dart';
 import '../services/device_greeting.dart';
+import '../services/renewal_window.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
+import '../widgets/potential_duplicate_badge.dart';
 import 'financial_review_screen.dart';
 import 'quick_add_sheet.dart';
 import 'subscriptions_screen.dart' show showSubscriptionDetails;
@@ -34,7 +36,12 @@ class PulseHomeScreen extends StatelessWidget {
           store.items,
           currency: currency,
         );
-        final upcoming = store.upcoming(withinDays: 30);
+        final renewalWindow = RenewalWindow.calculate(store.items);
+        final upcoming = renewalWindow.subscriptions;
+        final duplicateGroupsBySubscriptionId =
+            FinancialAssistant.indexDuplicateGroupsBySubscriptionId(
+              FinancialAssistant.findDuplicateGroups(store.items),
+            );
         return CustomScrollView(
           key: const PageStorageKey('v12-pulse-home'),
           slivers: [
@@ -64,11 +71,11 @@ class PulseHomeScreen extends StatelessWidget {
                             children: [
                               Expanded(
                                 flex: 6,
-                                child: _RenewalSummary(
-                                  currency: currency,
-                                  next12MonthsForecast:
-                                      assistant.next12MonthsForecast,
-                                  upcoming: upcoming,
+                                child: RenewalSummaryCard(
+                                  fallbackCurrency: currency,
+                                  summary: renewalWindow,
+                                  duplicateGroupsBySubscriptionId:
+                                      duplicateGroupsBySubscriptionId,
                                   onOpen: onOpenRenewals,
                                 ),
                               ),
@@ -78,6 +85,9 @@ class PulseHomeScreen extends StatelessWidget {
                                 child: _DecisionColumn(
                                   assistant: assistant,
                                   upcoming: upcoming,
+                                  paymentCount: renewalWindow.paymentCount,
+                                  duplicateGroupsBySubscriptionId:
+                                      duplicateGroupsBySubscriptionId,
                                   onOpenLibrary: onOpenLibrary,
                                   onOpenReviews:
                                       () => Navigator.of(context).push(
@@ -95,17 +105,20 @@ class PulseHomeScreen extends StatelessWidget {
                         }
                         return Column(
                           children: [
-                            _RenewalSummary(
-                              currency: currency,
-                              next12MonthsForecast:
-                                  assistant.next12MonthsForecast,
-                              upcoming: upcoming,
+                            RenewalSummaryCard(
+                              fallbackCurrency: currency,
+                              summary: renewalWindow,
+                              duplicateGroupsBySubscriptionId:
+                                  duplicateGroupsBySubscriptionId,
                               onOpen: onOpenRenewals,
                             ),
                             const SizedBox(height: V16Space.xl),
                             _DecisionColumn(
                               assistant: assistant,
                               upcoming: upcoming,
+                              paymentCount: renewalWindow.paymentCount,
+                              duplicateGroupsBySubscriptionId:
+                                  duplicateGroupsBySubscriptionId,
                               onOpenLibrary: onOpenLibrary,
                               onOpenReviews:
                                   () => Navigator.of(context).push(
@@ -203,123 +216,175 @@ class _HeaderAction extends StatelessWidget {
   );
 }
 
-class _RenewalSummary extends StatelessWidget {
-  final String currency;
-  final double next12MonthsForecast;
-  final List<Subscription> upcoming;
+@visibleForTesting
+class RenewalSummaryCard extends StatelessWidget {
+  final String fallbackCurrency;
+  final RenewalWindowSummary summary;
+  final Map<String, DuplicateSubscriptionGroup> duplicateGroupsBySubscriptionId;
   final VoidCallback onOpen;
 
-  const _RenewalSummary({
-    required this.currency,
-    required this.next12MonthsForecast,
-    required this.upcoming,
+  const RenewalSummaryCard({
+    super.key,
+    required this.fallbackCurrency,
+    required this.summary,
+    this.duplicateGroupsBySubscriptionId = const {},
     required this.onOpen,
   });
 
   @override
-  Widget build(BuildContext context) => AppCard(
-    onTap: onOpen,
-    semanticsLabel:
-        upcoming.isEmpty
-            ? tr('ui_50680a15e64f')
-            : tr('ui_0714259fe05e', {'value0': upcoming.length}),
-    padding: const EdgeInsets.all(V16Space.lg),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+  Widget build(BuildContext context) {
+    final upcoming = summary.subscriptions;
+    final totals =
+        summary.totalsByCurrency.isEmpty
+            ? <String, double>{fallbackCurrency: 0}
+            : summary.totalsByCurrency;
+    return Semantics(
+      container: true,
+      label:
+          summary.isEmpty
+              ? tr('ui_50680a15e64f')
+              : tr('ui_0714259fe05e', {'value0': summary.paymentCount}),
+      child: AppCard(
+        key: const Key('next-30-days-summary'),
+        padding: const EdgeInsets.all(V16Space.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: context.palette.accentSoft,
-                borderRadius: BorderRadius.circular(V16Radius.standard),
-              ),
-              child: Icon(
-                Icons.event_repeat_rounded,
-                color: context.palette.accent,
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: onOpen,
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: context.palette.accentSoft,
+                      borderRadius: BorderRadius.circular(V16Radius.standard),
+                    ),
+                    child: Icon(
+                      Icons.event_repeat_rounded,
+                      color: context.palette.accent,
+                    ),
+                  ),
+                  const SizedBox(width: V16Space.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tr('ui_67114cde38ee'),
+                          style: TextStyle(
+                            color: context.palette.text,
+                            fontSize: V16Type.title,
+                            fontWeight: V16Type.semibold,
+                          ),
+                        ),
+                        Text(
+                          upcoming.isEmpty
+                              ? tr('ui_500c004577c2')
+                              : tr('ui_46bcb22bca02', {
+                                'value0': summary.paymentCount,
+                              }),
+                          style: TextStyle(
+                            color: context.palette.textMuted,
+                            fontSize: V16Type.caption,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Directionality.of(context) == TextDirection.rtl
+                        ? Icons.arrow_back_rounded
+                        : Icons.arrow_forward_rounded,
+                    color: context.palette.textMuted,
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: V16Space.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    tr('ui_67114cde38ee'),
+            const SizedBox(height: V16Space.lg),
+            Text(
+              tr('v17Next30DaysTotal'),
+              style: TextStyle(color: context.palette.textMuted),
+            ),
+            Wrap(
+              spacing: V16Space.sm,
+              runSpacing: V16Space.xxs,
+              children: [
+                for (final entry in totals.entries)
+                  AnimatedMoney(
+                    key: ValueKey('next-30-days-total-${entry.key}'),
+                    value: entry.value,
+                    currency: entry.key,
                     style: TextStyle(
                       color: context.palette.text,
-                      fontSize: V16Type.title,
+                      fontSize: V16Type.headline,
                       fontWeight: V16Type.semibold,
                     ),
                   ),
-                  Text(
-                    upcoming.isEmpty
-                        ? tr('ui_500c004577c2')
-                        : tr('ui_46bcb22bca02', {'value0': upcoming.length}),
-                    style: TextStyle(
-                      color: context.palette.textMuted,
-                      fontSize: V16Type.caption,
-                    ),
-                  ),
-                ],
-              ),
+              ],
             ),
-            Icon(Icons.arrow_back_rounded, color: context.palette.textMuted),
+            if (upcoming.isNotEmpty) ...[
+              const SizedBox(height: V16Space.md),
+              Divider(color: context.palette.stroke, height: 1),
+              const SizedBox(height: V16Space.sm),
+              for (final item in upcoming.take(3))
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: V16Space.xs),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (duplicateGroupsBySubscriptionId[item.id]
+                                case final group?) ...[
+                              const SizedBox(height: V16Space.xxs),
+                              PotentialDuplicateBadge(
+                                key: ValueKey('duplicate-badge-${item.id}'),
+                                onTap:
+                                    () => openPotentialDuplicateReview(
+                                      context,
+                                      group,
+                                    ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: V16Space.xs),
+                      RenewalBadge(days: item.daysUntilRenewal()),
+                    ],
+                  ),
+                ),
+            ],
           ],
         ),
-        const SizedBox(height: V16Space.lg),
-        Text(
-          tr('ui_08965782a0af'),
-          style: TextStyle(color: context.palette.textMuted),
-        ),
-        AnimatedMoney(
-          value: next12MonthsForecast,
-          currency: currency,
-          style: TextStyle(
-            color: context.palette.text,
-            fontSize: V16Type.headline,
-            fontWeight: V16Type.semibold,
-          ),
-        ),
-        if (upcoming.isNotEmpty) ...[
-          const SizedBox(height: V16Space.md),
-          Divider(color: context.palette.stroke, height: 1),
-          const SizedBox(height: V16Space.sm),
-          for (final item in upcoming.take(3))
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: V16Space.xs),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      item.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: V16Space.xs),
-                  RenewalBadge(days: item.daysUntilRenewal()),
-                ],
-              ),
-            ),
-        ],
-      ],
-    ),
-  );
+      ),
+    );
+  }
 }
 
 class _DecisionColumn extends StatelessWidget {
   final FinancialAssistantSnapshot assistant;
   final List<Subscription> upcoming;
+  final int paymentCount;
+  final Map<String, DuplicateSubscriptionGroup> duplicateGroupsBySubscriptionId;
   final VoidCallback onOpenLibrary;
   final VoidCallback onOpenReviews;
 
   const _DecisionColumn({
     required this.assistant,
     required this.upcoming,
+    required this.paymentCount,
+    required this.duplicateGroupsBySubscriptionId,
     required this.onOpenLibrary,
     required this.onOpenReviews,
   });
@@ -335,14 +400,18 @@ class _DecisionColumn extends StatelessWidget {
         detail:
             upcoming.isEmpty
                 ? tr('ui_918e81b61c22')
-                : tr('ui_04f46fabefa1', {'value0': upcoming.length}),
+                : tr('ui_04f46fabefa1', {'value0': paymentCount}),
         onTap: onOpenLibrary,
       ),
       const SizedBox(height: V16Space.sm),
       if (upcoming.isEmpty)
         const _QuietLine()
       else
-        for (final item in upcoming.take(4)) _RenewalLine(subscription: item),
+        for (final item in upcoming.take(4))
+          _RenewalLine(
+            subscription: item,
+            duplicateGroup: duplicateGroupsBySubscriptionId[item.id],
+          ),
     ],
   );
 }
@@ -490,63 +559,80 @@ class _SectionHeading extends StatelessWidget {
 
 class _RenewalLine extends StatelessWidget {
   final Subscription subscription;
+  final DuplicateSubscriptionGroup? duplicateGroup;
 
-  const _RenewalLine({required this.subscription});
+  const _RenewalLine({required this.subscription, this.duplicateGroup});
 
   @override
   Widget build(BuildContext context) {
     final days = subscription.daysUntilRenewal();
-    return Semantics(
-      button: true,
-      label: tr('ui_a8ac629bd984', {
-        'value0': subscription.name,
-        'value1': days,
-      }),
-      child: CupertinoButton(
-        onPressed: () => showSubscriptionDetails(context, subscription),
-        padding: EdgeInsets.zero,
-        borderRadius: BorderRadius.circular(V16Radius.standard),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: V16Space.sm),
-          child: Row(
-            children: [
-              ServiceAvatar(
-                name: subscription.name,
-                emoji: subscription.emoji,
-                iconUrl: subscription.iconUrl,
-                manageUrl: subscription.manageUrl,
-                tint: categoryColor(subscription.category),
-                size: 44,
-              ),
-              const SizedBox(width: V16Space.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      subscription.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: context.palette.text,
-                        fontWeight: V16Type.semibold,
-                      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          button: true,
+          label: tr('ui_a8ac629bd984', {
+            'value0': subscription.name,
+            'value1': days,
+          }),
+          child: CupertinoButton(
+            onPressed: () => showSubscriptionDetails(context, subscription),
+            padding: EdgeInsets.zero,
+            borderRadius: BorderRadius.circular(V16Radius.standard),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: V16Space.sm),
+              child: Row(
+                children: [
+                  ServiceAvatar(
+                    name: subscription.name,
+                    emoji: subscription.emoji,
+                    iconUrl: subscription.iconUrl,
+                    manageUrl: subscription.manageUrl,
+                    tint: categoryColor(subscription.category),
+                    size: 44,
+                  ),
+                  const SizedBox(width: V16Space.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          subscription.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: context.palette.text,
+                            fontWeight: V16Type.semibold,
+                          ),
+                        ),
+                        RenewalBadge(days: days),
+                      ],
                     ),
-                    RenewalBadge(days: days),
-                  ],
-                ),
+                  ),
+                  Text(
+                    fmtMoneyWithCurrency(
+                      subscription.price,
+                      subscription.currency,
+                    ),
+                    style: TextStyle(
+                      color: context.palette.text,
+                      fontWeight: V16Type.semibold,
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                fmtMoneyWithCurrency(subscription.price, subscription.currency),
-                style: TextStyle(
-                  color: context.palette.text,
-                  fontWeight: V16Type.semibold,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
-      ),
+        if (duplicateGroup case final group?)
+          Padding(
+            padding: const EdgeInsetsDirectional.only(start: 44 + V16Space.sm),
+            child: PotentialDuplicateBadge(
+              key: ValueKey('duplicate-badge-${subscription.id}'),
+              onTap: () => openPotentialDuplicateReview(context, group),
+            ),
+          ),
+      ],
     );
   }
 }

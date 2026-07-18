@@ -182,6 +182,12 @@ class Subscription {
   /// آخر مرة راجع فيها المستخدم جدوى الاشتراك أو خطته.
   DateTime? lastReviewedAt;
 
+  /// Stable duplicate-group decisions stored inside the encrypted record.
+  ///
+  /// A set is used so repeated review actions remain idempotent. The group key
+  /// is derived exclusively from stable subscription IDs, never display data.
+  final Set<String> ignoredDuplicateGroupKeys;
+
   Subscription({
     required this.id,
     required this.name,
@@ -207,9 +213,11 @@ class Subscription {
     this.isEssential = false,
     this.planName = '',
     this.lastReviewedAt,
+    Set<String>? ignoredDuplicateGroupKeys,
     this.kind = PaymentKind.subscription,
     this.totalInstallments,
-  }) : priceHistory = priceHistory ?? [];
+  }) : priceHistory = priceHistory ?? [],
+       ignoredDuplicateGroupKeys = {...?ignoredDuplicateGroupKeys};
 
   /// هل اكتمل سداد القسط؟
   bool isCompleted([DateTime? from]) {
@@ -517,13 +525,14 @@ class Subscription {
     'isEssential': isEssential,
     'planName': planName,
     'lastReviewedAt': lastReviewedAt?.toIso8601String(),
+    'ignoredDuplicateGroupKeys': ignoredDuplicateGroupKeys.toList()..sort(),
     'iconUrl': iconUrl,
     'kind': kind.index,
     'totalInstallments': totalInstallments,
   };
 
   factory Subscription.fromJson(Map<String, dynamic> json) {
-    final data = SubscriptionSchema.migrateToV13(json);
+    final data = SubscriptionSchema.migrateToV14(json);
     final cycleIndex = (data['cycle'] as num?)?.toInt() ?? 1;
     return Subscription(
       id:
@@ -571,6 +580,12 @@ class Subscription {
       lastReviewedAt: DateTime.tryParse(
         (data['lastReviewedAt'] as String?) ?? '',
       ),
+      ignoredDuplicateGroupKeys: {
+        if (data['ignoredDuplicateGroupKeys'] is List)
+          for (final value in data['ignoredDuplicateGroupKeys'] as List)
+            if (value is String && value.isNotEmpty && value.length <= 2048)
+              value,
+      },
       iconUrl: (data['iconUrl'] as String?) ?? '',
       kind:
           PaymentKind.values[((data['kind'] as num?)?.toInt() ?? 0).clamp(

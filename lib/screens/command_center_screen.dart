@@ -5,13 +5,16 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/subscription.dart';
+import '../services/financial_assistant.dart';
 import '../services/renewal_intelligence.dart';
 import '../services/device_greeting.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
+import '../widgets/potential_duplicate_badge.dart';
 import 'calendar_screen.dart';
 import 'decision_center_screen.dart';
 import 'edit_subscription_screen.dart';
+import 'financial_review_screen.dart';
 import 'import_screen.dart';
 import 'subscriptions_screen.dart' show showSubscriptionDetails;
 
@@ -35,6 +38,10 @@ class CommandCenterScreen extends StatelessWidget {
             store.monthlyByCategory(currency).entries.toList()
               ..sort((a, b) => b.value.compareTo(a.value));
         final decisions = RenewalIntelligence.decisions(store.items);
+        final duplicateGroups =
+            FinancialAssistant.indexDuplicateGroupsBySubscriptionId(
+              FinancialAssistant.findDuplicateGroups(store.items),
+            );
         final snapshot = RenewalIntelligence.snapshot(
           store.items,
           currency: currency,
@@ -89,7 +96,10 @@ class CommandCenterScreen extends StatelessWidget {
             if (upcoming.isEmpty)
               const _CalmState()
             else
-              _RenewalStrip(subscriptions: upcoming.take(5).toList()),
+              _RenewalStrip(
+                subscriptions: upcoming.take(5).toList(),
+                duplicateGroups: duplicateGroups,
+              ),
             const SizedBox(height: 28),
             _V8SectionHeader(
               title: tr('ui_e94b40c88d6b'),
@@ -661,8 +671,12 @@ class _V8SectionHeader extends StatelessWidget {
 
 class _RenewalStrip extends StatelessWidget {
   final List<Subscription> subscriptions;
+  final Map<String, DuplicateSubscriptionGroup> duplicateGroups;
 
-  const _RenewalStrip({required this.subscriptions});
+  const _RenewalStrip({
+    required this.subscriptions,
+    required this.duplicateGroups,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -671,7 +685,10 @@ class _RenewalStrip extends StatelessWidget {
       child: Column(
         children: [
           for (var index = 0; index < subscriptions.length; index++) ...[
-            _RenewalCard(sub: subscriptions[index]),
+            _RenewalCard(
+              sub: subscriptions[index],
+              duplicateGroup: duplicateGroups[subscriptions[index].id],
+            ),
             if (index != subscriptions.length - 1)
               Divider(height: 1, color: context.palette.stroke),
           ],
@@ -683,69 +700,87 @@ class _RenewalStrip extends StatelessWidget {
 
 class _RenewalCard extends StatelessWidget {
   final Subscription sub;
+  final DuplicateSubscriptionGroup? duplicateGroup;
 
-  const _RenewalCard({required this.sub});
+  const _RenewalCard({required this.sub, this.duplicateGroup});
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    return InkWell(
-      onTap: () => showSubscriptionDetails(context, sub),
-      borderRadius: BorderRadius.circular(16),
-      child: Ink(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-        child: Row(
-          children: [
-            ServiceAvatar(
-              name: sub.name,
-              emoji: sub.emoji,
-              manageUrl: sub.manageUrl,
-              iconUrl: sub.iconUrl,
-              tint: categoryColor(sub.category),
-              size: 42,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    sub.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: p.text,
-                      fontWeight: FontWeight.w900,
-                      fontSize: V15Type.label,
-                    ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          onTap: () => showSubscriptionDetails(context, sub),
+          borderRadius: BorderRadius.circular(16),
+          child: Ink(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            child: Row(
+              children: [
+                ServiceAvatar(
+                  name: sub.name,
+                  emoji: sub.emoji,
+                  manageUrl: sub.manageUrl,
+                  iconUrl: sub.iconUrl,
+                  tint: categoryColor(sub.category),
+                  size: 42,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        sub.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: p.text,
+                          fontWeight: FontWeight.w900,
+                          fontSize: V15Type.label,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        tr('ui_109022fb0f10', {
+                          'value0': sub.daysUntilRenewal(),
+                        }),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: p.textMuted,
+                          fontSize: V15Type.caption,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    tr('ui_109022fb0f10', {'value0': sub.daysUntilRenewal()}),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: p.textMuted,
-                      fontSize: V15Type.caption,
-                    ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  fmtMoney(sub.price, sub.currency),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: p.accent,
+                    fontSize: V15Type.labelSmall,
+                    fontWeight: FontWeight.w900,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Text(
-              fmtMoney(sub.price, sub.currency),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: p.accent,
-                fontSize: V15Type.labelSmall,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        if (duplicateGroup case final group?)
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 10),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: PotentialDuplicateBadge(
+                onTap: () => openPotentialDuplicateReview(context, group),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

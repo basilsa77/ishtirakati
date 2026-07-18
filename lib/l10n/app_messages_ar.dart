@@ -540,4 +540,20 @@ const appMessagesAr = <String, String>{
   'ui_8f7d74ac0eac': 'تأكيد',
   'ui_1e65e8441737': '{value0}، {value1}',
   'ui_14d5786f2e64': 'إعادة المحاولة',
+  'v17Next30DaysTotal': 'إجمالي الدفعات خلال 30 يومًا',
+  'v17PossibleDuplicate': 'تكرار محتمل؟',
+  'v17DuplicateGroupTitle': 'اشتراكات متشابهة تحتاج مراجعة',
+  'v17DuplicateGroupDescription':
+      'راجع هذه الاشتراكات المتشابهة قبل اتخاذ قرار.',
+  'v17IgnoreDuplicate': 'تجاهل هذا المؤشر',
+  'v17DuplicateIgnored': 'تم تجاهل مؤشر التكرار',
+  'v17DuplicateIgnoreFailed': 'تعذر حفظ القرار. لم يتغير المؤشر.',
+  'v17DistributionOther': 'أخرى',
+  'v17MoreCategories': '+{count} تصنيفات أخرى',
+  'v17ShowAllCategories': 'عرض جميع التصنيفات',
+  'v17ShowFewerCategories': 'عرض أقل',
+  'v17PaymentHistoryTitle': 'سجل الدفعات',
+  'v17PaymentHistoryUnavailable':
+      'لا يسجل التطبيق دفعات فعلية حاليًا. راجع توقعات التجديد أعلاه.',
+  'v17ReviewDuplicate': 'مراجعة التكرار المحتمل',
 };

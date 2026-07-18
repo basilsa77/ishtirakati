@@ -34,7 +34,8 @@ void main() {
     final decoded = Subscription.fromJson(source);
     final encoded = decoded.toJson();
 
-    expect(encoded['schemaVersion'], 13);
+    expect(encoded['schemaVersion'], 14);
+    expect(encoded['ignoredDuplicateGroupKeys'], isEmpty);
     for (final key in <String>[
       'id',
       'name',

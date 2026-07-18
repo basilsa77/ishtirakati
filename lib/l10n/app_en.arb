@@ -738,5 +738,19 @@
   "firestoreDiagnosticNativeOperation": "Native operation",
   "firestoreDiagnosticAttempts": "Attempt count",
   "firestoreDiagnosticNativeResult": "Native result",
-  "firestoreDiagnosticPendingWrites": "Pending local writes"
+  "firestoreDiagnosticPendingWrites": "Pending local writes",
+  "v17Next30DaysTotal": "Total payments in the next 30 days",
+  "v17PossibleDuplicate": "Possible duplicate?",
+  "v17DuplicateGroupTitle": "Similar subscriptions need review",
+  "v17DuplicateGroupDescription": "Review these similar subscriptions before making a decision.",
+  "v17IgnoreDuplicate": "Ignore this insight",
+  "v17DuplicateIgnored": "Duplicate insight ignored",
+  "v17DuplicateIgnoreFailed": "The decision could not be saved. The insight was not changed.",
+  "v17DistributionOther": "Other",
+  "v17MoreCategories": "+{count} more categories",
+  "v17ShowAllCategories": "Show all categories",
+  "v17ShowFewerCategories": "Show fewer",
+  "v17PaymentHistoryTitle": "Payment history",
+  "v17PaymentHistoryUnavailable": "The app does not record actual payments yet. See the renewal forecast above.",
+  "v17ReviewDuplicate": "Review possible duplicate"
 }

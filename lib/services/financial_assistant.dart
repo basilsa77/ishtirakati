@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../models/subscription.dart';
 
 class MonthlyForecast {
@@ -13,15 +15,22 @@ class MonthlyForecast {
 }
 
 class DuplicateSubscriptionGroup {
+  final String groupKey;
   final String serviceName;
   final List<Subscription> subscriptions;
   final double avoidableMonthlyCost;
+  final bool isIgnored;
 
   const DuplicateSubscriptionGroup({
+    required this.groupKey,
     required this.serviceName,
     required this.subscriptions,
     required this.avoidableMonthlyCost,
+    required this.isIgnored,
   });
+
+  bool containsSubscription(String subscriptionId) =>
+      subscriptions.any((item) => item.id == subscriptionId);
 }
 
 enum FinancialReviewReason {
@@ -100,7 +109,11 @@ abstract final class FinancialAssistant {
             )
             .toList();
     final forecast = _forecast(active, today);
-    final duplicateGroups = _duplicates(active);
+    final duplicateGroups = findDuplicateGroups(
+      active,
+      currency: currency,
+      now: today,
+    );
     final duplicateIds = <String>{
       for (final group in duplicateGroups)
         for (final item in group.subscriptions) item.id,
@@ -193,6 +206,59 @@ abstract final class FinancialAssistant {
     );
   }
 
+  /// Finds active duplicate groups using the same engine as [analyze].
+  ///
+  /// Omitting [currency] returns groups across all currencies without ever
+  /// mixing different currencies into the same cost calculation. Ignored
+  /// decisions are excluded unless [includeIgnored] is explicitly requested.
+  static List<DuplicateSubscriptionGroup> findDuplicateGroups(
+    Iterable<Subscription> subscriptions, {
+    DateTime? now,
+    String? currency,
+    bool includeIgnored = false,
+  }) {
+    final today = _day(now ?? DateTime.now());
+    final active =
+        subscriptions
+            .where(
+              (item) =>
+                  (currency == null || item.currency == currency) &&
+                  !item.isPaused &&
+                  !item.isCompleted(today),
+            )
+            .toList();
+    return _duplicates(active, includeIgnored: includeIgnored);
+  }
+
+  /// Builds a direct lookup for list badges and deep links to a review group.
+  static Map<String, DuplicateSubscriptionGroup>
+  indexDuplicateGroupsBySubscriptionId(
+    Iterable<DuplicateSubscriptionGroup> groups,
+  ) {
+    final index = <String, DuplicateSubscriptionGroup>{};
+    for (final group in groups) {
+      for (final subscription in group.subscriptions) {
+        index[subscription.id] = group;
+      }
+    }
+    return Map.unmodifiable(index);
+  }
+
+  /// A collision-safe identity based only on stable subscription IDs.
+  static String duplicateGroupKey(Iterable<String> subscriptionIds) {
+    final ids =
+        subscriptionIds.where((id) => id.isNotEmpty).toSet().toList()..sort();
+    if (ids.length < 2) {
+      throw ArgumentError.value(
+        subscriptionIds,
+        'subscriptionIds',
+        'A duplicate group requires at least two unique IDs.',
+      );
+    }
+    final encoded = base64Url.encode(utf8.encode(jsonEncode(ids)));
+    return 'duplicate:v1:$encoded';
+  }
+
   static List<MonthlyForecast> _forecast(
     List<Subscription> active,
     DateTime today,
@@ -240,26 +306,34 @@ abstract final class FinancialAssistant {
   }
 
   static List<DuplicateSubscriptionGroup> _duplicates(
-    List<Subscription> active,
-  ) {
-    final grouped = <String, List<Subscription>>{};
+    List<Subscription> active, {
+    required bool includeIgnored,
+  }) {
+    final grouped = <(String, String), List<Subscription>>{};
     for (final item in active) {
       final key = _serviceKey(item);
       if (key.length < 3) continue;
-      grouped.putIfAbsent(key, () => []).add(item);
+      grouped.putIfAbsent((item.currency, key), () => []).add(item);
     }
     final output = <DuplicateSubscriptionGroup>[];
     for (final entry in grouped.entries) {
       if (entry.value.length < 2) continue;
       final sorted = [...entry.value]
         ..sort((a, b) => a.monthlyCost.compareTo(b.monthlyCost));
+      final groupKey = duplicateGroupKey(sorted.map((item) => item.id));
+      final isIgnored = sorted.any(
+        (item) => item.ignoredDuplicateGroupKeys.contains(groupKey),
+      );
+      if (isIgnored && !includeIgnored) continue;
       output.add(
         DuplicateSubscriptionGroup(
+          groupKey: groupKey,
           serviceName: sorted.first.name,
           subscriptions: sorted,
           avoidableMonthlyCost: sorted
               .skip(1)
               .fold(0.0, (sum, item) => sum + item.monthlyCost),
+          isIgnored: isIgnored,
         ),
       );
     }

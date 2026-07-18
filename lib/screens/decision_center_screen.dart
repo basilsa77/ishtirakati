@@ -4,9 +4,12 @@ library;
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/financial_assistant.dart';
 import '../services/renewal_intelligence.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
+import '../widgets/potential_duplicate_badge.dart';
+import 'financial_review_screen.dart';
 import 'subscriptions_screen.dart' show showSubscriptionDetails;
 
 class DecisionCenterScreen extends StatefulWidget {
@@ -28,6 +31,10 @@ class _DecisionCenterScreenState extends State<DecisionCenterScreen> {
         listenable: store,
         builder: (context, _) {
           final all = RenewalIntelligence.decisions(store.items);
+          final duplicateGroups =
+              FinancialAssistant.indexDuplicateGroupsBySubscriptionId(
+                FinancialAssistant.findDuplicateGroups(store.items),
+              );
           final items =
               _filter == null
                   ? all
@@ -90,7 +97,11 @@ class _DecisionCenterScreenState extends State<DecisionCenterScreen> {
                 for (var index = 0; index < items.length; index++) ...[
                   FadeSlideIn(
                     delayMs: index * 35,
-                    child: _DecisionCard(insight: items[index]),
+                    child: _DecisionCard(
+                      insight: items[index],
+                      duplicateGroup:
+                          duplicateGroups[items[index].subscription.id],
+                    ),
                   ),
                   const SizedBox(height: V16Space.sm),
                 ],
@@ -224,8 +235,9 @@ class _FilterChip extends StatelessWidget {
 
 class _DecisionCard extends StatelessWidget {
   final DecisionInsight insight;
+  final DuplicateSubscriptionGroup? duplicateGroup;
 
-  const _DecisionCard({required this.insight});
+  const _DecisionCard({required this.insight, this.duplicateGroup});
 
   Future<void> _recordUsage(BuildContext context) async {
     await SubscriptionStore.instance.recordUsage(insight.subscription.id);
@@ -296,6 +308,14 @@ class _DecisionCard extends StatelessWidget {
             Row(
               children: [
                 RenewalBadge(days: item.daysUntilRenewal()),
+                if (duplicateGroup case final group?) ...[
+                  const SizedBox(width: V16Space.xs),
+                  Flexible(
+                    child: PotentialDuplicateBadge(
+                      onTap: () => openPotentialDuplicateReview(context, group),
+                    ),
+                  ),
+                ],
                 const Spacer(),
                 if (insight.kind == DecisionKind.neverUsed ||
                     insight.kind == DecisionKind.renewalSoon)
