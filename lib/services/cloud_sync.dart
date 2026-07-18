@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
 import 'auth_service.dart';
+import 'cloud_account_binding.dart';
 import 'secure_data_codec.dart';
 import 'subscription_store.dart';
 import 'firebase_build_config.dart';
@@ -39,6 +40,7 @@ enum CloudSyncFailure {
   offline,
   permissionDenied,
   configuration,
+  accountMismatch,
   serviceUnavailable,
   appNotAuthorized,
   conflict,
@@ -184,9 +186,9 @@ class CloudSync {
   /// instances must not be used for this path.
   static const databaseId = '(default)';
   static const _maxBackupBytes = 850000;
-  static const _revisionKeyPrefix = 'ishtirakati_cloud_revision_v15_';
+  static const _revisionKeyPrefix = CloudAccountBinding.revisionKeyPrefix;
   static const _pendingRevisionKeyPrefix =
-      'ishtirakati_cloud_pending_revision_v15_';
+      CloudAccountBinding.pendingRevisionKeyPrefix;
   static final ValueNotifier<CloudSyncStatus> status = ValueNotifier(
     const CloudSyncStatus(CloudSyncPhase.idle),
   );
@@ -209,6 +211,29 @@ class CloudSync {
           : CloudSyncDelivery.failed,
     );
     return false;
+  }
+
+  static Future<bool> _ensureAccountBinding(String uid) async {
+    try {
+      final binding = await CloudAccountBinding.ensureBound(uid);
+      if (binding == CloudAccountBindingResult.mismatch) {
+        return _fail(
+          CloudSyncFailure.accountMismatch,
+          tr('cloudAccountMismatch'),
+        );
+      }
+      return true;
+    } on CloudAccountBindingException {
+      return _fail(
+        CloudSyncFailure.storageLocked,
+        tr('cloudAccountBindingUnavailable'),
+      );
+    } catch (_) {
+      return _fail(
+        CloudSyncFailure.storageLocked,
+        tr('cloudAccountBindingUnavailable'),
+      );
+    }
   }
 
   static void _setSyncing() {
@@ -448,23 +473,27 @@ class CloudSync {
 
   static Future<int> _localRevision(String uid) async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt('$_revisionKeyPrefix$uid') ?? 0;
+    final fingerprint = await CloudAccountBinding.fingerprint(uid);
+    return prefs.getInt('$_revisionKeyPrefix$fingerprint') ?? 0;
   }
 
   static Future<void> _saveLocalRevision(String uid, int revision) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('$_revisionKeyPrefix$uid', revision);
-    await prefs.remove('$_pendingRevisionKeyPrefix$uid');
+    final fingerprint = await CloudAccountBinding.fingerprint(uid);
+    await prefs.setInt('$_revisionKeyPrefix$fingerprint', revision);
+    await prefs.remove('$_pendingRevisionKeyPrefix$fingerprint');
   }
 
   static Future<void> _savePendingRevision(String uid, int revision) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('$_pendingRevisionKeyPrefix$uid', revision);
+    final fingerprint = await CloudAccountBinding.fingerprint(uid);
+    await prefs.setInt('$_pendingRevisionKeyPrefix$fingerprint', revision);
   }
 
   static Future<void> _clearPendingRevision(String uid) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('$_pendingRevisionKeyPrefix$uid');
+    final fingerprint = await CloudAccountBinding.fingerprint(uid);
+    await prefs.remove('$_pendingRevisionKeyPrefix$fingerprint');
     await _pendingConfirmationSubscription?.cancel();
     _pendingConfirmationSubscription = null;
   }
@@ -519,6 +548,7 @@ class CloudSync {
       return _fail(CloudSyncFailure.storageLocked, tr('cloudStorageLocked'));
     }
     if (doc == null || uid == null) return false;
+    if (!await _ensureAccountBinding(uid)) return false;
     _setSyncing();
     var firebaseOperation = 'firestore.prepare-encrypted-backup';
     try {
@@ -1100,6 +1130,7 @@ class CloudSync {
       return -1;
     }
     if (uid == null) return -1;
+    if (!await _ensureAccountBinding(uid)) return -1;
     _setSyncing();
     try {
       final snap = await _runFirestoreOperation(doc.get);
@@ -1159,6 +1190,7 @@ class CloudSync {
       _fail(CloudSyncFailure.unauthenticated, tr('cloudSignInToRestore'));
       return -1;
     }
+    if (!await _ensureAccountBinding(user.uid)) return -1;
     _setSyncing();
     final result = await FirestoreRestFallback.readEncryptedBackup(
       uid: user.uid,
@@ -1225,9 +1257,13 @@ class CloudSync {
   /// Restores a backup before uploading the latest local state.
   static Future<CloudSyncResult> restoreAndPush() async {
     final doc = _doc();
+    final uid = AuthService.currentUser?.uid;
     if (doc == null) {
       _fail(CloudSyncFailure.unauthenticated, tr('cloudSignInToSync'));
       return const CloudSyncResult.failed(CloudSyncFailure.unauthenticated);
+    }
+    if (uid == null || !await _ensureAccountBinding(uid)) {
+      return CloudSyncResult.failed(status.value.failure);
     }
     if (FirebaseBuildConfig.restUpdateFallbackEnabled) {
       final restored = await _pullViaRest();
@@ -1294,23 +1330,26 @@ class CloudSync {
     final doc = _doc();
     final uid = AuthService.currentUser?.uid;
     if (doc == null) throw StateError('No authenticated cloud document.');
+    if (uid == null || !await _ensureAccountBinding(uid)) {
+      throw StateError('Cloud account binding rejected the deletion.');
+    }
     try {
       await _runFirestoreOperation(doc.delete);
     } on FirebaseException catch (error, stackTrace) {
       _failFirebase(error, stackTrace, operation: 'firestore.delete-document');
       rethrow;
     }
-    if (uid != null) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('$_revisionKeyPrefix$uid');
-      await prefs.remove('$_pendingRevisionKeyPrefix$uid');
-    }
+    final prefs = await SharedPreferences.getInstance();
+    final fingerprint = await CloudAccountBinding.fingerprint(uid);
+    await prefs.remove('$_revisionKeyPrefix$fingerprint');
+    await prefs.remove('$_pendingRevisionKeyPrefix$fingerprint');
     status.value = const CloudSyncStatus(CloudSyncPhase.idle);
   }
 
   /// رفع مؤجل بعد كل تعديل (يجمع التعديلات المتتابعة في رفعة واحدة).
   static void schedulePush() {
-    if (!AuthService.isSignedIn ||
+    final scheduledUid = AuthService.currentUser?.uid;
+    if (scheduledUid == null ||
         !SubscriptionStore.instance.storageHealthy ||
         _pushQueued) {
       return;
@@ -1318,6 +1357,7 @@ class CloudSync {
     _pushQueued = true;
     Future.delayed(const Duration(seconds: 4), () async {
       _pushQueued = false;
+      if (AuthService.currentUser?.uid != scheduledUid) return;
       await push();
     });
   }

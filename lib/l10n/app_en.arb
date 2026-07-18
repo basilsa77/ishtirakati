@@ -97,6 +97,8 @@
   "cloudRestoreTimeout": "Restore took too long. Try again in a moment.",
   "cloudRestoreUnknown": "The cloud copy could not be restored. Data on this device was not changed.",
   "cloudAccountSyncUnknown": "Account sync failed. Data on this device was not changed.",
+  "cloudAccountMismatch": "This device's data is linked to another account. Sign in with the previous account or erase device data before switching accounts.",
+  "cloudAccountBindingUnavailable": "The local data account could not be verified. Sync was stopped to protect your data.",
   "aiProviderGemini": "Google Gemini — Free",
   "aiProviderGroq": "Groq — Free and fast",
   "aiInvalidKey": "The API key is invalid. Review it in Settings.",
