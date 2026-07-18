@@ -171,6 +171,27 @@ class CloudSyncResult {
   const CloudSyncResult.queued() : this._(success: false, queued: true);
 }
 
+enum CloudRestRestoreOutcome { restored, missing, failed }
+
+class CloudRestRestoreResult {
+  final CloudRestRestoreOutcome outcome;
+  final int imported;
+  final CloudSyncFailure failure;
+
+  const CloudRestRestoreResult.restored(this.imported)
+    : outcome = CloudRestRestoreOutcome.restored,
+      failure = CloudSyncFailure.none;
+
+  const CloudRestRestoreResult.missing()
+    : outcome = CloudRestRestoreOutcome.missing,
+      imported = 0,
+      failure = CloudSyncFailure.none;
+
+  const CloudRestRestoreResult.failed(this.failure)
+    : outcome = CloudRestRestoreOutcome.failed,
+      imported = 0;
+}
+
 class CloudSync {
   CloudSync._();
 
@@ -517,6 +538,28 @@ class CloudSync {
     required int localRevision,
     required FirestoreRestReadOutcome probeOutcome,
   }) => localRevision == 0 && probeOutcome == FirestoreRestReadOutcome.missing;
+
+  @visibleForTesting
+  static Future<CloudSyncResult> restoreAndPushViaRest({
+    required Future<CloudRestRestoreResult> Function() restore,
+    required Future<bool> Function() upload,
+    required CloudSyncFailure Function() uploadFailure,
+  }) async {
+    final restoreResult = await restore();
+    if (restoreResult.outcome == CloudRestRestoreOutcome.failed) {
+      return CloudSyncResult.failed(restoreResult.failure);
+    }
+
+    final uploaded = await upload();
+    if (!uploaded) {
+      return CloudSyncResult.failed(uploadFailure());
+    }
+    return CloudSyncResult.success(
+      imported: restoreResult.outcome == CloudRestRestoreOutcome.restored
+          ? restoreResult.imported
+          : 0,
+    );
+  }
 
   static Future<bool> _hasPendingFirstCreate(
     DocumentReference<Map<String, dynamic>> doc,
@@ -1184,13 +1227,17 @@ class CloudSync {
     }
   }
 
-  static Future<int> _pullViaRest() async {
+  static Future<CloudRestRestoreResult> _pullViaRest() async {
     final user = AuthService.currentUser;
     if (user == null) {
       _fail(CloudSyncFailure.unauthenticated, tr('cloudSignInToRestore'));
-      return -1;
+      return const CloudRestRestoreResult.failed(
+        CloudSyncFailure.unauthenticated,
+      );
     }
-    if (!await _ensureAccountBinding(user.uid)) return -1;
+    if (!await _ensureAccountBinding(user.uid)) {
+      return CloudRestRestoreResult.failed(status.value.failure);
+    }
     _setSyncing();
     final result = await FirestoreRestFallback.readEncryptedBackup(
       uid: user.uid,
@@ -1210,14 +1257,13 @@ class CloudSync {
     if (result.outcome != FirestoreRestReadOutcome.found ||
         result.document == null) {
       if (result.outcome == FirestoreRestReadOutcome.missing) {
-        _fail(CloudSyncFailure.configuration, tr('cloudSyncDocumentNotFound'));
-        return -1;
+        return const CloudRestRestoreResult.missing();
       }
       try {
         _throwRestReadFailure(result);
       } on FirebaseException catch (error, stackTrace) {
         _failFirebase(error, stackTrace, operation: 'rest-restore');
-        return -1;
+        return CloudRestRestoreResult.failed(status.value.failure);
       }
     }
     final remote = result.document!;
@@ -1226,7 +1272,9 @@ class CloudSync {
         utf8.encode(remote.backup).length > _maxBackupBytes ||
         !FirestoreRestFallback.isEncryptedBackupEnvelope(remote.backup)) {
       _fail(CloudSyncFailure.invalidBackup, tr('cloudInvalidBackup'));
-      return -1;
+      return const CloudRestRestoreResult.failed(
+        CloudSyncFailure.invalidBackup,
+      );
     }
     try {
       final count = await SubscriptionStore.instance.importEncryptedCloudBackup(
@@ -1237,7 +1285,9 @@ class CloudSync {
           CloudSyncFailure.storageLocked,
           tr('cloudEncryptedRestoreFailed'),
         );
-        return -1;
+        return const CloudRestRestoreResult.failed(
+          CloudSyncFailure.storageLocked,
+        );
       }
       await _saveLocalRevision(user.uid, remote.revision);
       status.value = status.value.copyWith(
@@ -1247,10 +1297,12 @@ class CloudSync {
         delivery: CloudSyncDelivery.serverConfirmed,
         hasPendingWrites: false,
       );
-      return count;
+      return CloudRestRestoreResult.restored(count);
     } on SecureDataException {
       _fail(CloudSyncFailure.storageLocked, tr('cloudStorageLocked'));
-      return -1;
+      return const CloudRestRestoreResult.failed(
+        CloudSyncFailure.storageLocked,
+      );
     }
   }
 
@@ -1266,14 +1318,11 @@ class CloudSync {
       return CloudSyncResult.failed(status.value.failure);
     }
     if (FirebaseBuildConfig.restUpdateFallbackEnabled) {
-      final restored = await _pullViaRest();
-      if (restored < 0) {
-        return CloudSyncResult.failed(status.value.failure);
-      }
-      final uploaded = await push();
-      return uploaded
-          ? CloudSyncResult.success(imported: restored)
-          : CloudSyncResult.failed(status.value.failure);
+      return restoreAndPushViaRest(
+        restore: _pullViaRest,
+        upload: push,
+        uploadFailure: () => status.value.failure,
+      );
     }
     try {
       final exists = (await _runFirestoreOperation(

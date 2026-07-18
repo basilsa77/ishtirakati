@@ -276,6 +276,93 @@ void main() {
       );
     });
 
+    test(
+      'confirmed REST 404 creates the first cloud revision exactly once',
+      () async {
+        var restoreCalls = 0;
+        var uploadCalls = 0;
+        final result = await CloudSync.restoreAndPushViaRest(
+          restore: () async {
+            restoreCalls++;
+            return const CloudRestRestoreResult.missing();
+          },
+          upload: () async {
+            uploadCalls++;
+            return true;
+          },
+          uploadFailure: () => CloudSyncFailure.unknown,
+        );
+
+        expect(restoreCalls, 1);
+        expect(uploadCalls, 1);
+        expect(result.success, isTrue);
+        expect(result.imported, 0);
+      },
+    );
+
+    test(
+      'successful REST restore uploads the merged state exactly once',
+      () async {
+        var uploadCalls = 0;
+        final result = await CloudSync.restoreAndPushViaRest(
+          restore: () async => const CloudRestRestoreResult.restored(4),
+          upload: () async {
+            uploadCalls++;
+            return true;
+          },
+          uploadFailure: () => CloudSyncFailure.unknown,
+        );
+
+        expect(uploadCalls, 1);
+        expect(result.success, isTrue);
+        expect(result.imported, 4);
+      },
+    );
+
+    test(
+      'REST permission, timeout, network, and malformed failures never upload',
+      () async {
+        const failures = <CloudSyncFailure>[
+          CloudSyncFailure.permissionDenied,
+          CloudSyncFailure.timeout,
+          CloudSyncFailure.serviceUnavailable,
+          CloudSyncFailure.invalidBackup,
+        ];
+
+        for (final failure in failures) {
+          var uploadCalls = 0;
+          final result = await CloudSync.restoreAndPushViaRest(
+            restore: () async => CloudRestRestoreResult.failed(failure),
+            upload: () async {
+              uploadCalls++;
+              return true;
+            },
+            uploadFailure: () => CloudSyncFailure.unknown,
+          );
+
+          expect(uploadCalls, 0, reason: 'failure=$failure');
+          expect(result.success, isFalse, reason: 'failure=$failure');
+          expect(result.failure, failure, reason: 'failure=$failure');
+        }
+      },
+    );
+
+    test('failed first-create upload is returned without a retry', () async {
+      var uploadCalls = 0;
+      final result = await CloudSync.restoreAndPushViaRest(
+        restore: () async => const CloudRestRestoreResult.missing(),
+        upload: () async {
+          uploadCalls++;
+          return false;
+        },
+        uploadFailure: () => CloudSyncFailure.permissionDenied,
+      );
+
+      expect(uploadCalls, 1);
+      expect(result.success, isFalse);
+      expect(result.failure, CloudSyncFailure.permissionDenied);
+    });
+
     test('queued writes never persist as confirmed revisions', () {
       expect(
         CloudSync.shouldPersistConfirmedRevision(
