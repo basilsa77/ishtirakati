@@ -10,6 +10,7 @@ import '../services/remote_catalog.dart';
 import '../services/subscription_store.dart';
 import '../services/update_checker.dart';
 import '../theme.dart';
+import '../widgets/service_name_text.dart';
 import 'calendar_screen.dart';
 import 'edit_subscription_screen.dart';
 import 'email_link_screen.dart';
@@ -230,7 +231,10 @@ class DashboardScreen extends StatelessWidget {
                   lines: [
                     tr('ui_933f0f6ac584', {'value0': neverUsed.first.name}),
                     if (neverUsed.length > 1)
-                      tr('ui_7578fd03e2b1', {'value0': neverUsed.length}),
+                      localizedPlural(
+                        'v17UnusedSubscriptionCount',
+                        neverUsed.length,
+                      ),
                   ],
                 ),
               ),
@@ -412,10 +416,10 @@ class _HeroCard extends StatelessWidget {
                   value:
                       pausedCount > 0
                           ? tr('ui_8b505e631670', {
-                            'value0': activeCount,
-                            'value1': pausedCount,
+                            'value0': localizedInteger(activeCount),
+                            'value1': localizedInteger(pausedCount),
                           })
-                          : '$activeCount',
+                          : localizedInteger(activeCount),
                 ),
               ],
             ),
@@ -719,20 +723,10 @@ class _GroupedTimeline extends StatelessWidget {
 
   const _GroupedTimeline({required this.subs});
 
-  static List<String> get _weekDays => [
-    tr('ui_69139e9f6f75'),
-    tr('ui_3e1154b18e8a'),
-    tr('ui_05ae1ca23dcb'),
-    tr('ui_74c564a4b5a6'),
-    tr('ui_fa35e221b844'),
-    tr('ui_a49412504fd0'),
-    tr('ui_b74290ce11de'),
-  ];
-
   static String _relative(int days, DateTime d) {
     if (days <= 0) return tr('ui_2422f71e7f4e');
     if (days == 1) return tr('commonTomorrow');
-    return '${_weekDays[d.weekday - 1]} ${d.day}/${d.month}';
+    return formatShortDate(d);
   }
 
   static Color _urgency(int days) {
@@ -866,9 +860,8 @@ class _TimelineCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            sub.name,
-                            overflow: TextOverflow.ellipsis,
+                          ServiceNameText(
+                            name: sub.name,
                             style: const TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: V15Type.label,

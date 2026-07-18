@@ -90,7 +90,7 @@ class _AiToolsScreenState extends State<AiToolsScreen> {
           content: Text(
             count == 0
                 ? tr('ui_d1cd2db743db')
-                : tr('ui_50ccfb7bccbb', {'value0': count}),
+                : localizedPlural('v17ServiceClassifiedCount', count),
           ),
         ),
       );

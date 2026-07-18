@@ -6,6 +6,7 @@ import '../models/subscription.dart';
 import '../services/financial_assistant.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
+import '../widgets/service_name_text.dart';
 
 Future<void> openPotentialDuplicateReview(
   BuildContext context,
@@ -243,10 +244,8 @@ class _FocusedDuplicateGroup extends StatelessWidget {
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      subscription.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    child: ServiceNameText(
+                      name: subscription.name,
                       style: TextStyle(
                         color: p.text,
                         fontWeight: V16Type.semibold,
@@ -287,9 +286,10 @@ class _ReviewSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = tr('ui_1ae481061748', {
-      'value0': analysis.reviewItems.length,
-    });
+    final title = localizedPlural(
+      'v17DecisionItemCount',
+      analysis.reviewItems.length,
+    );
     final detail = tr('ui_c7ca26cba27e', {
       'value0': fmtMoneyWithCurrency(
         analysis.potentialMonthlySavings,
@@ -391,8 +391,8 @@ class _ReviewRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item.subscription.name,
+                ServiceNameText(
+                  name: item.subscription.name,
                   style: TextStyle(
                     color: p.text,
                     fontSize: V16Type.bodySmall,

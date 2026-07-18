@@ -188,77 +188,16 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                         const SizedBox(height: V16Space.xs),
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
-                          child: CupertinoSlidingSegmentedControl<BillingCycle>(
+                          child: AppSegmentedControl<BillingCycle>(
+                            key: const Key('quick-add-cycle-segments'),
                             groupValue: _cycle,
-                            backgroundColor: p.surface,
-                            thumbColor: p.accentStrong,
-                            children: {
-                              BillingCycle.weekly: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: V16Space.xs,
-                                ),
-                                child: Text(
-                                  tr('ui_e16e5870ecd8'),
-                                  style: TextStyle(
-                                    color:
-                                        _cycle == BillingCycle.weekly
-                                            ? V16Colors.white
-                                            : p.text,
-                                    fontSize: V16Type.labelSmall,
-                                    fontWeight: V16Type.semibold,
-                                  ),
-                                ),
+                            labels: {
+                              BillingCycle.weekly: tr('ui_e16e5870ecd8'),
+                              BillingCycle.monthly: tr('ui_9c677bb93912'),
+                              BillingCycle.quarterly: localizedBillingCycle(
+                                BillingCycle.quarterly.name,
                               ),
-                              BillingCycle.monthly: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: V16Space.xs,
-                                ),
-                                child: Text(
-                                  tr('ui_9c677bb93912'),
-                                  style: TextStyle(
-                                    color:
-                                        _cycle == BillingCycle.monthly
-                                            ? V16Colors.white
-                                            : p.text,
-                                    fontSize: V16Type.labelSmall,
-                                    fontWeight: V16Type.semibold,
-                                  ),
-                                ),
-                              ),
-                              BillingCycle.quarterly: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: V16Space.xs,
-                                ),
-                                child: Text(
-                                  localizedBillingCycle(
-                                    BillingCycle.quarterly.name,
-                                  ),
-                                  style: TextStyle(
-                                    color:
-                                        _cycle == BillingCycle.quarterly
-                                            ? V16Colors.white
-                                            : p.text,
-                                    fontSize: V16Type.labelSmall,
-                                    fontWeight: V16Type.semibold,
-                                  ),
-                                ),
-                              ),
-                              BillingCycle.yearly: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: V16Space.xs,
-                                ),
-                                child: Text(
-                                  tr('ui_1beeff0b0fec'),
-                                  style: TextStyle(
-                                    color:
-                                        _cycle == BillingCycle.yearly
-                                            ? V16Colors.white
-                                            : p.text,
-                                    fontSize: V16Type.labelSmall,
-                                    fontWeight: V16Type.semibold,
-                                  ),
-                                ),
-                              ),
+                              BillingCycle.yearly: tr('ui_1beeff0b0fec'),
                             },
                             onValueChanged: (value) {
                               if (value != null) {

@@ -789,7 +789,7 @@ class SubscriptionStore extends ChangeNotifier {
       for (final s in _items.where((s) => s.currency == currency)) {
         total += s.spendingInMonth(d.year, d.month);
       }
-      out.add(MapEntry(localizedDate(d, skeleton: 'MMM'), total));
+      out.add(MapEntry(formatMonthAbbreviation(d), total));
     }
     return out;
   }
