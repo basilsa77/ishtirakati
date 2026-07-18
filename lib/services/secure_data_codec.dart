@@ -40,9 +40,7 @@ class IosSecureKeyStore implements SecureKeyStore {
       ),
     ),
     FlutterSecureStorage(
-      iOptions: IOSOptions(
-        accessibility: KeychainAccessibility.first_unlock,
-      ),
+      iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
     ),
   ];
 
@@ -76,10 +74,24 @@ class IosSecureKeyStore implements SecureKeyStore {
 
   @override
   Future<void> deleteAll(String key) async {
+    var failed = false;
     for (final store in _stores) {
       try {
         await store.delete(key: key);
-      } catch (_) {}
+      } catch (_) {
+        failed = true;
+      }
+    }
+    for (final store in _stores) {
+      try {
+        final remaining = await store.read(key: key);
+        if (remaining != null && remaining.isNotEmpty) failed = true;
+      } catch (_) {
+        failed = true;
+      }
+    }
+    if (failed) {
+      throw SecureDataException(tr('secureStorageLocked'));
     }
   }
 }
@@ -94,7 +106,7 @@ class SecureDataCodec {
   final SecureKeyStore _keyStore;
 
   SecureDataCodec({SecureKeyStore? keyStore})
-      : _keyStore = keyStore ?? const IosSecureKeyStore();
+    : _keyStore = keyStore ?? const IosSecureKeyStore();
 
   Future<List<List<int>>> _keychainKeys() async {
     final keys = <List<int>>[];
@@ -252,10 +264,7 @@ class SecureDataCodec {
 
   Future<String?> _tryDecrypt(SecretBox box, List<int> keyBytes) async {
     try {
-      final clear = await _cipher.decrypt(
-        box,
-        secretKey: SecretKey(keyBytes),
-      );
+      final clear = await _cipher.decrypt(box, secretKey: SecretKey(keyBytes));
       return utf8.decode(clear);
     } catch (_) {
       return null;
@@ -264,8 +273,15 @@ class SecureDataCodec {
 
   Future<void> deleteAllKeys() async {
     await _keyStore.deleteAll(keyName);
+    if ((await _keyStore.readAll(keyName)).isNotEmpty) {
+      throw SecureDataException(tr('secureStorageLocked'));
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(mirrorPreferenceKey);
     await prefs.remove(mirrorOptInPreferenceKey);
+    if (prefs.containsKey(mirrorPreferenceKey) ||
+        prefs.containsKey(mirrorOptInPreferenceKey)) {
+      throw SecureDataException(tr('secureStorageLocked'));
+    }
   }
 }

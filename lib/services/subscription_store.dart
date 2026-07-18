@@ -23,19 +23,25 @@ class SubscriptionStore extends ChangeNotifier {
     SecureDataCodec? dataCodec,
     SecureKeyStore? secretStore,
     EmailIdentityStore? emailIdentityStore,
+    Future<void> Function()? cancelNotificationsForDeletion,
   }) : _dataCodec = dataCodec ?? SecureDataCodec(),
        _secretStore = secretStore ?? const IosSecureKeyStore(),
-       _emailIdentityStore = emailIdentityStore ?? EmailIdentityStore.instance;
+       _emailIdentityStore = emailIdentityStore ?? EmailIdentityStore.instance,
+       _cancelNotificationsForDeletion =
+           cancelNotificationsForDeletion ??
+           NotificationService.instance.cancelAllForDeletion;
 
   @visibleForTesting
   SubscriptionStore.testing({
     SecureDataCodec? dataCodec,
     SecureKeyStore? secretStore,
     EmailIdentityStore? emailIdentityStore,
+    Future<void> Function()? cancelNotificationsForDeletion,
   }) : this._(
          dataCodec: dataCodec,
          secretStore: secretStore,
          emailIdentityStore: emailIdentityStore,
+         cancelNotificationsForDeletion: cancelNotificationsForDeletion,
        );
 
   static final SubscriptionStore instance = SubscriptionStore._();
@@ -76,6 +82,7 @@ class SubscriptionStore extends ChangeNotifier {
   final SecureDataCodec _dataCodec;
   final SecureKeyStore _secretStore;
   final EmailIdentityStore _emailIdentityStore;
+  final Future<void> Function() _cancelNotificationsForDeletion;
 
   List<Subscription> get items => List.unmodifiable(_items);
   String get defaultCurrency => _defaultCurrency;
@@ -267,8 +274,15 @@ class SubscriptionStore extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     if (next.isEmpty) {
       await _secretStore.deleteAll(_aiKeyKey);
+      if ((await _secretStore.readAll(_aiKeyKey)).isNotEmpty) {
+        throw SecureDataException(tr('secureStorageLocked'));
+      }
       await prefs.remove('${_aiKeyKey}_mirror');
       await prefs.remove(_aiKeyKey);
+      if (prefs.containsKey('${_aiKeyKey}_mirror') ||
+          prefs.containsKey(_aiKeyKey)) {
+        throw SecureDataException(tr('secureStorageLocked'));
+      }
     } else {
       final keychainReady = await _secretStore.writeAll(_aiKeyKey, next);
       if (!keychainReady) {
@@ -589,12 +603,33 @@ class SubscriptionStore extends ChangeNotifier {
 
   /// يمحو بيانات هذا التثبيت بعد نجاح حذف الحساب والسحابة.
   Future<void> clearLocalForAccountDeletion() async {
-    await NotificationService.instance.cancelAll();
-    await _emailIdentityStore.forget();
-    await _dataCodec.deleteAllKeys();
-    await _secretStore.deleteAll(_aiKeyKey);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    Object? firstError;
+    StackTrace? firstStackTrace;
+
+    Future<void> attempt(Future<void> Function() action) async {
+      try {
+        await action();
+      } catch (error, stackTrace) {
+        firstError ??= error;
+        firstStackTrace ??= stackTrace;
+      }
+    }
+
+    await attempt(_cancelNotificationsForDeletion);
+    await attempt(_emailIdentityStore.forget);
+    await attempt(_dataCodec.deleteAllKeys);
+    await attempt(() async {
+      await _secretStore.deleteAll(_aiKeyKey);
+      if ((await _secretStore.readAll(_aiKeyKey)).isNotEmpty) {
+        throw SecureDataException(tr('secureStorageLocked'));
+      }
+    });
+    await attempt(() async {
+      final prefs = await SharedPreferences.getInstance();
+      if (!await prefs.clear() || prefs.getKeys().isNotEmpty) {
+        throw SecureDataException(tr('secureStorageLocked'));
+      }
+    });
     _items.clear();
     _defaultCurrency = 'SAR';
     _monthlyBudget = 0;
@@ -608,6 +643,9 @@ class SubscriptionStore extends ChangeNotifier {
     _storageHealthy = true;
     _storageError = null;
     notifyListeners();
+    if (firstError != null) {
+      Error.throwWithStackTrace(firstError!, firstStackTrace!);
+    }
   }
 
   // ------------------------- إحصائيات -------------------------

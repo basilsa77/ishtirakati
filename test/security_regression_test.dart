@@ -7,6 +7,7 @@ import 'package:ishtirakati/models/subscription.dart';
 import 'package:ishtirakati/services/account_deletion_service.dart';
 import 'package:ishtirakati/services/ai_consent_service.dart';
 import 'package:ishtirakati/services/email_identity_store.dart';
+import 'package:ishtirakati/services/notification_service.dart';
 import 'package:ishtirakati/services/safe_url.dart';
 import 'package:ishtirakati/services/secure_data_codec.dart';
 import 'package:ishtirakati/services/subscription_store.dart';
@@ -62,6 +63,21 @@ class _FailingReadKeyStore implements SecureKeyStore {
 
   @override
   Future<bool> writeAll(String key, String value) async => false;
+}
+
+class _UndeletableKeyStore implements SecureKeyStore {
+  final List<String> values;
+
+  _UndeletableKeyStore(String value) : values = [value];
+
+  @override
+  Future<void> deleteAll(String key) async {}
+
+  @override
+  Future<List<String>> readAll(String key) async => List.of(values);
+
+  @override
+  Future<bool> writeAll(String key, String value) async => true;
 }
 
 class _DeletionCodec extends SecureDataCodec {
@@ -294,6 +310,70 @@ void main() {
     expect(prefs.getString('ishtirakati_default_currency'), isNull);
   });
 
+  test('فشل التحقق من حذف مفتاح AI لا يعلن أن المفتاح مُحي', () async {
+    SharedPreferences.setMockInitialValues({});
+    final secretStore = _UndeletableKeyStore('api-key-that-remains');
+    final store = SubscriptionStore.testing(
+      dataCodec: SecureDataCodec(keyStore: _FakeKeyStore()),
+      secretStore: secretStore,
+    );
+    await store.load();
+
+    await expectLater(
+      store.setAiApiKey(''),
+      throwsA(isA<SecureDataException>()),
+    );
+
+    expect(store.aiApiKey, 'api-key-that-remains');
+    expect(secretStore.values, isNotEmpty);
+  });
+
+  test('حذف الحساب يحاول كل المخازن ثم يصعّد فشل الإشعارات', () async {
+    SharedPreferences.setMockInitialValues({'sensitive': 'value'});
+    final codec = _DeletionCodec();
+    final secretStore = _FakeKeyStore(values: ['ai-key']);
+    final emailKeychain = _DeletionEmailKeychain();
+    final store = SubscriptionStore.testing(
+      dataCodec: codec,
+      secretStore: secretStore,
+      emailIdentityStore: EmailIdentityStore(keychain: emailKeychain),
+      cancelNotificationsForDeletion: () async {
+        throw StateError('test notification cancellation failure');
+      },
+    );
+
+    await expectLater(store.clearLocalForAccountDeletion(), throwsStateError);
+
+    expect(codec.deleted, isTrue);
+    expect(secretStore.deleted, isTrue);
+    expect(emailKeychain.canonical, isNull);
+    expect((await SharedPreferences.getInstance()).getKeys(), isEmpty);
+  });
+
+  test('حذف الإشعارات يفشل مغلقاً إن تعذرت التهيئة أو بقي طلب', () async {
+    var ready = false;
+    await expectLater(
+      NotificationService.cancelAllForDeletionWith(
+        initialize: () async {},
+        isReady: () => ready,
+        cancel: () async {},
+        pendingCount: () async => 0,
+      ),
+      throwsStateError,
+    );
+
+    ready = true;
+    await expectLater(
+      NotificationService.cancelAllForDeletionWith(
+        initialize: () async {},
+        isReady: () => ready,
+        cancel: () async {},
+        pendingCount: () async => 1,
+      ),
+      throwsStateError,
+    );
+  });
+
   test('حذف الحساب مرتب ولا يمسح المحلي عند فشل السحابة', () async {
     final calls = <String>[];
 
@@ -336,6 +416,7 @@ void main() {
       dataCodec: codec,
       secretStore: secretStore,
       emailIdentityStore: EmailIdentityStore(keychain: emailKeychain),
+      cancelNotificationsForDeletion: () async {},
     );
 
     await store.clearLocalForAccountDeletion();
