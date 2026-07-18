@@ -36,6 +36,8 @@ const _pluralKeys = <String>[
   'v17DaysAfterCount',
   'v17EmailScanNoMatches',
   'v17SubscriptionRenewsInDays',
+  'backupDeleteFinalMessage',
+  'backupImportCompleted',
 ];
 
 const _arabicCoreCases = <String, Map<int, String>>{

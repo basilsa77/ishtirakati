@@ -310,6 +310,8 @@ class IosTextField extends StatelessWidget {
   final int maxLines;
   final Widget? prefix;
   final Widget? suffix;
+  final String? errorText;
+  final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
 
   const IosTextField({
@@ -326,6 +328,8 @@ class IosTextField extends StatelessWidget {
     this.maxLines = 1,
     this.prefix,
     this.suffix,
+    this.errorText,
+    this.onChanged,
     this.onSubmitted,
   });
 
@@ -361,6 +365,7 @@ class IosTextField extends StatelessWidget {
           maxLines: maxLines,
           prefix: prefix,
           suffix: suffix,
+          onChanged: onChanged,
           onSubmitted: onSubmitted,
           clearButtonMode: OverlayVisibilityMode.editing,
           padding: const EdgeInsets.symmetric(
@@ -375,9 +380,30 @@ class IosTextField extends StatelessWidget {
           decoration: BoxDecoration(
             color: p.surface,
             borderRadius: BorderRadius.circular(V16Radius.standard),
-            border: Border.all(color: p.stroke),
+            border: Border.all(color: errorText == null ? p.stroke : p.danger),
           ),
         ),
+        if (errorText != null) ...[
+          const SizedBox(height: V16Space.xs),
+          Semantics(
+            container: true,
+            liveRegion: true,
+            label: errorText,
+            child: ExcludeSemantics(
+              child: Padding(
+                padding: const EdgeInsetsDirectional.only(start: V16Space.xxs),
+                child: Text(
+                  errorText!,
+                  style: TextStyle(
+                    color: p.danger,
+                    fontSize: V16Type.caption,
+                    fontWeight: V16Type.semibold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

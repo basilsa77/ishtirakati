@@ -1,7 +1,7 @@
 name: ishtirakati
 description: "اشتراكاتي - تتبّع اشتراكاتك الرقمية وتحكّم بمصروفك | تطبيق عربي أولًا للسوق السعودي والخليجي"
 publish_to: 'none'
-version: 16.0.1+45
+version: 17.0.0+46
 
 environment:
   sdk: '>=3.7.0 <4.0.0'
@@ -29,6 +29,10 @@ dependencies:
   firebase_app_check: ^0.4.5
   google_sign_in: ^7.2.0
   sign_in_with_apple: ^8.1.0
+  # Native iOS/iPadOS share sheet for encrypted backup and CSV exports.
+  share_plus: 12.0.2
+  # Native Files picker for restoring an encrypted JSON backup.
+  file_selector: 1.0.4
 
 dev_dependencies:
   flutter_test:

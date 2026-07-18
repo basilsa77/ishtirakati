@@ -130,7 +130,7 @@ jobs:
       - name: حفظ ملف قفل الاعتماديات
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: pubspec-lock-v16.0.1-build45
+          name: pubspec-lock-v17.0.0-build46
           path: pubspec.lock
           retention-days: 1
 
@@ -198,27 +198,27 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/ios/iphoneos/Runner.app Payload/
-          zip -qr "Ishtirakati-16.0.1-build45-${SHORT_SHA}-unsigned.ipa" Payload
-          ls -lh "Ishtirakati-16.0.1-build45-${SHORT_SHA}-unsigned.ipa"
+          zip -qr "Ishtirakati-17.0.0-build46-${SHORT_SHA}-unsigned.ipa" Payload
+          ls -lh "Ishtirakati-17.0.0-build46-${SHORT_SHA}-unsigned.ipa"
 
       - name: رفع الملف الناتج
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: Ishtirakati-16.0.1-build45-${{ env.SHORT_SHA }}-unsigned-ipa
-          path: Ishtirakati-16.0.1-build45-${{ env.SHORT_SHA }}-unsigned.ipa
+          name: Ishtirakati-17.0.0-build46-${{ env.SHORT_SHA }}-unsigned-ipa
+          path: Ishtirakati-17.0.0-build46-${{ env.SHORT_SHA }}-unsigned.ipa
           retention-days: 30
 
       - name: رفع رموز فك التشويش الخاصة بالمطور
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: Ishtirakati-16.0.1-build45-${{ env.SHORT_SHA }}-iOS-symbols
+          name: Ishtirakati-17.0.0-build46-${{ env.SHORT_SHA }}-iOS-symbols
           path: build/ios-symbols
           retention-days: 30
 
       - name: رفع قفل Swift Package Manager
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: Ishtirakati-16.0.1-build45-${{ env.SHORT_SHA }}-Package-resolved
+          name: Ishtirakati-17.0.0-build46-${{ env.SHORT_SHA }}-Package-resolved
           path: ios/**/Package.resolved
           if-no-files-found: warn
           retention-days: 30

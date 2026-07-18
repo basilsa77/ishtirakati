@@ -3,19 +3,24 @@ import 'package:flutter/services.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/subscription.dart';
+import '../services/amount_input_parser.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
 import '../widgets/ios_controls.dart';
 import 'edit_subscription_screen.dart';
 
-Future<void> showQuickAddSheet(BuildContext context) =>
-    showCupertinoModalPopup<void>(
-      context: context,
-      builder: (_) => const _QuickAddSheet(),
-    );
+Future<void> showQuickAddSheet(
+  BuildContext context, {
+  SubscriptionSaver? saveSubscription,
+}) => showCupertinoModalPopup<void>(
+  context: context,
+  builder: (_) => _QuickAddSheet(saveSubscription: saveSubscription),
+);
 
 class _QuickAddSheet extends StatefulWidget {
-  const _QuickAddSheet();
+  const _QuickAddSheet({this.saveSubscription});
+
+  final SubscriptionSaver? saveSubscription;
 
   @override
   State<_QuickAddSheet> createState() => _QuickAddSheetState();
@@ -26,7 +31,8 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
   final _price = TextEditingController();
   bool _saving = false;
   BillingCycle _cycle = BillingCycle.monthly;
-  String? _validationMessage;
+  String? _nameError;
+  String? _amountError;
 
   @override
   void dispose() {
@@ -36,22 +42,24 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     final name = _name.text.trim();
-    final price = double.tryParse(
-      _price.text
-          .trim()
-          .replaceAll(tr('ui_bc4d631526af'), '.')
-          .replaceAll(',', '.'),
-    );
-    if (name.isEmpty || price == null || price <= 0) {
-      setState(
-        () =>
-            _validationMessage =
-                name.isEmpty ? tr('ui_8836a5db4038') : tr('ui_881dedd25de1'),
-      );
+    final amount = validateAmountInput(_price.text);
+    final nameError = name.isEmpty ? tr('ui_8836a5db4038') : null;
+    final amountError =
+        amount.issue == null ? null : tr(amount.issue!.localizationKey);
+    if (nameError != null || amountError != null) {
+      setState(() {
+        _nameError = nameError;
+        _amountError = amountError;
+      });
       return;
     }
-    setState(() => _saving = true);
+    setState(() {
+      _nameError = null;
+      _amountError = null;
+      _saving = true;
+    });
     final now = DateTime.now();
     final renewal = switch (_cycle) {
       BillingCycle.weekly => now.add(const Duration(days: 7)),
@@ -59,22 +67,34 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
       BillingCycle.quarterly => Subscription.addMonths(now, 3),
       BillingCycle.yearly => Subscription.addMonths(now, 12),
     };
-    await SubscriptionStore.instance.upsert(
-      Subscription(
-        id: now.microsecondsSinceEpoch.toString(),
-        name: name,
-        emoji: '🔖',
-        price: price,
-        currency: SubscriptionStore.instance.defaultCurrency,
-        cycle: _cycle,
-        anchorDate: renewal,
-        category: 'أخرى',
-        reminderDays: 3,
-        autoRenews: true,
-      ),
+    final subscription = Subscription(
+      id: now.microsecondsSinceEpoch.toString(),
+      name: name,
+      emoji: '🔖',
+      price: amount.value!,
+      currency: SubscriptionStore.instance.defaultCurrency,
+      cycle: _cycle,
+      anchorDate: renewal,
+      category: 'أخرى',
+      reminderDays: 3,
+      autoRenews: true,
     );
-    await HapticFeedback.mediumImpact();
-    if (mounted) Navigator.pop(context);
+    try {
+      await (widget.saveSubscription ?? SubscriptionStore.instance.upsert)(
+        subscription,
+      );
+      try {
+        await HapticFeedback.mediumImpact();
+      } catch (_) {
+        // Saving is authoritative; unavailable haptics must not invite a
+        // second submission of an already-persisted subscription.
+      }
+      if (!mounted) return;
+      setState(() => _saving = false);
+      Navigator.pop(context);
+    } finally {
+      if (mounted && _saving) setState(() => _saving = false);
+    }
   }
 
   void _openFullForm() {
@@ -145,20 +165,34 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         IosTextField(
+                          key: const Key('quick-service-name-field'),
                           controller: _name,
                           label: tr('ui_8999278851b9'),
                           autofocus: true,
                           textInputAction: TextInputAction.next,
                           placeholder: tr('ui_c964408c2817'),
+                          errorText: _nameError,
+                          onChanged: (_) {
+                            if (_nameError != null) {
+                              setState(() => _nameError = null);
+                            }
+                          },
                         ),
                         const SizedBox(height: V16Space.sm),
                         IosTextField(
+                          key: const Key('quick-amount-field'),
                           controller: _price,
                           label: tr('ui_0d049d3998af'),
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
                           placeholder: '0.00',
+                          errorText: _amountError,
+                          onChanged: (_) {
+                            if (_amountError != null) {
+                              setState(() => _amountError = null);
+                            }
+                          },
                           suffix: Padding(
                             padding: const EdgeInsetsDirectional.only(
                               end: V16Space.sm,
@@ -209,17 +243,11 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                       ],
                     ),
                   ),
-                  if (_validationMessage != null) ...[
-                    const SizedBox(height: V16Space.sm),
-                    IosStatusNotice(
-                      message: _validationMessage!,
-                      tone: IosStatusTone.error,
-                    ),
-                  ],
                   const SizedBox(height: V16Space.md),
                   SizedBox(
                     width: double.infinity,
                     child: CupertinoButton.filled(
+                      key: const Key('quick-save-button'),
                       onPressed: _saving ? null : _save,
                       borderRadius: BorderRadius.circular(V16Radius.standard),
                       child: Text(

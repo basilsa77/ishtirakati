@@ -730,13 +730,13 @@ Future<void> showSubscriptionDetails(
                       ),
                     ),
                     const SizedBox(height: V16Space.md),
-                    _DetailMetric(
+                    SubscriptionDetailMetric(
                       icon: Icons.event_repeat_rounded,
                       label: tr('ui_b4f5658d61f3'),
                       value: _renewalText(sub.daysUntilRenewal()),
                     ),
                     const SizedBox(height: V16Space.sm),
-                    _DetailMetric(
+                    SubscriptionDetailMetric(
                       icon: Icons.payments_outlined,
                       label: tr('ui_118b84c4c576'),
                       value: fmtMoneyWithCurrency(
@@ -746,7 +746,7 @@ Future<void> showSubscriptionDetails(
                     ),
                     if (sub.notes.trim().isNotEmpty) ...[
                       const SizedBox(height: V16Space.sm),
-                      _DetailMetric(
+                      SubscriptionDetailNote(
                         icon: Icons.notes_rounded,
                         label: tr('ui_0be7afd7e65f'),
                         value: sub.notes,
@@ -879,12 +879,75 @@ List<Widget> _actionButtons(
   ),
 ];
 
-class _DetailMetric extends StatelessWidget {
+@visibleForTesting
+class SubscriptionDetailMetric extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
 
-  const _DetailMetric({
+  const SubscriptionDetailMetric({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: V16Space.md,
+        vertical: V16Space.sm,
+      ),
+      decoration: BoxDecoration(
+        color: p.surfaceAlt,
+        borderRadius: BorderRadius.circular(V16Radius.standard),
+        border: Border.all(color: p.stroke),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: p.accent, size: 19),
+          const SizedBox(width: V16Space.xs),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: p.textMuted, fontSize: V16Type.caption),
+            ),
+          ),
+          const SizedBox(width: V16Space.sm),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                color: p.text,
+                fontSize: V16Type.labelSmall,
+                fontWeight: V16Type.semibold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Notes intentionally keep their multiline layout; forcing long prose into
+/// the compact trailing-value metric would make it unreadable.
+@visibleForTesting
+class SubscriptionDetailNote extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const SubscriptionDetailNote({
+    super.key,
     required this.icon,
     required this.label,
     required this.value,
@@ -922,12 +985,10 @@ class _DetailMetric extends StatelessWidget {
           const SizedBox(height: V16Space.xs),
           Text(
             value,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: p.text,
               fontSize: V16Type.labelSmall,
-              fontWeight: V16Type.semibold,
+              height: V16Type.labelHeight,
             ),
           ),
         ],
