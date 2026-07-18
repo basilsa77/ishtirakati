@@ -195,7 +195,7 @@ const appMessagesAr = <String, String>{
   'ui_dd9f417e000b': 'لم أحدد وسيلة الدفع',
   'ui_b5f0807ace71': 'بطاقة مدى',
   'ui_eba8a86b7df5': 'بطاقة ائتمانية',
-  'ui_46537a09b0bd': 'رصيد المتجر',
+  'ui_46537a09b0bd': 'وسيلة دفع أخرى',
   'ui_71467661edb7': 'رصيد متجر التطبيقات',
   'ui_f6005bd9a851': 'تعديل الاشتراك',
   'ui_1d2163f7ccc0': 'اشتراك جديد',
@@ -613,4 +613,52 @@ const appMessagesAr = <String, String>{
   'v17SubscriptionRenewsInDays':
       '{count, plural, zero {{name} يتجدد اليوم} one {{name} يتجدد غدًا} two {{name} يتجدد بعد يومين} few {{name} يتجدد بعد # أيام} many {{name} يتجدد بعد # يومًا} other {{name} يتجدد بعد # يوم}}',
   'v17PaymentsForDate': 'دفعات {date}',
+  'v17RenewalDaySummary': '{date}، {services}، {totals}',
+  'v17AmountRequired': 'أدخل المبلغ.',
+  'v17AmountInvalid': 'أدخل مبلغًا رقميًا صحيحًا.',
+  'v17AmountZero': 'يجب أن يكون المبلغ أكبر من صفر.',
+  'v17AmountNegative': 'لا يمكن أن يكون المبلغ سالبًا.',
+  'backupBeforeDeleteTitle': 'احفظ نسخة قبل الحذف',
+  'backupBeforeDeleteMessage':
+      'يمكنك تصدير نسخة مشفرة، أو ملف CSV غير مشفر، أو المتابعة دون تصدير. النسخة المشفرة قابلة للاستعادة على هذا التثبيت فقط ما دام مفتاح Keychain متاحًا.',
+  'backupExportEncrypted': 'تصدير نسخة مشفرة',
+  'backupImportEncrypted': 'استيراد نسخة مشفرة',
+  'backupExportCsv': 'تصدير CSV',
+  'backupContinueWithoutExport': 'المتابعة دون تصدير',
+  'backupDeleteFinalMessage':
+      '{count, plural, zero {لا توجد اشتراكات محلية، لكن التطبيق سيطلب استبدال النسخة السحابية المتزامنة بنسخة فارغة عند توفر الاتصال إن كنت مسجلًا الدخول.} one {سيُحذف اشتراك واحد نهائيًا من هذا الجهاز، وسيطلب التطبيق استبدال النسخة السحابية المتزامنة بنسخة فارغة عند توفر الاتصال إن كنت مسجلًا الدخول.} two {سيُحذف اشتراكان نهائيًا من هذا الجهاز، وسيطلب التطبيق استبدال النسخة السحابية المتزامنة بنسخة فارغة عند توفر الاتصال إن كنت مسجلًا الدخول.} few {سيُحذف # اشتراكات نهائيًا من هذا الجهاز، وسيطلب التطبيق استبدال النسخة السحابية المتزامنة بنسخة فارغة عند توفر الاتصال إن كنت مسجلًا الدخول.} many {سيُحذف # اشتراكًا نهائيًا من هذا الجهاز، وسيطلب التطبيق استبدال النسخة السحابية المتزامنة بنسخة فارغة عند توفر الاتصال إن كنت مسجلًا الدخول.} other {سيُحذف # اشتراك نهائيًا من هذا الجهاز، وسيطلب التطبيق استبدال النسخة السحابية المتزامنة بنسخة فارغة عند توفر الاتصال إن كنت مسجلًا الدخول.}}',
+  'backupDeleteCompleted':
+      'تم حذف الاشتراكات من هذا الجهاز، وجُدولت محاولة مزامنة نسخة فارغة مع السحابة إن كنت مسجلًا الدخول؛ لم يُؤكد وصولها بعد.',
+  'backupDeleteFailed':
+      'تعذر إكمال الحذف بأمان. لم تتغير الاشتراكات في الذاكرة.',
+  'backupExportCompleted': 'اكتمل تصدير الملف.',
+  'backupShareUnavailable': 'تعذر تأكيد مشاركة الملف. لم يبدأ الحذف.',
+  'backupExportFailed': 'تعذر إنشاء الملف أو مشاركته.',
+  'backupCsvWarningTitle': 'ملف CSV غير مشفر',
+  'backupCsvWarningMessage':
+      'قد يحتوي CSV على أسماء اشتراكات ومبالغ وتواريخ خاصة. سيُشارك كنص غير مشفر؛ احفظه في مكان موثوق.',
+  'backupCsvConfirm': 'إنشاء ومشاركة CSV',
+  'backupImportCompleted':
+      '{count, plural, zero {تم التحقق من النسخة، ولا تحتوي على اشتراكات لاستعادتها.} one {تمت استعادة اشتراك واحد.} two {تمت استعادة اشتراكين.} few {تمت استعادة # اشتراكات.} many {تمت استعادة # اشتراكًا.} other {تمت استعادة # اشتراك.}}',
+  'backupUnsupportedVersion': 'إصدار ملف النسخة الاحتياطية غير مدعوم.',
+  'backupDecryptFailed':
+      'تعذر فتح النسخة بالمفتاح المحفوظ في Keychain. لم تتغير بيانات هذا الجهاز.',
+  'backupInvalidFile': 'الملف تالف أو ليس نسخة احتياطية مشفرة صالحة.',
+  'backupEncryptedSameDeviceDetail':
+      'مشفر؛ يحتاج مفتاح Keychain في هذا التثبيت للاستعادة',
+  'backupImportEncryptedDetail':
+      'تحقق من الملف ثم استعد بياناته بالمفتاح المحلي',
+  'backupCsvPlaintextDetail': 'نسخة بشرية غير مشفرة بعد تحذير الخصوصية',
+  'backupDeleteDeviceCloudDetail':
+      'يحذف بيانات الجهاز ويجدول محاولة مزامنة نسخة سحابية فارغة عند تسجيل الدخول',
+  'backupFilePickerLabel': 'نسخة اشتراكاتي المشفرة',
+  'backupCsvName': 'الاسم',
+  'backupCsvAmount': 'المبلغ',
+  'backupCsvCurrency': 'العملة',
+  'backupCsvCycle': 'الدورة',
+  'backupCsvCategory': 'التصنيف',
+  'backupCsvNextRenewal': 'التجديد القادم',
+  'backupCsvStatus': 'الحالة',
+  'backupCsvActive': 'نشط',
+  'backupCsvPaused': 'متوقف',
 };

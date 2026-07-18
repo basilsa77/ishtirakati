@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/subscription.dart';
+import '../models/subscription_schema.dart';
 import '../data/presets.dart';
 import '../l10n/app_localizations.dart';
 import 'category_classifier.dart';
@@ -18,6 +19,25 @@ import 'cloud_sync.dart';
 import 'email_identity_store.dart';
 import 'financial_assistant.dart';
 import 'secure_data_codec.dart';
+
+enum EncryptedFileBackupImportStatus {
+  success,
+  invalidPayload,
+  unsupportedVersion,
+  decryptionFailed,
+}
+
+@immutable
+class EncryptedFileBackupImportResult {
+  const EncryptedFileBackupImportResult(this.status, {this.importedCount = 0});
+
+  final EncryptedFileBackupImportStatus status;
+  final int importedCount;
+}
+
+class EncryptedFileBackupTooLargeException implements Exception {
+  const EncryptedFileBackupTooLargeException();
+}
 
 class SubscriptionStore extends ChangeNotifier {
   SubscriptionStore._({
@@ -60,7 +80,10 @@ class SubscriptionStore extends ChangeNotifier {
   static const String _onboardKey = 'ishtirakati_onboarded_v1';
   static const String _themeModeKey = 'ishtirakati_theme_mode';
   static const String _languageModeKey = 'ishtirakati_language_mode_v15';
-  static const int _maxImportBytes = 2 * 1024 * 1024;
+
+  /// Maximum authenticated plaintext accepted by the existing JSON importer.
+  /// File-backup limits account separately for the AES envelope/Base64 growth.
+  static const int maxImportBytes = 2 * 1024 * 1024;
   static const int _maxImportRecords = 5000;
 
   final List<Subscription> _items = [];
@@ -528,8 +551,13 @@ class SubscriptionStore extends ChangeNotifier {
 
   Future<void> clearAll() async {
     _ensureWritable();
+    // Persist the empty candidate before mutating memory. If encryption or the
+    // durable write fails, the caller sees an error and the user's in-memory
+    // subscriptions remain intact instead of entering a partially-cleared
+    // state. The existing persistence path intentionally retains its current
+    // cloud-sync behavior.
+    await _persistItems(const <Subscription>[]);
     _items.clear();
-    await _persist();
     notifyListeners();
   }
 
@@ -568,6 +596,18 @@ class SubscriptionStore extends ChangeNotifier {
     return _dataCodec.encrypt(exportJson());
   }
 
+  /// Creates a restorable file payload using the existing AES-GCM/Keychain
+  /// codec, while refusing plaintext that the matching importer cannot accept.
+  /// Cloud Sync deliberately keeps using [exportEncryptedCloudBackup].
+  Future<String> exportEncryptedFileBackup() async {
+    _ensureWritable();
+    final plain = exportJson();
+    if (utf8.encode(plain).length > maxImportBytes) {
+      throw const EncryptedFileBackupTooLargeException();
+    }
+    return _dataCodec.encrypt(plain);
+  }
+
   /// Decrypts a cloud payload in memory and imports it only after successful
   /// authentication. A missing/wrong Keychain key leaves local data untouched.
   Future<int> importEncryptedCloudBackup(String encrypted) async {
@@ -580,12 +620,134 @@ class SubscriptionStore extends ChangeNotifier {
     }
   }
 
+  /// Strict file-only restore path.
+  ///
+  /// The AES implementation and Keychain policy remain in [SecureDataCodec].
+  /// After authenticated decryption, this method verifies the metadata that is
+  /// inside the ciphertext before delegating to the backward-compatible JSON
+  /// importer. Cloud restores continue to use [importEncryptedCloudBackup].
+  Future<EncryptedFileBackupImportResult> importEncryptedFileBackup(
+    String encrypted, {
+    required String expectedApp,
+    required int expectedPayloadVersion,
+  }) async {
+    late final String plain;
+    try {
+      _ensureWritable();
+      plain = await _dataCodec.decrypt(encrypted);
+    } on SecureDataException {
+      return const EncryptedFileBackupImportResult(
+        EncryptedFileBackupImportStatus.decryptionFailed,
+      );
+    }
+
+    try {
+      if (utf8.encode(plain).length > maxImportBytes) {
+        return const EncryptedFileBackupImportResult(
+          EncryptedFileBackupImportStatus.invalidPayload,
+        );
+      }
+      final decoded = jsonDecode(plain);
+      const expectedKeys = <String>{
+        'app',
+        'version',
+        'exportedAt',
+        'defaultCurrency',
+        'monthlyBudget',
+        'subscriptions',
+      };
+      if (decoded is! Map<String, dynamic> ||
+          decoded.length != expectedKeys.length ||
+          decoded.keys.toSet().difference(expectedKeys).isNotEmpty ||
+          decoded['app'] != expectedApp) {
+        return const EncryptedFileBackupImportResult(
+          EncryptedFileBackupImportStatus.invalidPayload,
+        );
+      }
+
+      final payloadVersion = decoded['version'];
+      if (payloadVersion is! int) {
+        return const EncryptedFileBackupImportResult(
+          EncryptedFileBackupImportStatus.invalidPayload,
+        );
+      }
+      if (payloadVersion != expectedPayloadVersion) {
+        return const EncryptedFileBackupImportResult(
+          EncryptedFileBackupImportStatus.unsupportedVersion,
+        );
+      }
+
+      final exportedAt = decoded['exportedAt'];
+      final defaultCurrency = decoded['defaultCurrency'];
+      final monthlyBudget = decoded['monthlyBudget'];
+      if (exportedAt is! String ||
+          DateTime.tryParse(exportedAt) == null ||
+          defaultCurrency is! String ||
+          defaultCurrency.isEmpty ||
+          monthlyBudget is! num ||
+          !monthlyBudget.isFinite ||
+          monthlyBudget < 0) {
+        return const EncryptedFileBackupImportResult(
+          EncryptedFileBackupImportStatus.invalidPayload,
+        );
+      }
+
+      final subscriptions = decoded['subscriptions'];
+      if (subscriptions is! List || subscriptions.length > _maxImportRecords) {
+        return const EncryptedFileBackupImportResult(
+          EncryptedFileBackupImportStatus.invalidPayload,
+        );
+      }
+      for (final record in subscriptions) {
+        if (record is! Map<String, dynamic>) {
+          return const EncryptedFileBackupImportResult(
+            EncryptedFileBackupImportStatus.invalidPayload,
+          );
+        }
+        final schemaVersion = record['schemaVersion'];
+        // Missing schema metadata remains a supported legacy record. Current
+        // exports always emit an integer; malformed or future schemas must not
+        // be silently downgraded by a release that does not understand them.
+        if (schemaVersion == null) continue;
+        if (schemaVersion is! int || schemaVersion < 1) {
+          return const EncryptedFileBackupImportResult(
+            EncryptedFileBackupImportStatus.invalidPayload,
+          );
+        }
+        if (schemaVersion > SubscriptionSchema.currentVersion) {
+          return const EncryptedFileBackupImportResult(
+            EncryptedFileBackupImportStatus.unsupportedVersion,
+          );
+        }
+      }
+
+      final imported = await importJson(plain);
+      if (imported < 0) {
+        return const EncryptedFileBackupImportResult(
+          EncryptedFileBackupImportStatus.invalidPayload,
+        );
+      }
+      return EncryptedFileBackupImportResult(
+        EncryptedFileBackupImportStatus.success,
+        importedCount: imported,
+      );
+    } on FormatException {
+      return const EncryptedFileBackupImportResult(
+        EncryptedFileBackupImportStatus.invalidPayload,
+      );
+    } on TypeError {
+      return const EncryptedFileBackupImportResult(
+        EncryptedFileBackupImportStatus.invalidPayload,
+      );
+    }
+  }
+
   /// استيراد بيانات من نص JSON مُصدَّر سابقًا.
   /// يعيد عدد الاشتراكات المستوردة، أو -1 إذا كان النص غير صالح.
   Future<int> importJson(String raw) async {
     try {
       _ensureWritable();
-      if (utf8.encode(raw).length > _maxImportBytes) return -1;
+      if (utf8.encode(raw).length > maxImportBytes) return -1;
       final data = jsonDecode(raw);
       if (data is! Map<String, dynamic>) return -1;
       final list = data['subscriptions'];

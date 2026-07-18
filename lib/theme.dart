@@ -955,6 +955,10 @@ class AppMetricTile extends StatelessWidget {
     final color = accent ?? context.palette.accent;
     return AppCard(
       elevated: false,
+      padding: const EdgeInsets.symmetric(
+        horizontal: V16Space.md,
+        vertical: V16Space.sm,
+      ),
       child: Row(
         children: [
           Container(
@@ -969,27 +973,28 @@ class AppMetricTile extends StatelessWidget {
           ),
           const SizedBox(width: V16Space.sm),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: context.palette.textMuted,
-                    fontSize: V16Type.caption,
-                  ),
-                ),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: context.palette.text,
-                    fontSize: V16Type.titleSmall,
-                    fontWeight: V16Type.semibold,
-                  ),
-                ),
-              ],
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: context.palette.textMuted,
+                fontSize: V16Type.caption,
+              ),
+            ),
+          ),
+          const SizedBox(width: V16Space.sm),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                color: context.palette.text,
+                fontSize: V16Type.titleSmall,
+                fontWeight: V16Type.semibold,
+              ),
             ),
           ),
         ],

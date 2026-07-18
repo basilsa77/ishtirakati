@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../models/subscription.dart';
 import '../services/financial_assistant.dart';
+import '../services/renewal_day_grouping.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
 import '../widgets/potential_duplicate_badge.dart';
@@ -74,7 +75,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return ListenableBuilder(
       listenable: store,
       builder: (context, _) {
-        final byDay = <int, List<Subscription>>{};
+        final renewalItems = <RenewalDayItem>[];
         // Keep completed finite installments visible in historical months.
         // renewalsInMonth() itself prevents occurrences after the final payment.
         for (final subscription in store.items.where(
@@ -84,21 +85,35 @@ class _CalendarScreenState extends State<CalendarScreen> {
             _month.year,
             _month.month,
           )) {
-            byDay.putIfAbsent(date.day, () => []).add(subscription);
-          }
-        }
-        final totals = <String, double>{};
-        for (final entry in byDay.entries) {
-          final date = DateTime(_month.year, _month.month, entry.key);
-          for (final item in entry.value) {
-            totals.update(
-              item.currency,
-              (value) => value + item.priceAt(date),
-              ifAbsent: () => item.priceAt(date),
+            renewalItems.add(
+              RenewalDayItem(
+                subscription: subscription,
+                occursAt: date,
+                amount: subscription.priceAt(date),
+                currency: subscription.currency,
+              ),
             );
           }
         }
         final dominantCurrency = store.dominantCurrency;
+        final dayGroups = RenewalDayGrouping.group(
+          renewalItems,
+          preferredCurrency: dominantCurrency,
+        );
+        final byDay = <int, List<Subscription>>{
+          for (final group in dayGroups)
+            group.date.day: [for (final item in group.items) item.subscription],
+        };
+        final totals = <String, double>{};
+        for (final group in dayGroups) {
+          for (final entry in group.totalsByCurrency.entries) {
+            totals.update(
+              entry.key,
+              (value) => value + entry.value,
+              ifAbsent: () => entry.value,
+            );
+          }
+        }
         if (totals.isEmpty) totals[dominantCurrency] = 0;
         final orderedEntries =
             totals.entries.toList()..sort((first, second) {
@@ -192,16 +207,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
             if (byDay.isEmpty)
               const _CalendarEmpty()
             else
-              for (final day in (byDay.keys.toList()..sort()))
-                for (final subscription in byDay[day]!) ...[
-                  _CalendarPayment(
-                    date: DateTime(_month.year, _month.month, day),
-                    subscription: subscription,
-                    duplicateGroup:
-                        duplicateGroupsBySubscriptionId[subscription.id],
-                  ),
-                  const SizedBox(height: V16Space.sm),
-                ],
+              for (final group in dayGroups) ...[
+                RenewalDaySection(
+                  group: group,
+                  duplicateGroupsBySubscriptionId:
+                      duplicateGroupsBySubscriptionId,
+                  onOpenSubscription:
+                      (subscription) =>
+                          showSubscriptionDetails(context, subscription),
+                  onOpenDuplicate:
+                      (duplicateGroup) =>
+                          openPotentialDuplicateReview(context, duplicateGroup),
+                ),
+                const SizedBox(height: V16Space.sm),
+              ],
           ],
         );
       },
@@ -664,99 +683,229 @@ class _CalendarGrid extends StatelessWidget {
   }
 }
 
-class _CalendarPayment extends StatelessWidget {
-  final DateTime date;
-  final Subscription subscription;
-  final DuplicateSubscriptionGroup? duplicateGroup;
+@visibleForTesting
+class RenewalDaySection extends StatelessWidget {
+  final RenewalDayGroup group;
+  final Map<String, DuplicateSubscriptionGroup> duplicateGroupsBySubscriptionId;
+  final ValueChanged<Subscription> onOpenSubscription;
+  final ValueChanged<DuplicateSubscriptionGroup> onOpenDuplicate;
 
-  const _CalendarPayment({
-    required this.date,
-    required this.subscription,
-    this.duplicateGroup,
+  const RenewalDaySection({
+    super.key,
+    required this.group,
+    this.duplicateGroupsBySubscriptionId = const {},
+    required this.onOpenSubscription,
+    required this.onOpenDuplicate,
   });
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    final day = date.day;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppCard(
-          onTap: () => showSubscriptionDetails(context, subscription),
-          padding: const EdgeInsets.all(V16Space.md),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: p.accentSoft,
-                  borderRadius: BorderRadius.circular(V16Radius.compact),
-                ),
-                child: Text(
-                  localizedInteger(day),
-                  style: TextStyle(
-                    color: p.accent,
-                    fontWeight: V16Type.semibold,
+    final dayKey = _calendarDayKey(group.date);
+    final dateLabel = formatShortDate(group.date);
+    final countLabel = localizedPlural('v17ServiceCount', group.itemCount);
+    final totalLabels = [
+      for (final entry in group.totalsByCurrency.entries)
+        fmtMoneyWithCurrency(entry.value, entry.key),
+    ];
+
+    return AppCard(
+      key: ValueKey('renewal-day-section-$dayKey'),
+      padding: EdgeInsets.zero,
+      elevated: false,
+      child: Column(
+        children: [
+          Semantics(
+            container: true,
+            header: true,
+            label: tr('v17RenewalDaySummary', {
+              'date': dateLabel,
+              'services': countLabel,
+              'totals': totalLabels.join(', '),
+            }),
+            child: Padding(
+              key: ValueKey('renewal-day-header-$dayKey'),
+              padding: const EdgeInsets.all(V16Space.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          dateLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: p.text,
+                            fontSize: V16Type.label,
+                            fontWeight: V16Type.semibold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: V16Space.sm),
+                      Flexible(
+                        child: Text(
+                          countLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                          style: TextStyle(
+                            color: p.textMuted,
+                            fontSize: V16Type.labelSmall,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ),
-              const SizedBox(width: V16Space.sm),
-              ServiceAvatar(
-                name: subscription.name,
-                emoji: subscription.emoji,
-                manageUrl: subscription.manageUrl,
-                iconUrl: subscription.iconUrl,
-                tint: categoryColor(subscription.category),
-                size: 40,
-              ),
-              const SizedBox(width: V16Space.sm),
-              Expanded(
-                child: ServiceNameText(
-                  name: subscription.name,
-                  style: TextStyle(
-                    color: p.text,
-                    fontWeight: V16Type.semibold,
-                    fontSize: V16Type.label,
+                  const SizedBox(height: V16Space.xs),
+                  Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: V16Space.xs,
+                    runSpacing: V16Space.xxs,
+                    children: [
+                      for (var index = 0; index < totalLabels.length; index++)
+                        Container(
+                          key: ValueKey(
+                            'renewal-day-total-$dayKey-${group.totalsByCurrency.keys.elementAt(index)}',
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: V16Space.sm,
+                            vertical: V16Space.xxs,
+                          ),
+                          decoration: BoxDecoration(
+                            color: p.accentSoft,
+                            borderRadius: BorderRadius.circular(V16Radius.pill),
+                          ),
+                          child: Text(
+                            totalLabels[index],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: p.accent,
+                              fontSize: V16Type.labelSmall,
+                              fontWeight: V16Type.semibold,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                ),
+                ],
               ),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 92),
-                child: Text(
-                  fmtMoneyWithCurrency(
-                    subscription.priceAt(date),
-                    subscription.currency,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: p.accent,
-                    fontWeight: V16Type.semibold,
-                    fontSize: V16Type.labelSmall,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (duplicateGroup case final group?)
-          Padding(
-            padding: const EdgeInsetsDirectional.only(
-              top: V16Space.xs,
-              start: V16Space.md,
             ),
-            child: PotentialDuplicateBadge(
-              key: ValueKey('duplicate-badge-${subscription.id}'),
-              onTap: () => openPotentialDuplicateReview(context, group),
-            ),
           ),
-      ],
+          Divider(color: p.stroke, height: 1),
+          for (var index = 0; index < group.items.length; index++) ...[
+            _CalendarPaymentRow(
+              key: ValueKey(
+                'renewal-day-item-$dayKey-${group.items[index].subscription.id}-$index',
+              ),
+              item: group.items[index],
+              duplicateGroup:
+                  duplicateGroupsBySubscriptionId[group
+                      .items[index]
+                      .subscription
+                      .id],
+              onOpenSubscription: onOpenSubscription,
+              onOpenDuplicate: onOpenDuplicate,
+            ),
+            if (index != group.items.length - 1)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(start: V16Space.md),
+                child: Divider(color: p.stroke, height: 1),
+              ),
+          ],
+        ],
+      ),
     );
   }
 }
+
+class _CalendarPaymentRow extends StatelessWidget {
+  final RenewalDayItem item;
+  final DuplicateSubscriptionGroup? duplicateGroup;
+  final ValueChanged<Subscription> onOpenSubscription;
+  final ValueChanged<DuplicateSubscriptionGroup> onOpenDuplicate;
+
+  const _CalendarPaymentRow({
+    super.key,
+    required this.item,
+    this.duplicateGroup,
+    required this.onOpenSubscription,
+    required this.onOpenDuplicate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final subscription = item.subscription;
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: V16Space.md,
+        vertical: V16Space.xs,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () => onOpenSubscription(subscription),
+            child: Row(
+              children: [
+                ServiceAvatar(
+                  name: subscription.name,
+                  emoji: subscription.emoji,
+                  manageUrl: subscription.manageUrl,
+                  iconUrl: subscription.iconUrl,
+                  tint: categoryColor(subscription.category),
+                  size: 40,
+                ),
+                const SizedBox(width: V16Space.sm),
+                Expanded(
+                  child: ServiceNameText(
+                    name: subscription.name,
+                    style: TextStyle(
+                      color: p.text,
+                      fontWeight: V16Type.semibold,
+                      fontSize: V16Type.label,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: V16Space.sm),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 104),
+                  child: Text(
+                    fmtMoneyWithCurrency(item.amount, item.currency),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                    style: TextStyle(
+                      color: p.accent,
+                      fontWeight: V16Type.semibold,
+                      fontSize: V16Type.labelSmall,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (duplicateGroup case final group?) ...[
+            const SizedBox(height: V16Space.xs),
+            PotentialDuplicateBadge(
+              key: ValueKey('duplicate-badge-${subscription.id}'),
+              onTap: () => onOpenDuplicate(group),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+String _calendarDayKey(DateTime date) =>
+    '${date.year.toString().padLeft(4, '0')}-'
+    '${date.month.toString().padLeft(2, '0')}-'
+    '${date.day.toString().padLeft(2, '0')}';
 
 class _CalendarEmpty extends StatelessWidget {
   const _CalendarEmpty();

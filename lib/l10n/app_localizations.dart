@@ -482,6 +482,17 @@ String localizedPaymentKind(String name) => tr(switch (name) {
   _ => 'paymentSubscription',
 });
 
+/// Resolves the display label without changing the stored payment-method
+/// value. Unknown legacy values deliberately remain visible verbatim.
+String localizedPaymentMethod(String value) => switch (value) {
+  'غير محدد' => tr('ui_dd9f417e000b'),
+  'بطاقة مدى' => tr('ui_b5f0807ace71'),
+  'بطاقة ائتمانية' => tr('ui_eba8a86b7df5'),
+  'رصيد المتجر' => tr('ui_71467661edb7'),
+  'أخرى' => tr('ui_46537a09b0bd'),
+  _ => value,
+};
+
 String localizedBillingCycle(String name) => tr(switch (name) {
   'weekly' => 'cycleWeekly',
   'quarterly' => 'cycleQuarterly',

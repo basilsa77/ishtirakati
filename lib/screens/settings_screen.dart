@@ -9,6 +9,7 @@ import '../models/subscription.dart' show currencySymbols;
 import '../l10n/app_localizations.dart';
 import '../services/account_deletion_service.dart';
 import '../services/auth_service.dart';
+import '../services/backup_file_service.dart';
 import '../services/cloud_sync.dart';
 import '../services/firebase_build_config.dart';
 import '../services/firestore_connection_diagnostics.dart';
@@ -25,8 +26,21 @@ import 'import_screen.dart';
 import 'login_screen.dart';
 import 'onboarding_screen.dart';
 
+const Key v17DataDeleteButtonKey = Key('v17-data-delete');
+const Key v17DeleteEncryptedBackupKey = Key('v17-delete-encrypted-backup');
+const Key v17DeleteCsvKey = Key('v17-delete-csv');
+const Key v17DeleteWithoutExportKey = Key('v17-delete-without-export');
+const Key v17DeleteFinalConfirmKey = Key('v17-delete-final-confirm');
+const Key v17DeleteCancelKey = Key('v17-delete-cancel');
+
+enum _PreDeleteChoice { encryptedBackup, csv, withoutExport }
+
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({super.key, this.store, this.backupFileService});
+
+  /// Test seams only; production always uses the singleton and system gateway.
+  final SubscriptionStore? store;
+  final BackupFileService? backupFileService;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -34,12 +48,15 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _budget;
+  late final SubscriptionStore _store;
+  late final BackupFileService _backupFiles;
 
   @override
   void initState() {
     super.initState();
-    final store = SubscriptionStore.instance;
-    final budget = store.monthlyBudget;
+    _store = widget.store ?? SubscriptionStore.instance;
+    _backupFiles = widget.backupFileService ?? BackupFileService(store: _store);
+    final budget = _store.monthlyBudget;
     _budget = TextEditingController(
       text:
           budget <= 0
@@ -58,7 +75,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final store = SubscriptionStore.instance;
+    final store = _store;
     return ListenableBuilder(
       listenable: store,
       builder:
@@ -209,7 +226,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 26),
               _SettingsLabel(tr('ui_b4fba865ed46')),
               const SizedBox(height: 10),
-              _DataCard(onDelete: _confirmWipe),
+              _DataCard(
+                onExportEncrypted: _exportEncryptedBackup,
+                onImportEncrypted: _importEncryptedBackup,
+                onExportCsv: _exportCsv,
+                onDelete: _confirmWipe,
+              ),
               const SizedBox(height: 26),
               _SettingsLabel(tr('ui_db69cd4d6275')),
               const SizedBox(height: 10),
@@ -239,7 +261,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               .replaceAll(',', '.'),
         ) ??
         0;
-    await SubscriptionStore.instance.setMonthlyBudget(value);
+    await _store.setMonthlyBudget(value);
     if (!mounted) return;
     await showCupertinoDialog<void>(
       context: context,
@@ -259,31 +281,185 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _confirmWipe() async {
-    final confirmed = await showIosConfirmation(
+    final choice = await showCupertinoModalPopup<_PreDeleteChoice>(
       context: context,
-      title: tr('ui_6d5931ec133b'),
-      message: tr('ui_5e32a3fb9f4d'),
-      confirmLabel: tr('ui_cd6f896cc0ee'),
-      destructive: true,
-    );
-    if (!confirmed) return;
-    await SubscriptionStore.instance.clearAll();
-    if (mounted) {
-      await showCupertinoDialog<void>(
-        context: context,
-        builder:
-            (dialogContext) => CupertinoAlertDialog(
-              content: Text(tr('ui_2753acf39a49')),
-              actions: [
-                CupertinoDialogAction(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: Text(tr('ui_3ef541b90a31')),
-                ),
-              ],
+      builder:
+          (sheetContext) => CupertinoActionSheet(
+            title: Text(tr('backupBeforeDeleteTitle')),
+            message: Text(tr('backupBeforeDeleteMessage')),
+            actions: [
+              CupertinoActionSheetAction(
+                key: v17DeleteEncryptedBackupKey,
+                onPressed:
+                    () => Navigator.pop(
+                      sheetContext,
+                      _PreDeleteChoice.encryptedBackup,
+                    ),
+                child: Text(tr('backupExportEncrypted')),
+              ),
+              CupertinoActionSheetAction(
+                key: v17DeleteCsvKey,
+                onPressed:
+                    () => Navigator.pop(sheetContext, _PreDeleteChoice.csv),
+                child: Text(tr('backupExportCsv')),
+              ),
+              CupertinoActionSheetAction(
+                key: v17DeleteWithoutExportKey,
+                onPressed:
+                    () => Navigator.pop(
+                      sheetContext,
+                      _PreDeleteChoice.withoutExport,
+                    ),
+                child: Text(tr('backupContinueWithoutExport')),
+              ),
+            ],
+            cancelButton: CupertinoActionSheetAction(
+              key: v17DeleteCancelKey,
+              onPressed: () => Navigator.pop(sheetContext),
+              child: Text(tr('ui_9a30dc2a96b8')),
             ),
-      );
+          ),
+    );
+    if (!mounted || choice == null) return;
+
+    final exportCompleted = switch (choice) {
+      _PreDeleteChoice.encryptedBackup => await _exportEncryptedBackup(
+        showSuccess: false,
+      ),
+      _PreDeleteChoice.csv => await _exportCsv(showSuccess: false),
+      _PreDeleteChoice.withoutExport => true,
+    };
+    if (!mounted || !exportCompleted) return;
+    await _confirmFinalWipe();
+  }
+
+  Future<void> _confirmFinalWipe() async {
+    final count = _store.items.length;
+    final confirmed = await showCupertinoDialog<bool>(
+      context: context,
+      builder:
+          (dialogContext) => CupertinoAlertDialog(
+            title: Text(tr('ui_6d5931ec133b')),
+            content: Text(localizedPlural('backupDeleteFinalMessage', count)),
+            actions: [
+              CupertinoDialogAction(
+                key: v17DeleteCancelKey,
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: Text(tr('ui_9a30dc2a96b8')),
+              ),
+              CupertinoDialogAction(
+                key: v17DeleteFinalConfirmKey,
+                isDestructiveAction: true,
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: Text(tr('ui_cd6f896cc0ee')),
+              ),
+            ],
+          ),
+    );
+    if (confirmed != true || !mounted) return;
+    // If synchronization changed the list while the dialog was open, repeat
+    // the confirmation so the displayed count always equals the actual count.
+    if (_store.items.length != count) {
+      await _confirmFinalWipe();
+      return;
+    }
+    try {
+      await _store.clearAll();
+      if (!mounted) return;
+      await _showDataMessage(tr('backupDeleteCompleted'));
+    } catch (_) {
+      if (!mounted) return;
+      await _showDataMessage(tr('backupDeleteFailed'));
     }
   }
+
+  Future<bool> _exportEncryptedBackup({bool showSuccess = true}) async {
+    try {
+      final status = await _backupFiles.shareEncryptedBackup(_shareOrigin());
+      if (!mounted || status == BackupShareStatus.dismissed) return false;
+      if (status == BackupShareStatus.success) {
+        if (showSuccess) {
+          await _showDataMessage(tr('backupExportCompleted'));
+        }
+        return true;
+      }
+      await _showDataMessage(tr('backupShareUnavailable'));
+      return false;
+    } catch (_) {
+      if (mounted) await _showDataMessage(tr('backupExportFailed'));
+      return false;
+    }
+  }
+
+  Future<bool> _exportCsv({bool showSuccess = true}) async {
+    final accepted = await showIosConfirmation(
+      context: context,
+      title: tr('backupCsvWarningTitle'),
+      message: tr('backupCsvWarningMessage'),
+      confirmLabel: tr('backupCsvConfirm'),
+    );
+    if (!accepted || !mounted) return false;
+    try {
+      final status = await _backupFiles.shareCsv(_shareOrigin());
+      if (!mounted || status == BackupShareStatus.dismissed) return false;
+      if (status == BackupShareStatus.success) {
+        if (showSuccess) {
+          await _showDataMessage(tr('backupExportCompleted'));
+        }
+        return true;
+      }
+      await _showDataMessage(tr('backupShareUnavailable'));
+      return false;
+    } catch (_) {
+      if (mounted) await _showDataMessage(tr('backupExportFailed'));
+      return false;
+    }
+  }
+
+  Future<void> _importEncryptedBackup() async {
+    BackupImportResult result;
+    try {
+      result = await _backupFiles.pickAndImportEncryptedBackup();
+    } catch (_) {
+      if (mounted) await _showDataMessage(tr('backupInvalidFile'));
+      return;
+    }
+    if (!mounted || result.status == BackupImportStatus.cancelled) return;
+    final message = switch (result.status) {
+      BackupImportStatus.success => localizedPlural(
+        'backupImportCompleted',
+        result.importedCount,
+      ),
+      BackupImportStatus.unsupportedVersion => tr('backupUnsupportedVersion'),
+      BackupImportStatus.decryptionFailed => tr('backupDecryptFailed'),
+      BackupImportStatus.invalidFile => tr('backupInvalidFile'),
+      BackupImportStatus.cancelled => '',
+    };
+    await _showDataMessage(message);
+  }
+
+  Rect _shareOrigin() {
+    final renderBox = context.findRenderObject();
+    if (renderBox is RenderBox && renderBox.hasSize) {
+      return renderBox.localToGlobal(Offset.zero) & renderBox.size;
+    }
+    final size = MediaQuery.sizeOf(context);
+    return Rect.fromLTWH(size.width / 2, size.height / 2, 1, 1);
+  }
+
+  Future<void> _showDataMessage(String message) => showCupertinoDialog<void>(
+    context: context,
+    builder:
+        (dialogContext) => CupertinoAlertDialog(
+          content: Text(message),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(tr('ui_3ef541b90a31')),
+            ),
+          ],
+        ),
+  );
 
   Future<void> _confirmDeleteAccount() async {
     final confirmed = await showIosConfirmation(
@@ -1424,48 +1600,121 @@ class _ThemeModeOption extends StatelessWidget {
 
 /// إدارة البيانات: حذف السجل من الجهاز.
 class _DataCard extends StatelessWidget {
+  final Future<bool> Function({bool showSuccess}) onExportEncrypted;
+  final Future<void> Function() onImportEncrypted;
+  final Future<bool> Function({bool showSuccess}) onExportCsv;
   final Future<void> Function() onDelete;
 
-  const _DataCard({required this.onDelete});
+  const _DataCard({
+    required this.onExportEncrypted,
+    required this.onImportEncrypted,
+    required this.onExportCsv,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
     return AppCard(
       padding: EdgeInsets.zero,
-      child: CupertinoButton(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-        onPressed: onDelete,
-        child: Row(
-          children: [
-            Icon(CupertinoIcons.delete, color: p.danger, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    tr('ui_e70886198cca'),
-                    style: TextStyle(
-                      color: p.danger,
-                      fontWeight: V16Type.semibold,
-                      fontSize: V16Type.label,
-                    ),
+      child: Column(
+        children: [
+          _DataAction(
+            icon: CupertinoIcons.lock_shield,
+            title: tr('backupExportEncrypted'),
+            detail: tr('backupEncryptedSameDeviceDetail'),
+            onTap: () async {
+              await onExportEncrypted(showSuccess: true);
+            },
+          ),
+          Divider(height: 1, color: p.stroke),
+          _DataAction(
+            icon: CupertinoIcons.arrow_down_doc,
+            title: tr('backupImportEncrypted'),
+            detail: tr('backupImportEncryptedDetail'),
+            onTap: onImportEncrypted,
+          ),
+          Divider(height: 1, color: p.stroke),
+          _DataAction(
+            icon: CupertinoIcons.table,
+            title: tr('backupExportCsv'),
+            detail: tr('backupCsvPlaintextDetail'),
+            onTap: () async {
+              await onExportCsv(showSuccess: true);
+            },
+          ),
+          Divider(height: 1, color: p.stroke),
+          _DataAction(
+            buttonKey: v17DataDeleteButtonKey,
+            icon: CupertinoIcons.delete,
+            title: tr('ui_e70886198cca'),
+            detail: tr('backupDeleteDeviceCloudDetail'),
+            tone: p.danger,
+            onTap: onDelete,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DataAction extends StatelessWidget {
+  const _DataAction({
+    this.buttonKey,
+    required this.icon,
+    required this.title,
+    required this.detail,
+    required this.onTap,
+    this.tone,
+  });
+
+  final IconData icon;
+  final Key? buttonKey;
+  final String title;
+  final String detail;
+  final Future<void> Function() onTap;
+  final Color? tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final color = tone ?? palette.accent;
+    return CupertinoButton(
+      key: buttonKey,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      onPressed: onTap,
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: V16Type.semibold,
+                    fontSize: V16Type.label,
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    tr('ui_a5571e3ecfb5'),
-                    style: TextStyle(
-                      color: p.danger.withValues(alpha: .75),
-                      fontSize: V16Type.caption,
-                    ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  detail,
+                  style: TextStyle(
+                    color:
+                        tone == null
+                            ? palette.textMuted
+                            : color.withValues(alpha: .78),
+                    fontSize: V16Type.caption,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Icon(CupertinoIcons.chevron_left, color: p.danger, size: 17),
-          ],
-        ),
+          ),
+          Icon(CupertinoIcons.chevron_left, color: color, size: 17),
+        ],
       ),
     );
   }

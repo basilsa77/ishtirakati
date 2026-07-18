@@ -5,21 +5,29 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../l10n/app_localizations.dart';
 import '../data/presets.dart';
+import '../l10n/app_localizations.dart';
 import '../models/subscription.dart';
+import '../services/amount_input_parser.dart';
 import '../services/itunes_search.dart';
 import '../services/remote_catalog.dart';
-import '../services/subscription_store.dart';
 import '../services/safe_url.dart';
+import '../services/subscription_store.dart';
 import '../theme.dart';
 import '../widgets/ios_controls.dart';
 import 'plan_comparison_screen.dart';
 
+typedef SubscriptionSaver = Future<void> Function(Subscription subscription);
+
 class EditSubscriptionScreen extends StatefulWidget {
   final Subscription? existing;
+  final SubscriptionSaver? saveSubscription;
 
-  const EditSubscriptionScreen({super.key, this.existing});
+  const EditSubscriptionScreen({
+    super.key,
+    this.existing,
+    this.saveSubscription,
+  });
 
   @override
   State<EditSubscriptionScreen> createState() => _EditSubscriptionScreenState();
@@ -50,7 +58,10 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   late final TextEditingController _planName;
   String _iconUrl = '';
   bool _searching = false;
+  bool _saving = false;
   String? _formError;
+  String? _nameError;
+  String? _amountError;
   PaymentKind _kind = PaymentKind.subscription;
   late final TextEditingController _installments;
 
@@ -78,9 +89,6 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
     _category = e?.category ?? 'أخرى';
     _paused = e?.isPaused ?? false;
     _payMethod = e?.paymentMethod ?? 'غير محدد';
-    if (!kPaymentMethods.contains(_payMethod)) {
-      _payMethod = 'أخرى';
-    }
     _reminderDays = e?.reminderDays ?? 3;
     if (!kReminderOptions.containsKey(_reminderDays)) {
       _reminderDays = 3;
@@ -380,19 +388,18 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     final name = _name.text.trim();
-    final price = double.tryParse(
-      _price.text
-          .trim()
-          .replaceAll(tr('ui_bc4d631526af'), '.')
-          .replaceAll(',', '.'),
-    );
-    if (name.isEmpty || price == null || price <= 0) {
-      setState(
-        () =>
-            _formError =
-                name.isEmpty ? tr('ui_b045235121d4') : tr('ui_1a28a98d1b31'),
-      );
+    final amount = validateAmountInput(_price.text);
+    final nameError = name.isEmpty ? tr('ui_b045235121d4') : null;
+    final amountError =
+        amount.issue == null ? null : tr(amount.issue!.localizationKey);
+    if (nameError != null || amountError != null) {
+      setState(() {
+        _nameError = nameError;
+        _amountError = amountError;
+        _formError = null;
+      });
       return;
     }
     final manageUrl = _normalizedManageUrl(_url.text.trim());
@@ -400,6 +407,13 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
       setState(() => _formError = tr('ui_36a69f5412dd'));
       return;
     }
+    setState(() {
+      _nameError = null;
+      _amountError = null;
+      _formError = null;
+      _saving = true;
+    });
+    final price = amount.value!;
     final sub = Subscription(
       id:
           widget.existing?.id ??
@@ -431,10 +445,20 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               ? int.tryParse(_installments.text.trim())
               : null,
     );
-    await SubscriptionStore.instance.upsert(sub);
-    HapticFeedback.mediumImpact();
-    if (!mounted) return;
-    Navigator.of(context).pop();
+    try {
+      await (widget.saveSubscription ?? SubscriptionStore.instance.upsert)(sub);
+      try {
+        await HapticFeedback.mediumImpact();
+      } catch (_) {
+        // Saving is authoritative; unavailable haptics must not invite a
+        // second submission of an already-persisted subscription.
+      }
+      if (!mounted) return;
+      setState(() => _saving = false);
+      Navigator.of(context).pop();
+    } finally {
+      if (mounted && _saving) setState(() => _saving = false);
+    }
   }
 
   Future<void> _delete() async {
@@ -450,18 +474,6 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
       if (mounted) Navigator.of(context).pop();
     }
   }
-
-  String _paymentLabel(String value) => switch (value) {
-    'غير محدد' => tr('ui_dd9f417e000b'),
-    'بطاقة مدى' => tr('ui_b5f0807ace71'),
-    'بطاقة ائتمانية' => tr('ui_eba8a86b7df5'),
-    'Apple Pay' => 'Apple Pay',
-    'STC Pay' => 'STC Pay',
-    'PayPal' => 'PayPal',
-    'رصيد المتجر' => tr('ui_71467661edb7'),
-    'أخرى' => tr('ui_46537a09b0bd'),
-    _ => value,
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -570,10 +582,17 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: IosTextField(
+                      key: const Key('full-service-name-field'),
                       controller: _name,
                       label: tr('ui_acc6d15daf7d'),
                       textInputAction: TextInputAction.next,
                       placeholder: tr('ui_a9ad2049b6fc'),
+                      errorText: _nameError,
+                      onChanged: (_) {
+                        if (_nameError != null) {
+                          setState(() => _nameError = null);
+                        }
+                      },
                       suffix: CupertinoButton(
                         padding: const EdgeInsets.symmetric(horizontal: 10),
                         onPressed: _searching ? null : _smartSearch,
@@ -593,6 +612,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                   Expanded(
                     flex: 3,
                     child: IosTextField(
+                      key: const Key('full-amount-field'),
                       controller: _price,
                       label: tr('ui_0d049d3998af'),
                       keyboardType: const TextInputType.numberWithOptions(
@@ -600,6 +620,12 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                       ),
                       textDirection: TextDirection.ltr,
                       placeholder: '19.99',
+                      errorText: _amountError,
+                      onChanged: (_) {
+                        if (_amountError != null) {
+                          setState(() => _amountError = null);
+                        }
+                      },
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -680,15 +706,18 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               const SizedBox(height: 14),
               IosPickerRow(
                 label: tr('ui_f3471840f9f9'),
-                value: _paymentLabel(_payMethod),
+                value: localizedPaymentMethod(_payMethod),
                 icon: CupertinoIcons.creditcard,
                 onPressed: () async {
                   final selected = await showIosPicker<String>(
                     context: context,
                     title: tr('ui_4efa54e360b7'),
                     selected: _payMethod,
-                    values: kPaymentMethods,
-                    label: _paymentLabel,
+                    values: [
+                      ...kPaymentMethods,
+                      if (!kPaymentMethods.contains(_payMethod)) _payMethod,
+                    ],
+                    label: localizedPaymentMethod,
                   );
                   if (selected != null) setState(() => _payMethod = selected);
                 },
@@ -867,10 +896,15 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
               ],
               const SizedBox(height: V16Space.lg),
               CupertinoButton.filled(
-                onPressed: _save,
+                key: const Key('full-save-button'),
+                onPressed: _saving ? null : _save,
                 borderRadius: BorderRadius.circular(V16Radius.standard),
                 child: Text(
-                  isEditing ? tr('ui_6c03d6737c2f') : tr('ui_5c849a4aae0d'),
+                  _saving
+                      ? tr('ui_dd81b078c15b')
+                      : isEditing
+                      ? tr('ui_6c03d6737c2f')
+                      : tr('ui_5c849a4aae0d'),
                 ),
               ),
               if (isEditing) ...[
