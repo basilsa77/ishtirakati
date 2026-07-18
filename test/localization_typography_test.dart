@@ -38,33 +38,41 @@ void main() {
     expect(resolveStoredLocale('ar'), const Locale('ar'));
     expect(resolveStoredLocale('en'), const Locale('en'));
     expect(resolveStoredLocale('system'), isNull);
-    expect(resolveSupportedLocale(const Locale('en', 'US')), const Locale('en'));
-    expect(resolveSupportedLocale(const Locale('fr', 'FR')), const Locale('ar'));
+    expect(
+      resolveSupportedLocale(const Locale('en', 'US')),
+      const Locale('en'),
+    );
+    expect(
+      resolveSupportedLocale(const Locale('fr', 'FR')),
+      const Locale('ar'),
+    );
   });
 
   test('Arabic and English ARB catalogs stay complete and aligned', () {
-    final arabic = jsonDecode(File('lib/l10n/app_ar.arb').readAsStringSync())
-        as Map<String, dynamic>;
-    final english = jsonDecode(File('lib/l10n/app_en.arb').readAsStringSync())
-        as Map<String, dynamic>;
+    final arabic =
+        jsonDecode(File('lib/l10n/app_ar.arb').readAsStringSync())
+            as Map<String, dynamic>;
+    final english =
+        jsonDecode(File('lib/l10n/app_en.arb').readAsStringSync())
+            as Map<String, dynamic>;
     expect(arabic.keys.toSet(), english.keys.toSet());
     expect(arabic.length, greaterThan(500));
     expect(
       english.entries
           .where((entry) => entry.key != 'languageArabic')
-          .where((entry) => RegExp(r'[\u0600-\u06ff]').hasMatch('${entry.value}')),
+          .where(
+            (entry) => RegExp(r'[\u0600-\u06ff]').hasMatch('${entry.value}'),
+          ),
       isEmpty,
     );
   });
 
-  testWidgets('localized messages switch language and preserve placeholders',
-      (_) async {
+  testWidgets('localized messages switch language and preserve placeholders', (
+    _,
+  ) async {
     await AppLocalizations.load(const Locale('en'));
     expect(tr('navSettings'), 'Settings');
-    expect(
-      tr('daysAfter', {'days': 4}),
-      'In 4 days',
-    );
+    expect(tr('daysAfter', {'days': 4}), 'In 4 days');
 
     await AppLocalizations.load(const Locale('ar'));
     expect(tr('navSettings'), 'الإعدادات');

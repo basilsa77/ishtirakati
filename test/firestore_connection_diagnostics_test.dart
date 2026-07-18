@@ -3,36 +3,39 @@ import 'package:ishtirakati/services/firestore_connection_diagnostics.dart';
 
 void main() {
   group('Firestore REST diagnostic', () {
-    test('maps decisive HTTP statuses without conflating transport failures', () {
-      expect(
-        FirestoreConnectionDiagnostics.outcomeForHttpStatus(200),
-        FirestoreRestOutcome.success,
-      );
-      expect(
-        FirestoreConnectionDiagnostics.outcomeForHttpStatus(404),
-        FirestoreRestOutcome.missingDocument,
-      );
-      expect(
-        FirestoreConnectionDiagnostics.outcomeForHttpStatus(401),
-        FirestoreRestOutcome.unauthenticated,
-      );
-      expect(
-        FirestoreConnectionDiagnostics.outcomeForHttpStatus(403),
-        FirestoreRestOutcome.permissionDenied,
-      );
-      expect(
-        FirestoreConnectionDiagnostics.outcomeForHttpStatus(400),
-        FirestoreRestOutcome.invalidTarget,
-      );
-      expect(
-        FirestoreConnectionDiagnostics.outcomeForHttpStatus(429),
-        FirestoreRestOutcome.rateLimited,
-      );
-      expect(
-        FirestoreConnectionDiagnostics.outcomeForHttpStatus(503),
-        FirestoreRestOutcome.serviceFailure,
-      );
-    });
+    test(
+      'maps decisive HTTP statuses without conflating transport failures',
+      () {
+        expect(
+          FirestoreConnectionDiagnostics.outcomeForHttpStatus(200),
+          FirestoreRestOutcome.success,
+        );
+        expect(
+          FirestoreConnectionDiagnostics.outcomeForHttpStatus(404),
+          FirestoreRestOutcome.missingDocument,
+        );
+        expect(
+          FirestoreConnectionDiagnostics.outcomeForHttpStatus(401),
+          FirestoreRestOutcome.unauthenticated,
+        );
+        expect(
+          FirestoreConnectionDiagnostics.outcomeForHttpStatus(403),
+          FirestoreRestOutcome.permissionDenied,
+        );
+        expect(
+          FirestoreConnectionDiagnostics.outcomeForHttpStatus(400),
+          FirestoreRestOutcome.invalidTarget,
+        );
+        expect(
+          FirestoreConnectionDiagnostics.outcomeForHttpStatus(429),
+          FirestoreRestOutcome.rateLimited,
+        );
+        expect(
+          FirestoreConnectionDiagnostics.outcomeForHttpStatus(503),
+          FirestoreRestOutcome.serviceFailure,
+        );
+      },
+    );
 
     test('does not misclassify a database-level 404 as a missing document', () {
       expect(

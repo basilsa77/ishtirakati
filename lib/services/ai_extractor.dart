@@ -81,13 +81,28 @@ List<ImportCandidate> parseAiCandidates(String raw) {
   if (data is! List) return const [];
 
   const validCurrencies = {
-    'SAR', 'AED', 'USD', 'EUR', 'KWD', 'QAR', 'BHD', 'OMR',
+    'SAR',
+    'AED',
+    'USD',
+    'EUR',
+    'KWD',
+    'QAR',
+    'BHD',
+    'OMR',
   };
   const validCategories = {
-    'ترفيه ومشاهدة', 'موسيقى وبودكاست', 'إنتاجية وذكاء اصطناعي',
-    'ألعاب', 'رياضة وصحة', 'تعليم', 'تسوق وتوصيل',
-    'اتصالات وإنترنت', 'تخزين سحابي', 'أخرى',
-    'مالية وفواتير', 'أخبار ومجلات',
+    'ترفيه ومشاهدة',
+    'موسيقى وبودكاست',
+    'إنتاجية وذكاء اصطناعي',
+    'ألعاب',
+    'رياضة وصحة',
+    'تعليم',
+    'تسوق وتوصيل',
+    'اتصالات وإنترنت',
+    'تخزين سحابي',
+    'أخرى',
+    'مالية وفواتير',
+    'أخبار ومجلات',
   };
 
   final seen = <String>{};
@@ -98,8 +113,7 @@ List<ImportCandidate> parseAiCandidates(String raw) {
     if (name.isEmpty || seen.contains(name)) continue;
     seen.add(name);
 
-    final currencyRaw =
-        ((e['currency'] as String?) ?? '').trim().toUpperCase();
+    final currencyRaw = ((e['currency'] as String?) ?? '').trim().toUpperCase();
     final cycleRaw = ((e['cycle'] as String?) ?? 'monthly').toLowerCase();
     final cycle = switch (cycleRaw) {
       'weekly' => BillingCycle.weekly,
@@ -109,22 +123,23 @@ List<ImportCandidate> parseAiCandidates(String raw) {
     };
     final categoryRaw = ((e['category'] as String?) ?? 'أخرى').trim();
     final price = (e['price'] as num?)?.toDouble();
-    final anchor =
-        DateTime.tryParse((e['lastChargeDate'] as String?) ?? '');
+    final anchor = DateTime.tryParse((e['lastChargeDate'] as String?) ?? '');
 
-    out.add(ImportCandidate(
-      name: name,
-      emoji: ((e['emoji'] as String?) ?? '').trim().isEmpty
-          ? '🔖'
-          : (e['emoji'] as String).trim(),
-      category:
-          validCategories.contains(categoryRaw) ? categoryRaw : 'أخرى',
-      price: (price != null && price > 0 && price < 100000) ? price : null,
-      currency: validCurrencies.contains(currencyRaw) ? currencyRaw : '',
-      cycle: cycle,
-      anchor: anchor,
-      sourceLine: tr('aiExtractionSource'),
-    ));
+    out.add(
+      ImportCandidate(
+        name: name,
+        emoji:
+            ((e['emoji'] as String?) ?? '').trim().isEmpty
+                ? '🔖'
+                : (e['emoji'] as String).trim(),
+        category: validCategories.contains(categoryRaw) ? categoryRaw : 'أخرى',
+        price: (price != null && price > 0 && price < 100000) ? price : null,
+        currency: validCurrencies.contains(currencyRaw) ? currencyRaw : '',
+        cycle: cycle,
+        anchor: anchor,
+        sourceLine: tr('aiExtractionSource'),
+      ),
+    );
   }
   return out;
 }
@@ -150,10 +165,10 @@ class AiProviderInfo {
 
 extension LocalizedAiProviderInfo on AiProviderInfo {
   String get localizedLabel => tr(switch (id) {
-        'gemini' => 'aiProviderGemini',
-        'groq' => 'aiProviderGroq',
-        _ => label,
-      });
+    'gemini' => 'aiProviderGemini',
+    'groq' => 'aiProviderGroq',
+    _ => label,
+  });
 }
 
 const List<AiProviderInfo> kAiProviders = [
@@ -192,9 +207,9 @@ const List<AiProviderInfo> kAiProviders = [
 ];
 
 AiProviderInfo aiProviderById(String id) => kAiProviders.firstWhere(
-      (p) => p.id == id,
-      orElse: () => kAiProviders.first,
-    );
+  (p) => p.id == id,
+  orElse: () => kAiProviders.first,
+);
 
 /// طلب توليد نص موحّد يعمل مع Gemini وكل المزودات المتوافقة مع OpenAI.
 Future<String> aiGenerateText(
@@ -259,9 +274,7 @@ Future<String> aiGenerateText(
         lastError = e;
       }
     }
-    throw AiExtractionException(
-      tr('aiConnectionFailed', {'error': lastError}),
-    );
+    throw AiExtractionException(tr('aiConnectionFailed', {'error': lastError}));
   }
 
   // مزودات متوافقة مع OpenAI (Groq / OpenAI / DeepSeek)
@@ -276,8 +289,7 @@ Future<String> aiGenerateText(
           body: jsonEncode({
             'model': provider.model,
             'temperature': temperature,
-            if (jsonOutput)
-              'response_format': {'type': 'json_object'},
+            if (jsonOutput) 'response_format': {'type': 'json_object'},
             'messages': [
               {'role': 'user', 'content': prompt},
             ],
@@ -293,13 +305,9 @@ Future<String> aiGenerateText(
       throw AiExtractionException(tr('aiRateLimited'));
     }
     if (res.statusCode != 200) {
-      throw AiExtractionException(
-        tr('aiHttpFailed', {'code': res.statusCode}),
-      );
+      throw AiExtractionException(tr('aiHttpFailed', {'code': res.statusCode}));
     }
-    return extractOpenAiResponseText(
-      jsonDecode(utf8.decode(res.bodyBytes)),
-    );
+    return extractOpenAiResponseText(jsonDecode(utf8.decode(res.bodyBytes)));
   } on AiExtractionException {
     rethrow;
   } catch (e) {
@@ -328,8 +336,7 @@ class AiExtractor {
     String providerId = 'gemini',
   }) async {
     // نقتصر على حجم معقول حتى لا نتجاوز حدود الطلب.
-    final clipped =
-        text.length > 60000 ? text.substring(0, 60000) : text;
+    final clipped = text.length > 60000 ? text.substring(0, 60000) : text;
     final answer = await aiGenerateText(
       '$_prompt\n$clipped',
       apiKey,
@@ -369,10 +376,11 @@ ${names.join('\n')}
 Map<String, String> parseAiCategories(String raw) {
   var value = raw.trim();
   if (value.startsWith('```')) {
-    value = value
-        .replaceAll(RegExp(r'^```[a-zA-Z]*'), '')
-        .replaceAll('```', '')
-        .trim();
+    value =
+        value
+            .replaceAll(RegExp(r'^```[a-zA-Z]*'), '')
+            .replaceAll('```', '')
+            .trim();
   }
   final start = value.indexOf('{');
   final end = value.lastIndexOf('}');

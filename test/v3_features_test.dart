@@ -44,10 +44,7 @@ void main() {
     });
 
     test('سنوي: دفعة في شهر الذكرى فقط', () {
-      final s = _sub(
-        cycle: BillingCycle.yearly,
-        anchor: DateTime(2024, 5, 10),
-      );
+      final s = _sub(cycle: BillingCycle.yearly, anchor: DateTime(2024, 5, 10));
       expect(s.paymentsInMonth(2026, 5), 1);
       expect(s.paymentsInMonth(2026, 6), 0);
     });
@@ -78,16 +75,14 @@ void main() {
         cycle: BillingCycle.monthly,
         anchor: DateTime(2026, 7, 1),
       );
-      expect(
-        Subscription.fromJson(noTrial.toJson()).trialEndDate,
-        isNull,
-      );
+      expect(Subscription.fromJson(noTrial.toJson()).trialEndDate, isNull);
     });
   });
 
   group('قاعدة الخدمات عن بُعد', () {
     test('يحلل JSON صالحًا', () {
-      const raw = '{"version":1,"services":['
+      const raw =
+          '{"version":1,"services":['
           '{"name":"Netflix","emoji":"🍿","category":"ترفيه ومشاهدة",'
           '"domain":"netflix.com","manageUrl":"https://netflix.com/account",'
           '"priceHint":55.99},'

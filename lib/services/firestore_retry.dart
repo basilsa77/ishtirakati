@@ -64,26 +64,27 @@ class FirestoreRetry {
     final jitter = random ?? Random.secure();
     final wait = sleeper ?? Future<void>.delayed;
     for (var attempt = 1; attempt <= attempts; attempt++) {
-      onEvent?.call(FirestoreRetryEvent(
-        operation: operation,
-        attempt: attempt,
-        maxAttempts: attempts,
-      ));
+      onEvent?.call(
+        FirestoreRetryEvent(
+          operation: operation,
+          attempt: attempt,
+          maxAttempts: attempts,
+        ),
+      );
       try {
         return await action().timeout(operationTimeout);
       } on FirebaseException catch (error) {
         if (!isRetryableCode(error.code) || attempt == attempts) rethrow;
-        final delay = delayForAttempt(
-          attempt,
-          jitterMs: jitter.nextInt(401),
+        final delay = delayForAttempt(attempt, jitterMs: jitter.nextInt(401));
+        onEvent?.call(
+          FirestoreRetryEvent(
+            operation: operation,
+            attempt: attempt,
+            maxAttempts: attempts,
+            nextDelayMs: delay.inMilliseconds,
+            code: error.code,
+          ),
         );
-        onEvent?.call(FirestoreRetryEvent(
-          operation: operation,
-          attempt: attempt,
-          maxAttempts: attempts,
-          nextDelayMs: delay.inMilliseconds,
-          code: error.code,
-        ));
         await wait(delay);
       }
     }

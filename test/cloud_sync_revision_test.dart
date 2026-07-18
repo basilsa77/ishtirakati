@@ -110,10 +110,12 @@ void main() {
         await expectLater(
           CloudSync.writeWithoutPreflightRead(
             localRevision: 0,
-            firstCreate: () async => throw FirebaseException(
-              plugin: 'cloud_firestore',
-              code: 'unavailable',
-            ),
+            firstCreate:
+                () async =>
+                    throw FirebaseException(
+                      plugin: 'cloud_firestore',
+                      code: 'unavailable',
+                    ),
             transactionUpdate: () async {
               transactionCalls++;
               throw StateError('transaction must not run');
@@ -196,8 +198,8 @@ void main() {
           restFirstCreateEnabled: true,
           restUpdateEnabled: true,
           restFirstCreate: () async => throw StateError('create must not run'),
-          nativeFirstCreate: () async =>
-              throw StateError('create must not run'),
+          nativeFirstCreate:
+              () async => throw StateError('create must not run'),
           restUpdate: () async {
             restCalls++;
             return const CloudSyncWriteOutcome(

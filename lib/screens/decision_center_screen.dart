@@ -28,12 +28,14 @@ class _DecisionCenterScreenState extends State<DecisionCenterScreen> {
         listenable: store,
         builder: (context, _) {
           final all = RenewalIntelligence.decisions(store.items);
-          final items = _filter == null
-              ? all
-              : all.where((item) => item.priority == _filter).toList();
-          final urgent = all
-              .where((item) => item.priority == DecisionPriority.urgent)
-              .length;
+          final items =
+              _filter == null
+                  ? all
+                  : all.where((item) => item.priority == _filter).toList();
+          final urgent =
+              all
+                  .where((item) => item.priority == DecisionPriority.urgent)
+                  .length;
           return ListView(
             padding: const EdgeInsetsDirectional.fromSTEB(
               V16Space.ml,
@@ -59,22 +61,24 @@ class _DecisionCenterScreenState extends State<DecisionCenterScreen> {
                     _FilterChip(
                       label: tr('ui_5858bf88ec0b'),
                       selected: _filter == DecisionPriority.urgent,
-                      onTap: () =>
-                          setState(() => _filter = DecisionPriority.urgent),
+                      onTap:
+                          () =>
+                              setState(() => _filter = DecisionPriority.urgent),
                     ),
                     const SizedBox(width: V16Space.xs),
                     _FilterChip(
                       label: tr('ui_d0ac893de481'),
                       selected: _filter == DecisionPriority.high,
-                      onTap: () =>
-                          setState(() => _filter = DecisionPriority.high),
+                      onTap:
+                          () => setState(() => _filter = DecisionPriority.high),
                     ),
                     const SizedBox(width: V16Space.xs),
                     _FilterChip(
                       label: tr('ui_573fb812710c'),
                       selected: _filter == DecisionPriority.normal,
-                      onTap: () =>
-                          setState(() => _filter = DecisionPriority.normal),
+                      onTap:
+                          () =>
+                              setState(() => _filter = DecisionPriority.normal),
                     ),
                   ],
                 ),
@@ -106,9 +110,10 @@ class _DecisionHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final detail = total == 0
-        ? tr('ui_92a21744db1f')
-        : tr('ui_23f338c9231e', {'value0': total, 'value1': urgent});
+    final detail =
+        total == 0
+            ? tr('ui_92a21744db1f')
+            : tr('ui_23f338c9231e', {'value0': total, 'value1': urgent});
     return Semantics(
       container: true,
       label: '${tr('ui_2374a9a65ea0')}. $detail',
@@ -152,11 +157,7 @@ class _DecisionHero extends StatelessWidget {
               if (largeText || constraints.maxWidth < 330) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    copy,
-                    const SizedBox(height: V16Space.md),
-                    count,
-                  ],
+                  children: [copy, const SizedBox(height: V16Space.md), count],
                 );
               }
               return Row(

@@ -32,13 +32,16 @@ List<AppSearchResult> parseItunesResults(String raw) {
       final name = ((e['trackName'] as String?) ?? '').trim();
       if (name.isEmpty || seen.contains(name)) continue;
       seen.add(name);
-      out.add(AppSearchResult(
-        name: name,
-        iconUrl: (e['artworkUrl100'] as String?) ??
-            (e['artworkUrl60'] as String?) ??
-            '',
-        seller: (e['sellerName'] as String?) ?? '',
-      ));
+      out.add(
+        AppSearchResult(
+          name: name,
+          iconUrl:
+              (e['artworkUrl100'] as String?) ??
+              (e['artworkUrl60'] as String?) ??
+              '',
+          seller: (e['sellerName'] as String?) ?? '',
+        ),
+      );
     }
     return out;
   } catch (_) {

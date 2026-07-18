@@ -30,9 +30,10 @@ Subscription sub({
     isEssential: essential,
     autoRenews: autoRenews,
     manageUrl: manageUrl,
-    kind: installments == null
-        ? PaymentKind.subscription
-        : PaymentKind.installment,
+    kind:
+        installments == null
+            ? PaymentKind.subscription
+            : PaymentKind.installment,
     totalInstallments: installments,
     lastReviewedAt: lastReviewedAt,
     planName: planName,
@@ -226,7 +227,15 @@ void main() {
 
   test('لا يقترح إلغاء خدمة أساسية منخفضة الاستخدام', () {
     final result = FinancialAssistant.analyze(
-      [sub(id: 'essential', name: 'خدمة أساسية', price: 80, usageCount: 0, essential: true)],
+      [
+        sub(
+          id: 'essential',
+          name: 'خدمة أساسية',
+          price: 80,
+          usageCount: 0,
+          essential: true,
+        ),
+      ],
       currency: 'SAR',
       now: DateTime(2026, 7, 1),
     );

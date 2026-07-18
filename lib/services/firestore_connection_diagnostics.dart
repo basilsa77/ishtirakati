@@ -156,9 +156,10 @@ class FirestoreConnectionDiagnostics {
         tokenWatch.stop();
         final result = FirestoreConnectionDiagnostic(
           rest: FirestoreRestDiagnostic(
-            outcome: error is TimeoutException
-                ? FirestoreRestOutcome.timeout
-                : FirestoreRestOutcome.tokenFailure,
+            outcome:
+                error is TimeoutException
+                    ? FirestoreRestOutcome.timeout
+                    : FirestoreRestOutcome.tokenFailure,
             httpStatus: null,
             dnsSucceeded: false,
             connectionSucceeded: false,
@@ -173,16 +174,17 @@ class FirestoreConnectionDiagnostics {
       }
       tokenWatch.stop();
 
-      final rest = token == null || token.isEmpty
-          ? FirestoreRestDiagnostic(
-              outcome: FirestoreRestOutcome.tokenFailure,
-              httpStatus: null,
-              dnsSucceeded: false,
-              connectionSucceeded: false,
-              elapsed: tokenWatch.elapsed,
-              exceptionType: 'EmptyFirebaseIdToken',
-            )
-          : await _runRest(uid: user.uid, idToken: token);
+      final rest =
+          token == null || token.isEmpty
+              ? FirestoreRestDiagnostic(
+                outcome: FirestoreRestOutcome.tokenFailure,
+                httpStatus: null,
+                dnsSucceeded: false,
+                connectionSucceeded: false,
+                elapsed: tokenWatch.elapsed,
+                exceptionType: 'EmptyFirebaseIdToken',
+              )
+              : await _runRest(uid: user.uid, idToken: token);
       token = null;
       final native = await _runNative(user.uid);
       final result = FirestoreConnectionDiagnostic(
@@ -205,8 +207,9 @@ class FirestoreConnectionDiagnostics {
     var dnsSucceeded = false;
     var connectionSucceeded = false;
     try {
-      final addresses = await InternetAddress.lookup(_firestoreHost)
-          .timeout(_diagnosticTimeout);
+      final addresses = await InternetAddress.lookup(
+        _firestoreHost,
+      ).timeout(_diagnosticTimeout);
       dnsSucceeded = addresses.isNotEmpty;
       if (!dnsSucceeded) {
         return FirestoreRestDiagnostic(
@@ -234,17 +237,18 @@ class FirestoreConnectionDiagnostics {
         int? commitHttpStatus;
         var outcome = outcomeForHttpStatus(response.statusCode);
         if (response.statusCode == HttpStatus.notFound) {
-          final commitRequest = http.Request(
-            'POST',
-            Uri.https(
-              _firestoreHost,
-              '/v1/projects/$_firebaseProjectId/databases/'
-              '${FirestoreConfig.databaseId}/documents:commit',
-            ),
-          )
-            ..headers[HttpHeaders.authorizationHeader] = 'Bearer $idToken'
-            ..headers[HttpHeaders.contentTypeHeader] = 'application/json'
-            ..body = '{"writes":[]}';
+          final commitRequest =
+              http.Request(
+                  'POST',
+                  Uri.https(
+                    _firestoreHost,
+                    '/v1/projects/$_firebaseProjectId/databases/'
+                    '${FirestoreConfig.databaseId}/documents:commit',
+                  ),
+                )
+                ..headers[HttpHeaders.authorizationHeader] = 'Bearer $idToken'
+                ..headers[HttpHeaders.contentTypeHeader] = 'application/json'
+                ..body = '{"writes":[]}';
           final commitResponse = await client
               .send(commitRequest)
               .timeout(_diagnosticTimeout);
@@ -340,10 +344,11 @@ class FirestoreConnectionDiagnostics {
     try {
       final snapshot = await FirestoreRetry.run(
         operation: 'diagnostic-native-read',
-        action: () => FirestoreConfig.instance
-            .collection('users')
-            .doc(uid)
-            .get(const GetOptions(source: Source.server)),
+        action:
+            () => FirestoreConfig.instance
+                .collection('users')
+                .doc(uid)
+                .get(const GetOptions(source: Source.server)),
         onEvent: (event) => attempts = event.attempt,
       );
       watch.stop();
@@ -453,17 +458,18 @@ class FirestoreConnectionDiagnostics {
           .replaceAll(uid, '<uid>')
           .replaceAll(Uri.encodeComponent(uid), '<uid>');
     }
-    safe = safe
-        .replaceAll(
-          RegExp(r'Bearer\s+[A-Za-z0-9._~-]+', caseSensitive: false),
-          'Bearer <token>',
-        )
-        .replaceAll(
-          RegExp(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'),
-          '<email>',
-        )
-        .replaceAll(RegExp(r'[\r\n]+'), ' ')
-        .trim();
+    safe =
+        safe
+            .replaceAll(
+              RegExp(r'Bearer\s+[A-Za-z0-9._~-]+', caseSensitive: false),
+              'Bearer <token>',
+            )
+            .replaceAll(
+              RegExp(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'),
+              '<email>',
+            )
+            .replaceAll(RegExp(r'[\r\n]+'), ' ')
+            .trim();
     return safe.length <= 500 ? safe : safe.substring(0, 500);
   }
 }

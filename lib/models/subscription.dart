@@ -114,9 +114,10 @@ String fmtMoney(double v, String currency) {
 
 /// صياغة واضحة للقوائم التي يجب أن تبيّن العملة بجانب المبلغ.
 String fmtMoneyWithCurrency(double value, String currency) {
-  final symbol = isEnglishLocale && currency == 'SAR'
-      ? 'SAR'
-      : currencySymbols[currency] ?? currency;
+  final symbol =
+      isEnglishLocale && currency == 'SAR'
+          ? 'SAR'
+          : currencySymbols[currency] ?? currency;
   final amount = fmtMoney(value, currency);
   return (isEnglishLocale ? '$symbol $amount' : '$amount $symbol').trim();
 }
@@ -532,8 +533,11 @@ class Subscription {
       emoji: (data['emoji'] as String?) ?? '🔖',
       price: (data['price'] as num?)?.toDouble() ?? 0,
       currency: (data['currency'] as String?) ?? 'SAR',
-      cycle: BillingCycle
-          .values[cycleIndex.clamp(0, BillingCycle.values.length - 1)],
+      cycle:
+          BillingCycle.values[cycleIndex.clamp(
+            0,
+            BillingCycle.values.length - 1,
+          )],
       anchorDate:
           DateTime.tryParse((data['anchor'] as String?) ?? '') ??
           DateTime.now(),
@@ -550,14 +554,16 @@ class Subscription {
             if (PriceChange.fromJson(e) case final change?) change,
       ],
       isFamily: (data['isFamily'] as bool?) ?? false,
-      familyMembers: (((data['familyMembers'] as num?)?.toInt() ?? 2).clamp(
-        1,
-        20,
-      )).toInt(),
-      usageCount: (((data['usageCount'] as num?)?.toInt() ?? 0).clamp(
-        0,
-        100000,
-      )).toInt(),
+      familyMembers:
+          (((data['familyMembers'] as num?)?.toInt() ?? 2).clamp(
+            1,
+            20,
+          )).toInt(),
+      usageCount:
+          (((data['usageCount'] as num?)?.toInt() ?? 0).clamp(
+            0,
+            100000,
+          )).toInt(),
       lastUsedAt: DateTime.tryParse((data['lastUsedAt'] as String?) ?? ''),
       autoRenews: (data['autoRenews'] as bool?) ?? true,
       isEssential: (data['isEssential'] as bool?) ?? false,

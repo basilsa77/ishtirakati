@@ -25,9 +25,9 @@ class AccountDeletionService {
   const AccountDeletionService._();
 
   static Future<void> deleteEverything() => AccountDeletionCoordinator.run(
-        reauthenticate: AuthService.reauthenticateCurrentUser,
-        deleteCloud: CloudSync.deleteRemoteData,
-        deleteAccount: AuthService.deleteCurrentUser,
-        clearLocal: SubscriptionStore.instance.clearLocalForAccountDeletion,
-      );
+    reauthenticate: AuthService.reauthenticateCurrentUser,
+    deleteCloud: CloudSync.deleteRemoteData,
+    deleteAccount: AuthService.deleteCurrentUser,
+    clearLocal: SubscriptionStore.instance.clearLocalForAccountDeletion,
+  );
 }

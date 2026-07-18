@@ -24,9 +24,10 @@ abstract final class SubscriptionSchema {
       return Map<String, dynamic>.from(source);
     }
 
-    final record = sourceVersion <= 12
-        ? migrateToV12(source)
-        : Map<String, dynamic>.from(source);
+    final record =
+        sourceVersion <= 12
+            ? migrateToV12(source)
+            : Map<String, dynamic>.from(source);
     record.putIfAbsent('autoRenews', () => true);
     record.putIfAbsent('isEssential', () => false);
     record.putIfAbsent('planName', () => '');

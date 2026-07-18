@@ -17,14 +17,14 @@ class FirebaseRestAppCheckException implements Exception {
   const FirebaseRestAppCheckException(this.failure, {this.causeType});
 
   String get safeType => switch (failure) {
-        FirebaseRestAppCheckFailure.providerUnavailable =>
-          'MissingFirebaseAppCheckTokenProvider',
-        FirebaseRestAppCheckFailure.emptyToken => 'EmptyFirebaseAppCheckToken',
-        FirebaseRestAppCheckFailure.tokenAcquisitionFailed =>
-          causeType == null
-              ? 'FirebaseAppCheckTokenFailure'
-              : 'FirebaseAppCheckTokenFailure($causeType)',
-      };
+    FirebaseRestAppCheckFailure.providerUnavailable =>
+      'MissingFirebaseAppCheckTokenProvider',
+    FirebaseRestAppCheckFailure.emptyToken => 'EmptyFirebaseAppCheckToken',
+    FirebaseRestAppCheckFailure.tokenAcquisitionFailed =>
+      causeType == null
+          ? 'FirebaseAppCheckTokenFailure'
+          : 'FirebaseAppCheckTokenFailure($causeType)',
+  };
 
   @override
   String toString() => safeType;
@@ -64,8 +64,7 @@ class FirebaseRestAuthHeaders {
 
     String? appCheckToken;
     try {
-      appCheckToken =
-          await provider(forceRefreshAppCheck).timeout(timeout);
+      appCheckToken = await provider(forceRefreshAppCheck).timeout(timeout);
     } catch (error) {
       headers.clear();
       throw FirebaseRestAppCheckException(

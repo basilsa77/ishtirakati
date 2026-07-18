@@ -31,8 +31,9 @@ class CommandCenterScreen extends StatelessWidget {
         final yearly = store.yearlyTotals()[currency] ?? 0;
         final budget = store.monthlyBudget;
         final upcoming = store.upcoming(withinDays: 21);
-        final byCategory = store.monthlyByCategory(currency).entries.toList()
-          ..sort((a, b) => b.value.compareTo(a.value));
+        final byCategory =
+            store.monthlyByCategory(currency).entries.toList()
+              ..sort((a, b) => b.value.compareTo(a.value));
         final decisions = RenewalIntelligence.decisions(store.items);
         final snapshot = RenewalIntelligence.snapshot(
           store.items,
@@ -54,15 +55,20 @@ class CommandCenterScreen extends StatelessWidget {
             _CashFlowRibbon(snapshot: snapshot),
             const SizedBox(height: 14),
             _QuickLane(
-              onAdd: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const EditSubscriptionScreen()),
-              ),
-              onImport: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ImportScreen()),
-              ),
-              onCalendar: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const CalendarPage()),
-              ),
+              onAdd:
+                  () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const EditSubscriptionScreen(),
+                    ),
+                  ),
+              onImport:
+                  () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ImportScreen()),
+                  ),
+              onCalendar:
+                  () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const CalendarPage()),
+                  ),
             ),
             if (decisions.isNotEmpty) ...[
               const SizedBox(height: 24),
@@ -74,9 +80,10 @@ class CommandCenterScreen extends StatelessWidget {
             const SizedBox(height: 28),
             _V8SectionHeader(
               title: tr('ui_00fb70720d38'),
-              detail: upcoming.isEmpty
-                  ? tr('ui_917c39cede7a')
-                  : tr('ui_43d451ae8a86', {'value0': upcoming.length}),
+              detail:
+                  upcoming.isEmpty
+                      ? tr('ui_917c39cede7a')
+                      : tr('ui_43d451ae8a86', {'value0': upcoming.length}),
             ),
             const SizedBox(height: 12),
             if (upcoming.isEmpty)
@@ -134,9 +141,10 @@ class _CashFlowRibbon extends StatelessWidget {
           _CashFlowTile(
             icon: Icons.bolt_rounded,
             label: tr('ui_3f506ba7c244'),
-            value: snapshot.dueIn7Days == 0
-                ? tr('ui_4c6f78c0b2fd')
-                : fmtMoney(snapshot.amountIn7Days, snapshot.currency),
+            value:
+                snapshot.dueIn7Days == 0
+                    ? tr('ui_4c6f78c0b2fd')
+                    : fmtMoney(snapshot.amountIn7Days, snapshot.currency),
           ),
           _CashFlowTile(
             icon: Icons.calendar_view_month_rounded,
@@ -223,7 +231,10 @@ class _CashFlowTile extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: p.textMuted, fontSize: V15Type.captionSmall),
+                  style: TextStyle(
+                    color: p.textMuted,
+                    fontSize: V15Type.captionSmall,
+                  ),
                 ),
               ],
             ),
@@ -279,18 +290,22 @@ class _DecisionPreview extends StatelessWidget {
                     ),
                     Text(
                       tr('ui_1443ecd0c584', {'value0': total}),
-                      style: TextStyle(color: p.textMuted, fontSize: V15Type.caption),
+                      style: TextStyle(
+                        color: p.textMuted,
+                        fontSize: V15Type.caption,
+                      ),
                     ),
                   ],
                 ),
               ),
               IconButton(
                 tooltip: tr('ui_0e86b3ccc44c'),
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const DecisionCenterScreen(),
-                  ),
-                ),
+                onPressed:
+                    () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const DecisionCenterScreen(),
+                      ),
+                    ),
                 icon: const Icon(Icons.arrow_back_rounded),
               ),
             ],
@@ -303,9 +318,10 @@ class _DecisionPreview extends StatelessWidget {
                   decisions[index].priority == DecisionPriority.urgent
                       ? Icons.priority_high_rounded
                       : Icons.check_circle_outline_rounded,
-                  color: decisions[index].priority == DecisionPriority.urgent
-                      ? p.danger
-                      : p.accent,
+                  color:
+                      decisions[index].priority == DecisionPriority.urgent
+                          ? p.danger
+                          : p.accent,
                   size: 18,
                 ),
                 const SizedBox(width: 8),
@@ -484,7 +500,10 @@ class _CommitmentHero extends StatelessWidget {
                 Text(
                   isOver ? tr('ui_400c5921601a') : tr('ui_710a964067c1'),
                   style: TextStyle(
-                    color: isOver ? const Color(0xFFFFC5CA) : const Color(0xCFFFFFFF),
+                    color:
+                        isOver
+                            ? const Color(0xFFFFC5CA)
+                            : const Color(0xCFFFFFFF),
                     fontWeight: FontWeight.w800,
                     fontSize: V15Type.caption,
                   ),
@@ -541,9 +560,21 @@ class _QuickLane extends StatelessWidget {
           crossAxisSpacing: 10,
           childAspectRatio: columns == 2 ? 2.1 : 1.35,
           children: [
-            _QuickAction(icon: Icons.add_rounded, label: tr('ui_d52453ac627d'), onTap: onAdd),
-            _QuickAction(icon: Icons.document_scanner_rounded, label: tr('ui_e8c12678c3b4'), onTap: onImport),
-            _QuickAction(icon: Icons.calendar_today_rounded, label: tr('ui_c6c25b9b516f'), onTap: onCalendar),
+            _QuickAction(
+              icon: Icons.add_rounded,
+              label: tr('ui_d52453ac627d'),
+              onTap: onAdd,
+            ),
+            _QuickAction(
+              icon: Icons.document_scanner_rounded,
+              label: tr('ui_e8c12678c3b4'),
+              onTap: onImport,
+            ),
+            _QuickAction(
+              icon: Icons.calendar_today_rounded,
+              label: tr('ui_c6c25b9b516f'),
+              onTap: onCalendar,
+            ),
           ],
         );
       },
@@ -641,7 +672,8 @@ class _RenewalStrip extends StatelessWidget {
         children: [
           for (var index = 0; index < subscriptions.length; index++) ...[
             _RenewalCard(sub: subscriptions[index]),
-            if (index != subscriptions.length - 1) Divider(height: 1, color: context.palette.stroke),
+            if (index != subscriptions.length - 1)
+              Divider(height: 1, color: context.palette.stroke),
           ],
         ],
       ),
@@ -658,45 +690,62 @@ class _RenewalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.palette;
     return InkWell(
-        onTap: () => showSubscriptionDetails(context, sub),
-        borderRadius: BorderRadius.circular(16),
-        child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-          child: Row(
-            children: [
-              ServiceAvatar(
-                name: sub.name,
-                emoji: sub.emoji,
-                manageUrl: sub.manageUrl,
-                iconUrl: sub.iconUrl,
-                tint: categoryColor(sub.category),
-                size: 42,
+      onTap: () => showSubscriptionDetails(context, sub),
+      borderRadius: BorderRadius.circular(16),
+      child: Ink(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        child: Row(
+          children: [
+            ServiceAvatar(
+              name: sub.name,
+              emoji: sub.emoji,
+              manageUrl: sub.manageUrl,
+              iconUrl: sub.iconUrl,
+              tint: categoryColor(sub.category),
+              size: 42,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    sub.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: p.text,
+                      fontWeight: FontWeight.w900,
+                      fontSize: V15Type.label,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    tr('ui_109022fb0f10', {'value0': sub.daysUntilRenewal()}),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: p.textMuted,
+                      fontSize: V15Type.caption,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(sub.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: V15Type.label)),
-                    const SizedBox(height: 4),
-                    Text(tr('ui_109022fb0f10', {'value0': sub.daysUntilRenewal()}), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
-                  ],
-                ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              fmtMoney(sub.price, sub.currency),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: p.accent,
+                fontSize: V15Type.labelSmall,
+                fontWeight: FontWeight.w900,
               ),
-              const SizedBox(width: 8),
-              Text(
-                fmtMoney(sub.price, sub.currency),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: p.accent,
-                  fontSize: V15Type.labelSmall,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
     );
   }
 }
@@ -727,9 +776,21 @@ class _PulseGrid extends StatelessWidget {
           crossAxisSpacing: 10,
           childAspectRatio: columns == 2 ? 1.85 : 1.05,
           children: [
-            _PulseTile(icon: Icons.notifications_active_outlined, label: tr('ui_027ea1355212'), value: '$upcoming'),
-            _PulseTile(icon: Icons.visibility_off_outlined, label: tr('ui_fa5641bf64f8'), value: '$unused'),
-            _PulseTile(icon: Icons.savings_outlined, label: tr('ui_0c7813863463'), value: saved <= 0 ? '—' : fmtMoney(saved, currency)),
+            _PulseTile(
+              icon: Icons.notifications_active_outlined,
+              label: tr('ui_027ea1355212'),
+              value: '$upcoming',
+            ),
+            _PulseTile(
+              icon: Icons.visibility_off_outlined,
+              label: tr('ui_fa5641bf64f8'),
+              value: '$unused',
+            ),
+            _PulseTile(
+              icon: Icons.savings_outlined,
+              label: tr('ui_0c7813863463'),
+              value: saved <= 0 ? '—' : fmtMoney(saved, currency),
+            ),
           ],
         );
       },
@@ -774,7 +835,10 @@ class _PulseTile extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          Text(label, style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
+          Text(
+            label,
+            style: TextStyle(color: p.textMuted, fontSize: V15Type.caption),
+          ),
         ],
       ),
     );
@@ -815,7 +879,10 @@ class _SpendingMap extends StatelessWidget {
           Divider(color: p.stroke, height: 22),
           Row(
             children: [
-              Text(tr('ui_9d0c449bb1ae'), style: TextStyle(color: p.textMuted, fontSize: V15Type.caption)),
+              Text(
+                tr('ui_9d0c449bb1ae'),
+                style: TextStyle(color: p.textMuted, fontSize: V15Type.caption),
+              ),
               const Spacer(),
               Text(
                 fmtMoney(total, currency),
@@ -862,7 +929,11 @@ class _CategoryLine extends StatelessWidget {
                 name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: V15Type.labelSmall),
+                style: TextStyle(
+                  color: p.text,
+                  fontWeight: FontWeight.w800,
+                  fontSize: V15Type.labelSmall,
+                ),
               ),
             ),
             ConstrainedBox(
@@ -872,7 +943,11 @@ class _CategoryLine extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.end,
-                style: TextStyle(color: p.text, fontWeight: FontWeight.w900, fontSize: V15Type.caption),
+                style: TextStyle(
+                  color: p.text,
+                  fontWeight: FontWeight.w900,
+                  fontSize: V15Type.caption,
+                ),
               ),
             ),
           ],
@@ -910,7 +985,10 @@ class _UsageFocus extends StatelessWidget {
         children: [
           for (var i = 0; i < subscriptions.length; i++) ...[
             ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 4,
+              ),
               leading: ServiceAvatar(
                 name: subscriptions[i].name,
                 emoji: subscriptions[i].emoji,
@@ -921,7 +999,11 @@ class _UsageFocus extends StatelessWidget {
               ),
               title: Text(
                 subscriptions[i].name,
-                style: TextStyle(color: p.text, fontWeight: FontWeight.w800, fontSize: V15Type.labelSmall),
+                style: TextStyle(
+                  color: p.text,
+                  fontWeight: FontWeight.w800,
+                  fontSize: V15Type.labelSmall,
+                ),
               ),
               subtitle: Text(
                 tr('ui_26ecf5ebf90c'),
@@ -964,7 +1046,11 @@ class _CalmState extends StatelessWidget {
           Expanded(
             child: Text(
               message ?? tr('ui_6260753cde19'),
-              style: TextStyle(color: p.text, fontSize: V15Type.labelSmall, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                color: p.text,
+                fontSize: V15Type.labelSmall,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
@@ -989,14 +1075,25 @@ class _DashboardEmpty extends StatelessWidget {
               width: 76,
               height: 76,
               alignment: Alignment.center,
-              decoration: BoxDecoration(color: p.accentSoft, shape: BoxShape.circle),
-              child: Icon(Icons.space_dashboard_rounded, color: p.accent, size: 34),
+              decoration: BoxDecoration(
+                color: p.accentSoft,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.space_dashboard_rounded,
+                color: p.accent,
+                size: 34,
+              ),
             ),
             const SizedBox(height: 18),
             Text(
               tr('ui_748129d10111'),
               textAlign: TextAlign.center,
-              style: TextStyle(color: p.text, fontSize: V15Type.title, fontWeight: FontWeight.w900),
+              style: TextStyle(
+                color: p.text,
+                fontSize: V15Type.title,
+                fontWeight: FontWeight.w900,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -1006,9 +1103,12 @@ class _DashboardEmpty extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             FilledButton.icon(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const EditSubscriptionScreen()),
-              ),
+              onPressed:
+                  () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const EditSubscriptionScreen(),
+                    ),
+                  ),
               icon: const Icon(Icons.add_rounded),
               label: Text(tr('ui_7e7a0c30b825')),
             ),

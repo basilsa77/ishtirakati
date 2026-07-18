@@ -52,8 +52,7 @@ class PlanComparison {
     required this.alternativeMonthlyCost,
   });
 
-  double get monthlyDifference =>
-      alternativeMonthlyCost - currentMonthlyCost;
+  double get monthlyDifference => alternativeMonthlyCost - currentMonthlyCost;
   double get annualDifference => monthlyDifference * 12;
   bool get alternativeSavesMoney => monthlyDifference < 0;
 }
@@ -79,9 +78,9 @@ class FinancialAssistantSnapshot {
 
   /// عدد السجلات الإضافية المحتمل الاستغناء عنها داخل مجموعات التكرار.
   int get duplicateCandidateCount => duplicateGroups.fold(
-        0,
-        (sum, group) => sum + group.subscriptions.length - 1,
-      );
+    0,
+    (sum, group) => sum + group.subscriptions.length - 1,
+  );
 }
 
 abstract final class FinancialAssistant {
@@ -91,12 +90,15 @@ abstract final class FinancialAssistant {
     DateTime? now,
   }) {
     final today = _day(now ?? DateTime.now());
-    final active = subscriptions
-        .where((item) =>
-            item.currency == currency &&
-            !item.isPaused &&
-            !item.isCompleted(today))
-        .toList();
+    final active =
+        subscriptions
+            .where(
+              (item) =>
+                  item.currency == currency &&
+                  !item.isPaused &&
+                  !item.isCompleted(today),
+            )
+            .toList();
     final forecast = _forecast(active, today);
     final duplicateGroups = _duplicates(active);
     final duplicateIds = <String>{
@@ -112,11 +114,13 @@ abstract final class FinancialAssistant {
       final sorted = [...group.subscriptions]
         ..sort((a, b) => a.monthlyCost.compareTo(b.monthlyCost));
       for (final item in sorted.skip(1)) {
-        reviewItems.add(FinancialReviewItem(
-          subscription: item,
-          reason: FinancialReviewReason.duplicate,
-          priority: 100,
-        ));
+        reviewItems.add(
+          FinancialReviewItem(
+            subscription: item,
+            reason: FinancialReviewReason.duplicate,
+            priority: 100,
+          ),
+        );
         reviewedIds.add(item.id);
         if (!item.isEssential && savingsIds.add(item.id)) {
           savings += item.monthlyCost;
@@ -128,37 +132,41 @@ abstract final class FinancialAssistant {
       if (item.isEssential) continue;
       if (reviewedIds.contains(item.id)) continue;
       final reviewedAt = item.lastReviewedAt;
-      final hasMeasuredUsageWindow = reviewedAt != null &&
-          today.difference(_day(reviewedAt)).inDays >= 30;
-      if (item.usageCount == 0 &&
-          item.autoRenews &&
-          hasMeasuredUsageWindow) {
-        reviewItems.add(FinancialReviewItem(
-          subscription: item,
-          reason: FinancialReviewReason.unusedAutoRenewal,
-          priority: 90 - item.daysUntilRenewal(today).clamp(0, 30).toInt(),
-        ));
+      final hasMeasuredUsageWindow =
+          reviewedAt != null && today.difference(_day(reviewedAt)).inDays >= 30;
+      if (item.usageCount == 0 && item.autoRenews && hasMeasuredUsageWindow) {
+        reviewItems.add(
+          FinancialReviewItem(
+            subscription: item,
+            reason: FinancialReviewReason.unusedAutoRenewal,
+            priority: 90 - item.daysUntilRenewal(today).clamp(0, 30).toInt(),
+          ),
+        );
         if (savingsIds.add(item.id)) savings += item.monthlyCost;
         continue;
       }
       final increase = item.priceChangePercent;
       if (increase != null && increase >= 10) {
-        reviewItems.add(FinancialReviewItem(
-          subscription: item,
-          reason: FinancialReviewReason.priceIncrease,
-          priority: 70 + increase.clamp(0, 25).round(),
-        ));
+        reviewItems.add(
+          FinancialReviewItem(
+            subscription: item,
+            reason: FinancialReviewReason.priceIncrease,
+            priority: 70 + increase.clamp(0, 25).round(),
+          ),
+        );
         continue;
       }
       if (item.autoRenews &&
           !duplicateIds.contains(item.id) &&
           reviewedAt != null &&
           today.difference(_day(reviewedAt)).inDays >= 180) {
-        reviewItems.add(FinancialReviewItem(
-          subscription: item,
-          reason: FinancialReviewReason.overdueReview,
-          priority: 45,
-        ));
+        reviewItems.add(
+          FinancialReviewItem(
+            subscription: item,
+            reason: FinancialReviewReason.overdueReview,
+            priority: 45,
+          ),
+        );
       }
     }
     reviewItems.sort((a, b) => b.priority.compareTo(a.priority));
@@ -197,7 +205,9 @@ abstract final class FinancialAssistant {
       for (final item in active) {
         for (final renewal in _renewalsBetween(item, periodStart, periodEnd)) {
           final lastInstallment = item.lastInstallmentDate;
-          if (lastInstallment != null && renewal.isAfter(lastInstallment)) continue;
+          if (lastInstallment != null && renewal.isAfter(lastInstallment)) {
+            continue;
+          }
           total += item.price;
           count += 1;
         }
@@ -243,15 +253,19 @@ abstract final class FinancialAssistant {
       if (entry.value.length < 2) continue;
       final sorted = [...entry.value]
         ..sort((a, b) => a.monthlyCost.compareTo(b.monthlyCost));
-      output.add(DuplicateSubscriptionGroup(
-        serviceName: sorted.first.name,
-        subscriptions: sorted,
-        avoidableMonthlyCost:
-            sorted.skip(1).fold(0.0, (sum, item) => sum + item.monthlyCost),
-      ));
+      output.add(
+        DuplicateSubscriptionGroup(
+          serviceName: sorted.first.name,
+          subscriptions: sorted,
+          avoidableMonthlyCost: sorted
+              .skip(1)
+              .fold(0.0, (sum, item) => sum + item.monthlyCost),
+        ),
+      );
     }
-    output.sort((a, b) =>
-        b.avoidableMonthlyCost.compareTo(a.avoidableMonthlyCost));
+    output.sort(
+      (a, b) => b.avoidableMonthlyCost.compareTo(a.avoidableMonthlyCost),
+    );
     return output;
   }
 
@@ -272,13 +286,27 @@ abstract final class FinancialAssistant {
       return host;
     }
     const ignored = {
-      'pro', 'plus', 'premium', 'basic', 'family', 'monthly', 'yearly',
-      'احترافي', 'برو', 'بلس', 'عائلي', 'شهري', 'سنوي', 'الخطة', 'اشتراك',
+      'pro',
+      'plus',
+      'premium',
+      'basic',
+      'family',
+      'monthly',
+      'yearly',
+      'احترافي',
+      'برو',
+      'بلس',
+      'عائلي',
+      'شهري',
+      'سنوي',
+      'الخطة',
+      'اشتراك',
     };
-    final normalized = item.name
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9\u0600-\u06ff]+'), ' ')
-        .trim();
+    final normalized =
+        item.name
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^a-z0-9\u0600-\u06ff]+'), ' ')
+            .trim();
     return normalized
         .split(RegExp(r'\s+'))
         .where((token) => token.isNotEmpty && !ignored.contains(token))

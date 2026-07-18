@@ -47,14 +47,16 @@ List<RemoteService> parseCatalog(String raw) {
         (e['manageUrl'] as String?) ?? '',
         domain,
       );
-      out.add(RemoteService(
-        name: name,
-        emoji: (e['emoji'] as String?) ?? '🔖',
-        category: kCategories.contains(category) ? category : 'أخرى',
-        domain: domain,
-        manageUrl: manageUrl,
-        priceHint: (e['priceHint'] as num?)?.toDouble(),
-      ));
+      out.add(
+        RemoteService(
+          name: name,
+          emoji: (e['emoji'] as String?) ?? '🔖',
+          category: kCategories.contains(category) ? category : 'أخرى',
+          domain: domain,
+          manageUrl: manageUrl,
+          priceHint: (e['priceHint'] as num?)?.toDouble(),
+        ),
+      );
     }
     return out;
   } catch (_) {

@@ -10,13 +10,16 @@ void main() {
   });
 
   test('يتجاهل التاريخ غير الموجود في التقويم', () {
-    final result = parseSubscriptionsText('Netflix 59 SAR\nالتاريخ: 2026-02-31');
+    final result = parseSubscriptionsText(
+      'Netflix 59 SAR\nالتاريخ: 2026-02-31',
+    );
     expect(result.single.anchor, isNull);
   });
 
   group('الاستيراد الذكي', () {
     test('رسالة بنك سعودية: نتفلكس بالريال مع التاريخ', () {
-      const sms = 'شراء إنترنت\n'
+      const sms =
+          'شراء إنترنت\n'
           'بطاقة: مدى 1234*\n'
           'من: NETFLIX.COM\n'
           'مبلغ: 55.99 ر.س\n'
@@ -30,7 +33,8 @@ void main() {
     });
 
     test('إيصال Apple بأرقام عربية', () {
-      const receipt = 'إيصالك من Apple\n'
+      const receipt =
+          'إيصالك من Apple\n'
           'iCloud+ ٥٠ جيجا — ١٣.٩٩ ر.س شهريًا';
       final r = parseSubscriptionsText(receipt);
       final icloud = r.firstWhere((c) => c.name == 'iCloud+');
@@ -47,7 +51,8 @@ void main() {
     });
 
     test('عدة خدمات في نص واحد بدون تكرار', () {
-      const text = 'spotify 21.99 SAR\n'
+      const text =
+          'spotify 21.99 SAR\n'
           'netflix 55.99 SAR\n'
           'NETFLIX.COM مرة أخرى 55.99';
       final r = parseSubscriptionsText(text);

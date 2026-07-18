@@ -26,11 +26,12 @@ class DashboardScreen extends StatelessWidget {
       builder: (context, _) {
         if (store.items.isEmpty) {
           return _EmptyState(
-            onAdd: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const EditSubscriptionScreen(),
-              ),
-            ),
+            onAdd:
+                () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const EditSubscriptionScreen(),
+                  ),
+                ),
           );
         }
 
@@ -47,8 +48,7 @@ class DashboardScreen extends StatelessWidget {
 
         final priceAlerts = <(Subscription, double)>[];
         for (final sub in store.active) {
-          final hint =
-              RemoteCatalog.instance.byName(sub.name)?.priceHint;
+          final hint = RemoteCatalog.instance.byName(sub.name)?.priceHint;
           if (hint == null || hint <= 0) continue;
           if (sub.price > hint * 1.10) {
             priceAlerts.add((sub, hint));
@@ -60,48 +60,51 @@ class DashboardScreen extends StatelessWidget {
           children: [
             ValueListenableBuilder<String?>(
               valueListenable: UpdateChecker.newVersion,
-              builder: (context, v, _) => v == null
-                  ? const SizedBox.shrink()
-                  : Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: AppCard(
-                        color: AppColors.goldSoft,
-                        borderColor: AppColors.goldDeep,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.system_update_alt_rounded,
-                              color: AppColors.gold,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                tr('ui_a19013d189fa', {'value0': v}),
-                                style: const TextStyle(
-                                  color: AppColors.ink,
-                                  fontSize: V15Type.labelSmall,
-                                  fontWeight: FontWeight.w700,
-                                ),
+              builder:
+                  (context, v, _) =>
+                      v == null
+                          ? const SizedBox.shrink()
+                          : Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: AppCard(
+                              color: AppColors.goldSoft,
+                              borderColor: AppColors.goldDeep,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.system_update_alt_rounded,
+                                    color: AppColors.gold,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      tr('ui_a19013d189fa', {'value0': v}),
+                                      style: const TextStyle(
+                                        color: AppColors.ink,
+                                        fontSize: V15Type.labelSmall,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed:
+                                        () => launchUrl(
+                                          Uri.parse(
+                                            'https://github.com/basilsa77/ishtirakati/actions',
+                                          ),
+                                          mode: LaunchMode.externalApplication,
+                                        ),
+                                    child: Text(tr('ui_69357e138dca')),
+                                  ),
+                                ],
                               ),
                             ),
-                            TextButton(
-                              onPressed: () => launchUrl(
-                                Uri.parse(
-                                  'https://github.com/basilsa77/ishtirakati/actions',
-                                ),
-                                mode: LaunchMode.externalApplication,
-                              ),
-                              child: Text(tr('ui_69357e138dca')),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                          ),
             ),
             FadeSlideIn(
               child: _HeroCard(
@@ -120,38 +123,42 @@ class DashboardScreen extends StatelessWidget {
                   _QuickAction(
                     icon: Icons.add_rounded,
                     label: tr('ui_d52453ac627d'),
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const EditSubscriptionScreen(),
-                      ),
-                    ),
+                    onTap:
+                        () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const EditSubscriptionScreen(),
+                          ),
+                        ),
                   ),
                   _QuickAction(
                     icon: Icons.auto_awesome_rounded,
                     label: tr('ui_e8c12678c3b4'),
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const ImportScreen(),
-                      ),
-                    ),
+                    onTap:
+                        () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const ImportScreen(),
+                          ),
+                        ),
                   ),
                   _QuickAction(
                     icon: Icons.alternate_email_rounded,
                     label: tr('ui_cb572218fea7'),
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const EmailLinkScreen(),
-                      ),
-                    ),
+                    onTap:
+                        () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const EmailLinkScreen(),
+                          ),
+                        ),
                   ),
                   _QuickAction(
                     icon: Icons.calendar_month_rounded,
                     label: tr('ui_c6c25b9b516f'),
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const CalendarScreen(),
-                      ),
-                    ),
+                    onTap:
+                        () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const CalendarScreen(),
+                          ),
+                        ),
                   ),
                 ],
               ),
@@ -167,8 +174,13 @@ class DashboardScreen extends StatelessWidget {
                   title: tr('ui_47edefeab4b6'),
                   lines: [
                     for (final t in trials.take(3))
-                      tr('ui_45336e9e2ab8', {'value0': t.name, 'value1': fmtDate(t.trialEndDate!)}) +
-                          tr('ui_27ce6b033958', {'value0': fmtMoney(t.price, t.currency)}),
+                      tr('ui_45336e9e2ab8', {
+                            'value0': t.name,
+                            'value1': fmtDate(t.trialEndDate!),
+                          }) +
+                          tr('ui_27ce6b033958', {
+                            'value0': fmtMoney(t.price, t.currency),
+                          }),
                   ],
                 ),
               ),
@@ -184,8 +196,13 @@ class DashboardScreen extends StatelessWidget {
                   title: tr('ui_ad985475cbb8'),
                   lines: [
                     for (final (sub, hint) in priceAlerts.take(2))
-                      tr('ui_b9b0ded20cf0', {'value0': sub.name, 'value1': fmtMoney(sub.price, sub.currency)}) +
-                          tr('ui_d1feaff4c27d', {'value0': fmtMoney(hint, sub.currency)}),
+                      tr('ui_b9b0ded20cf0', {
+                            'value0': sub.name,
+                            'value1': fmtMoney(sub.price, sub.currency),
+                          }) +
+                          tr('ui_d1feaff4c27d', {
+                            'value0': fmtMoney(hint, sub.currency),
+                          }),
                   ],
                 ),
               ),
@@ -255,15 +272,14 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 22),
             Row(
               children: [
-                Expanded(
-                  child: SectionTitle(tr('ui_0eb554a9cdb9')),
-                ),
+                Expanded(child: SectionTitle(tr('ui_0eb554a9cdb9'))),
                 TextButton.icon(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const CalendarScreen(),
-                    ),
-                  ),
+                  onPressed:
+                      () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const CalendarScreen(),
+                        ),
+                      ),
                   icon: const Icon(Icons.calendar_month_rounded, size: 18),
                   label: Text(tr('ui_c6c25b9b516f')),
                 ),
@@ -374,25 +390,32 @@ class _HeroCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 9,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
             decoration: BoxDecoration(
               color: const Color(0x2E062318),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               children: [
-                _HeroFact(label: tr('ui_a1851a504669'), value: fmtMoney(yearly, currency)),
+                _HeroFact(
+                  label: tr('ui_a1851a504669'),
+                  value: fmtMoney(yearly, currency),
+                ),
                 _heroDivider(),
-                _HeroFact(label: tr('ui_99646e599b41'), value: fmtMoney(daily, currency)),
+                _HeroFact(
+                  label: tr('ui_99646e599b41'),
+                  value: fmtMoney(daily, currency),
+                ),
                 _heroDivider(),
                 _HeroFact(
                   label: tr('ui_629e90b3af3d'),
-                  value: pausedCount > 0
-                      ? tr('ui_8b505e631670', {'value0': activeCount, 'value1': pausedCount})
-                      : '$activeCount',
+                  value:
+                      pausedCount > 0
+                          ? tr('ui_8b505e631670', {
+                            'value0': activeCount,
+                            'value1': pausedCount,
+                          })
+                          : '$activeCount',
                 ),
               ],
             ),
@@ -403,11 +426,11 @@ class _HeroCard extends StatelessWidget {
   }
 
   Widget _heroDivider() => Container(
-        width: 1,
-        height: 26,
-        margin: const EdgeInsets.symmetric(horizontal: 12),
-        color: const Color(0x33FFFFFF),
-      );
+    width: 1,
+    height: 26,
+    margin: const EdgeInsets.symmetric(horizontal: 12),
+    color: const Color(0x33FFFFFF),
+  );
 }
 
 class _HeroFact extends StatelessWidget {
@@ -617,9 +640,10 @@ class _BudgetCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ratio = budget <= 0 ? 0.0 : (spent / budget).clamp(0.0, 1.0);
     final over = spent > budget;
-    final color = over
-        ? AppColors.danger
-        : ratio > 0.8
+    final color =
+        over
+            ? AppColors.danger
+            : ratio > 0.8
             ? AppColors.warn
             : AppColors.primary;
 
@@ -660,18 +684,23 @@ class _BudgetCard extends StatelessWidget {
                 tween: Tween(begin: 0, end: ratio),
                 duration: const Duration(milliseconds: 800),
                 curve: Curves.easeOutCubic,
-                builder: (context, t, _) => FractionallySizedBox(
-                  widthFactor: t <= 0 ? 0.01 : t,
-                  child: Container(color: color),
-                ),
+                builder:
+                    (context, t, _) => FractionallySizedBox(
+                      widthFactor: t <= 0 ? 0.01 : t,
+                      child: Container(color: color),
+                    ),
               ),
             ),
           ),
           const SizedBox(height: 7),
           Text(
             over
-                ? tr('ui_020e7b265152', {'value0': fmtMoney(spent - budget, currency)})
-                : tr('ui_8300f5ee63ef', {'value0': fmtMoney(budget - spent, currency)}),
+                ? tr('ui_020e7b265152', {
+                  'value0': fmtMoney(spent - budget, currency),
+                })
+                : tr('ui_8300f5ee63ef', {
+                  'value0': fmtMoney(budget - spent, currency),
+                }),
             style: TextStyle(
               color: over ? AppColors.danger : AppColors.muted,
               fontSize: V15Type.caption,
@@ -691,8 +720,13 @@ class _GroupedTimeline extends StatelessWidget {
   const _GroupedTimeline({required this.subs});
 
   static List<String> get _weekDays => [
-    tr('ui_69139e9f6f75'), tr('ui_3e1154b18e8a'), tr('ui_05ae1ca23dcb'), tr('ui_74c564a4b5a6'),
-    tr('ui_fa35e221b844'), tr('ui_a49412504fd0'), tr('ui_b74290ce11de'),
+    tr('ui_69139e9f6f75'),
+    tr('ui_3e1154b18e8a'),
+    tr('ui_05ae1ca23dcb'),
+    tr('ui_74c564a4b5a6'),
+    tr('ui_fa35e221b844'),
+    tr('ui_a49412504fd0'),
+    tr('ui_b74290ce11de'),
   ];
 
   static String _relative(int days, DateTime d) {
@@ -727,8 +761,8 @@ class _GroupedTimeline extends StatelessWidget {
             _TimelineCard(
               sub: s,
               color: _urgency(s.daysUntilRenewal()),
-              isLastInGroup: s == groups[dates[gi]]!.last &&
-                  gi == dates.length - 1,
+              isLastInGroup:
+                  s == groups[dates[gi]]!.last && gi == dates.length - 1,
             ),
         ],
       ],
@@ -737,9 +771,12 @@ class _GroupedTimeline extends StatelessWidget {
 
   Widget _dayHeader(DateTime d, List<Subscription> daySubs, bool first) {
     final today = DateTime.now();
-    final days = DateTime(d.year, d.month, d.day)
-        .difference(DateTime(today.year, today.month, today.day))
-        .inDays;
+    final days =
+        DateTime(
+          d.year,
+          d.month,
+          d.day,
+        ).difference(DateTime(today.year, today.month, today.day)).inDays;
     final color = _urgency(days);
     var total = 0.0;
     for (final s in daySubs) {
@@ -806,9 +843,7 @@ class _TimelineCard extends StatelessWidget {
             Container(
               width: 2,
               margin: const EdgeInsetsDirectional.only(start: 3, end: 15),
-              color: isLastInGroup
-                  ? Colors.transparent
-                  : AppColors.border,
+              color: isLastInGroup ? Colors.transparent : AppColors.border,
             ),
             Expanded(
               child: AppCard(
@@ -843,10 +878,16 @@ class _TimelineCard extends StatelessWidget {
                           Text(
                             sub.kind == PaymentKind.installment &&
                                     sub.remainingInstallments() != null
-                                ? tr('ui_cd6d76c191c9', {'value0': sub.remainingInstallments()})
+                                ? tr('ui_cd6d76c191c9', {
+                                  'value0': sub.remainingInstallments(),
+                                })
                                 : sub.kind == PaymentKind.bill
-                                    ? tr('ui_e02a979a78d0', {'value0': localizedBillingCycle(sub.cycle.name)})
-                                    : localizedBillingCycle(sub.cycle.name),
+                                ? tr('ui_e02a979a78d0', {
+                                  'value0': localizedBillingCycle(
+                                    sub.cycle.name,
+                                  ),
+                                })
+                                : localizedBillingCycle(sub.cycle.name),
                             style: const TextStyle(
                               color: AppColors.muted,
                               fontSize: V15Type.caption,
@@ -895,10 +936,7 @@ class _EmptyState extends StatelessWidget {
                 gradient: AppColors.heroGradient,
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(
-                    color: Color(0x5514B886),
-                    blurRadius: 30,
-                  ),
+                  BoxShadow(color: Color(0x5514B886), blurRadius: 30),
                 ],
               ),
               child: const Icon(
@@ -919,8 +957,7 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              tr('ui_d00120a9a84f') +
-              tr('ui_f59f967ab825'),
+              tr('ui_d00120a9a84f') + tr('ui_f59f967ab825'),
               textAlign: TextAlign.center,
               style: const TextStyle(color: AppColors.muted, height: 1.6),
             ),

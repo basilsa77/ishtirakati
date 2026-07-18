@@ -60,9 +60,10 @@ class RenewalIntelligence {
     DateTime? now,
   }) {
     final today = _day(now ?? DateTime.now());
-    final active = subscriptions
-        .where((item) => !item.isPaused && !item.isCompleted(today))
-        .toList();
+    final active =
+        subscriptions
+            .where((item) => !item.isPaused && !item.isCompleted(today))
+            .toList();
     var due7 = 0;
     var due30 = 0;
     var trials = 0;
@@ -114,65 +115,74 @@ class RenewalIntelligence {
       if (trialEnd != null) {
         final days = _day(trialEnd).difference(today).inDays;
         if (days >= 0 && days <= 7) {
-          output.add(DecisionInsight(
-            subscription: item,
-            kind: DecisionKind.trialEnding,
-            priority: days <= 2
-                ? DecisionPriority.urgent
-                : DecisionPriority.high,
-            title: days == 0
-                ? tr('decisionTrialToday', {'name': item.name})
-                : tr('decisionTrialSoon', {
-                    'name': item.name,
-                    'days': localizedDaysAfter(days),
-                  }),
-            detail: tr('decisionTrialDetail'),
-            score: 110 - days,
-          ));
+          output.add(
+            DecisionInsight(
+              subscription: item,
+              kind: DecisionKind.trialEnding,
+              priority:
+                  days <= 2 ? DecisionPriority.urgent : DecisionPriority.high,
+              title:
+                  days == 0
+                      ? tr('decisionTrialToday', {'name': item.name})
+                      : tr('decisionTrialSoon', {
+                        'name': item.name,
+                        'days': localizedDaysAfter(days),
+                      }),
+              detail: tr('decisionTrialDetail'),
+              score: 110 - days,
+            ),
+          );
           continue;
         }
       }
 
       final renewalDays = item.daysUntilRenewal(today);
       if (renewalDays >= 0 && renewalDays <= 3 && item.usageCount == 0) {
-        output.add(DecisionInsight(
-          subscription: item,
-          kind: DecisionKind.renewalSoon,
-          priority: DecisionPriority.urgent,
-          title: tr('decisionUnusedRenewal', {'name': item.name}),
-          detail: tr('decisionUnusedRenewalDetail'),
-          score: 100 - renewalDays,
-        ));
+        output.add(
+          DecisionInsight(
+            subscription: item,
+            kind: DecisionKind.renewalSoon,
+            priority: DecisionPriority.urgent,
+            title: tr('decisionUnusedRenewal', {'name': item.name}),
+            detail: tr('decisionUnusedRenewalDetail'),
+            score: 100 - renewalDays,
+          ),
+        );
         continue;
       }
 
       final increase = item.priceChangePercent;
       if (increase != null && increase >= 10) {
-        output.add(DecisionInsight(
-          subscription: item,
-          kind: DecisionKind.priceIncrease,
-          priority: increase >= 25
-              ? DecisionPriority.high
-              : DecisionPriority.normal,
-          title: tr('decisionPriceIncrease', {
-            'name': item.name,
-            'percent': localizedNumber(increase.round()),
-          }),
-          detail: tr('decisionPriceIncreaseDetail'),
-          score: 70 + increase.clamp(0, 24).round(),
-        ));
+        output.add(
+          DecisionInsight(
+            subscription: item,
+            kind: DecisionKind.priceIncrease,
+            priority:
+                increase >= 25
+                    ? DecisionPriority.high
+                    : DecisionPriority.normal,
+            title: tr('decisionPriceIncrease', {
+              'name': item.name,
+              'percent': localizedNumber(increase.round()),
+            }),
+            detail: tr('decisionPriceIncreaseDetail'),
+            score: 70 + increase.clamp(0, 24).round(),
+          ),
+        );
         continue;
       }
 
       if (item.usageCount == 0) {
-        output.add(DecisionInsight(
-          subscription: item,
-          kind: DecisionKind.neverUsed,
-          priority: DecisionPriority.normal,
-          title: tr('decisionNeverUsed', {'name': item.name}),
-          detail: tr('decisionNeverUsedDetail'),
-          score: 50 + item.monthlyCost.clamp(0, 40).round(),
-        ));
+        output.add(
+          DecisionInsight(
+            subscription: item,
+            kind: DecisionKind.neverUsed,
+            priority: DecisionPriority.normal,
+            title: tr('decisionNeverUsed', {'name': item.name}),
+            detail: tr('decisionNeverUsedDetail'),
+            score: 50 + item.monthlyCost.clamp(0, 40).round(),
+          ),
+        );
       }
     }
 

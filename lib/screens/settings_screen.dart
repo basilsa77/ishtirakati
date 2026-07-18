@@ -41,11 +41,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final store = SubscriptionStore.instance;
     final budget = store.monthlyBudget;
     _budget = TextEditingController(
-      text: budget <= 0
-          ? ''
-          : budget == budget.roundToDouble()
-          ? budget.toStringAsFixed(0)
-          : budget.toStringAsFixed(2),
+      text:
+          budget <= 0
+              ? ''
+              : budget == budget.roundToDouble()
+              ? budget.toStringAsFixed(0)
+              : budget.toStringAsFixed(2),
     );
   }
 
@@ -60,159 +61,172 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final store = SubscriptionStore.instance;
     return ListenableBuilder(
       listenable: store,
-      builder: (context, _) => ListView(
-        padding: const EdgeInsetsDirectional.fromSTEB(
-          V16Space.ml,
-          V16Space.md,
-          V16Space.ml,
-          V16Space.xl,
-        ),
-        children: [
-          const _SettingsIntro(),
-          if (!store.storageHealthy) ...[
-            const SizedBox(height: V16Space.md),
-            IosStatusNotice(
-              message: store.storageError ?? tr('ui_8fb06d4b1479'),
-              tone: IosStatusTone.error,
+      builder:
+          (context, _) => ListView(
+            padding: const EdgeInsetsDirectional.fromSTEB(
+              V16Space.ml,
+              V16Space.md,
+              V16Space.ml,
+              V16Space.xl,
             ),
-          ],
-          const SizedBox(height: V16Space.lg),
-          _AccountCard(
-            onChanged: () => setState(() {}),
-            onDeleteAccount: _confirmDeleteAccount,
-          ),
-          const SizedBox(height: 26),
-          _SettingsLabel(context.l10n.text('settingsAppearance')),
-          const SizedBox(height: 10),
-          const _ThemeModeCard(),
-          const SizedBox(height: 26),
-          _SettingsLabel(context.l10n.text('language')),
-          const SizedBox(height: 10),
-          const _LanguageModeCard(),
-          const SizedBox(height: 26),
-          _SettingsLabel(tr('ui_f3e1723cfe33')),
-          const SizedBox(height: 10),
-          AppCard(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                _SettingsSwitch(
-                  icon: Icons.notifications_none_rounded,
-                  title: tr('ui_551e77811caa'),
-                  detail: tr('ui_0354b6cd5038'),
-                  value: store.notificationsEnabled,
-                  onChanged: (value) async {
-                    if (value) {
-                      final permitted = await NotificationService.instance
-                          .requestPermission();
-                      if (!permitted && context.mounted) {
-                        await showCupertinoDialog<void>(
-                          context: context,
-                          builder: (dialogContext) => CupertinoAlertDialog(
-                            title: Text(tr('ui_b6d4d093c09d')),
-                            content: Text(tr('ui_7459d276bf09')),
-                            actions: [
-                              CupertinoDialogAction(
-                                onPressed: () => Navigator.pop(dialogContext),
-                                child: Text(tr('ui_a64b3d93816b')),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-                    }
-                    await store.setNotificationsEnabled(value);
-                  },
-                ),
-                Divider(height: 1, color: context.palette.stroke),
-                _SettingsSwitch(
-                  icon: CupertinoIcons.lock_shield,
-                  title: tr('ui_d1161e76379a'),
-                  detail: tr('ui_77cd4e71bca6'),
-                  value: store.privateNotifications,
-                  onChanged: store.setPrivateNotifications,
+            children: [
+              const _SettingsIntro(),
+              if (!store.storageHealthy) ...[
+                const SizedBox(height: V16Space.md),
+                IosStatusNotice(
+                  message: store.storageError ?? tr('ui_8fb06d4b1479'),
+                  tone: IosStatusTone.error,
                 ),
               ],
-            ),
-          ),
-          const SizedBox(height: 26),
-          _SettingsLabel(tr('ui_976adf68f49a')),
-          const SizedBox(height: 10),
-          AppCard(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                _SettingsSwitch(
-                  icon: Icons.face_retouching_natural_rounded,
-                  title: tr('ui_b2eb28c06d2a'),
-                  detail: tr('ui_5acd34c06919'),
-                  value: store.appLockEnabled,
-                  onChanged: store.setAppLockEnabled,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 26),
-          _SettingsLabel(tr('ui_2c0c0a6a3389')),
-          const SizedBox(height: 10),
-          _BudgetCard(controller: _budget, onSave: _saveBudget),
-          const SizedBox(height: 26),
-          _SettingsLabel(tr('ui_70f79cf39f31')),
-          const SizedBox(height: 10),
-          AppCard(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                _SettingsAction(
-                  icon: Icons.document_scanner_rounded,
-                  title: tr('ui_4d5bbc8f3ce7'),
-                  detail: tr('ui_3ad982d68db0'),
-                  onTap: () => Navigator.of(context).push(
-                    CupertinoPageRoute(builder: (_) => const ImportScreen()),
-                  ),
-                ),
-                Divider(height: 1, color: context.palette.stroke),
-                _SettingsAction(
-                  icon: Icons.alternate_email_rounded,
-                  title: tr('ui_c4d54697418a'),
-                  detail: tr('ui_05c130b7df4a'),
-                  onTap: () => Navigator.of(context).push(
-                    CupertinoPageRoute(builder: (_) => const EmailLinkScreen()),
-                  ),
-                ),
-                Divider(height: 1, color: context.palette.stroke),
-                _SettingsAction(
-                  icon: Icons.auto_awesome_rounded,
-                  title: tr('ui_6ec927377748'),
-                  detail: tr('ui_6e55c742696f'),
-                  onTap: () => Navigator.of(context).push(
-                    CupertinoPageRoute(builder: (_) => const AiToolsScreen()),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 26),
-          _SettingsLabel(tr('ui_b4fba865ed46')),
-          const SizedBox(height: 10),
-          _DataCard(onDelete: _confirmWipe),
-          const SizedBox(height: 26),
-          _SettingsLabel(tr('ui_db69cd4d6275')),
-          const SizedBox(height: 10),
-          const _AboutCard(),
-          const SizedBox(height: 30),
-          Center(
-            child: Text(
-              tr('ui_ed185d7957db'),
-              style: TextStyle(
-                color: context.palette.textMuted,
-                fontSize: V16Type.labelSmall,
-                fontWeight: V16Type.semibold,
+              const SizedBox(height: V16Space.lg),
+              _AccountCard(
+                onChanged: () => setState(() {}),
+                onDeleteAccount: _confirmDeleteAccount,
               ),
-            ),
+              const SizedBox(height: 26),
+              _SettingsLabel(context.l10n.text('settingsAppearance')),
+              const SizedBox(height: 10),
+              const _ThemeModeCard(),
+              const SizedBox(height: 26),
+              _SettingsLabel(context.l10n.text('language')),
+              const SizedBox(height: 10),
+              const _LanguageModeCard(),
+              const SizedBox(height: 26),
+              _SettingsLabel(tr('ui_f3e1723cfe33')),
+              const SizedBox(height: 10),
+              AppCard(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    _SettingsSwitch(
+                      icon: Icons.notifications_none_rounded,
+                      title: tr('ui_551e77811caa'),
+                      detail: tr('ui_0354b6cd5038'),
+                      value: store.notificationsEnabled,
+                      onChanged: (value) async {
+                        if (value) {
+                          final permitted =
+                              await NotificationService.instance
+                                  .requestPermission();
+                          if (!permitted && context.mounted) {
+                            await showCupertinoDialog<void>(
+                              context: context,
+                              builder:
+                                  (dialogContext) => CupertinoAlertDialog(
+                                    title: Text(tr('ui_b6d4d093c09d')),
+                                    content: Text(tr('ui_7459d276bf09')),
+                                    actions: [
+                                      CupertinoDialogAction(
+                                        onPressed:
+                                            () => Navigator.pop(dialogContext),
+                                        child: Text(tr('ui_a64b3d93816b')),
+                                      ),
+                                    ],
+                                  ),
+                            );
+                          }
+                        }
+                        await store.setNotificationsEnabled(value);
+                      },
+                    ),
+                    Divider(height: 1, color: context.palette.stroke),
+                    _SettingsSwitch(
+                      icon: CupertinoIcons.lock_shield,
+                      title: tr('ui_d1161e76379a'),
+                      detail: tr('ui_77cd4e71bca6'),
+                      value: store.privateNotifications,
+                      onChanged: store.setPrivateNotifications,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 26),
+              _SettingsLabel(tr('ui_976adf68f49a')),
+              const SizedBox(height: 10),
+              AppCard(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    _SettingsSwitch(
+                      icon: Icons.face_retouching_natural_rounded,
+                      title: tr('ui_b2eb28c06d2a'),
+                      detail: tr('ui_5acd34c06919'),
+                      value: store.appLockEnabled,
+                      onChanged: store.setAppLockEnabled,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 26),
+              _SettingsLabel(tr('ui_2c0c0a6a3389')),
+              const SizedBox(height: 10),
+              _BudgetCard(controller: _budget, onSave: _saveBudget),
+              const SizedBox(height: 26),
+              _SettingsLabel(tr('ui_70f79cf39f31')),
+              const SizedBox(height: 10),
+              AppCard(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    _SettingsAction(
+                      icon: Icons.document_scanner_rounded,
+                      title: tr('ui_4d5bbc8f3ce7'),
+                      detail: tr('ui_3ad982d68db0'),
+                      onTap:
+                          () => Navigator.of(context).push(
+                            CupertinoPageRoute(
+                              builder: (_) => const ImportScreen(),
+                            ),
+                          ),
+                    ),
+                    Divider(height: 1, color: context.palette.stroke),
+                    _SettingsAction(
+                      icon: Icons.alternate_email_rounded,
+                      title: tr('ui_c4d54697418a'),
+                      detail: tr('ui_05c130b7df4a'),
+                      onTap:
+                          () => Navigator.of(context).push(
+                            CupertinoPageRoute(
+                              builder: (_) => const EmailLinkScreen(),
+                            ),
+                          ),
+                    ),
+                    Divider(height: 1, color: context.palette.stroke),
+                    _SettingsAction(
+                      icon: Icons.auto_awesome_rounded,
+                      title: tr('ui_6ec927377748'),
+                      detail: tr('ui_6e55c742696f'),
+                      onTap:
+                          () => Navigator.of(context).push(
+                            CupertinoPageRoute(
+                              builder: (_) => const AiToolsScreen(),
+                            ),
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 26),
+              _SettingsLabel(tr('ui_b4fba865ed46')),
+              const SizedBox(height: 10),
+              _DataCard(onDelete: _confirmWipe),
+              const SizedBox(height: 26),
+              _SettingsLabel(tr('ui_db69cd4d6275')),
+              const SizedBox(height: 10),
+              const _AboutCard(),
+              const SizedBox(height: 30),
+              Center(
+                child: Text(
+                  tr('ui_ed185d7957db'),
+                  style: TextStyle(
+                    color: context.palette.textMuted,
+                    fontSize: V16Type.labelSmall,
+                    fontWeight: V16Type.semibold,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -229,17 +243,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
     await showCupertinoDialog<void>(
       context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
-        content: Text(
-          value <= 0 ? tr('ui_46e83de05124') : tr('ui_e7311dcecd04'),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(tr('ui_3ef541b90a31')),
+      builder:
+          (dialogContext) => CupertinoAlertDialog(
+            content: Text(
+              value <= 0 ? tr('ui_46e83de05124') : tr('ui_e7311dcecd04'),
+            ),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(tr('ui_3ef541b90a31')),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -256,15 +271,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) {
       await showCupertinoDialog<void>(
         context: context,
-        builder: (dialogContext) => CupertinoAlertDialog(
-          content: Text(tr('ui_2753acf39a49')),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text(tr('ui_3ef541b90a31')),
+        builder:
+            (dialogContext) => CupertinoAlertDialog(
+              content: Text(tr('ui_2753acf39a49')),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(tr('ui_3ef541b90a31')),
+                ),
+              ],
             ),
-          ],
-        ),
       );
     }
   }
@@ -282,18 +298,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showCupertinoDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => PopScope(
-        canPop: false,
-        child: CupertinoAlertDialog(
-          content: Row(
-            children: [
-              const CupertinoActivityIndicator(),
-              const SizedBox(width: 12),
-              Expanded(child: Text(tr('ui_2bdda9dc2f90'))),
-            ],
+      builder:
+          (_) => PopScope(
+            canPop: false,
+            child: CupertinoAlertDialog(
+              content: Row(
+                children: [
+                  const CupertinoActivityIndicator(),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(tr('ui_2bdda9dc2f90'))),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
     );
     try {
       await AccountDeletionService.deleteEverything();
@@ -306,21 +323,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (error) {
       if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
-      final message = error is AuthException
-          ? error.message
-          : tr('ui_1b4978e420cd');
+      final message =
+          error is AuthException ? error.message : tr('ui_1b4978e420cd');
       await showCupertinoDialog<void>(
         context: context,
-        builder: (dialogContext) => CupertinoAlertDialog(
-          title: Text(tr('ui_c9f721ee4fd2')),
-          content: Text(message),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text(tr('ui_a64b3d93816b')),
+        builder:
+            (dialogContext) => CupertinoAlertDialog(
+              title: Text(tr('ui_c9f721ee4fd2')),
+              content: Text(message),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(tr('ui_a64b3d93816b')),
+                ),
+              ],
             ),
-          ],
-        ),
       );
     }
   }
@@ -398,16 +415,18 @@ class _AccountCard extends StatelessWidget {
           const SizedBox(height: 16),
           if (!signedIn)
             CupertinoButton.filled(
-              onPressed: !AuthService.isAvailable
-                  ? null
-                  : () async {
-                      await Navigator.of(context).push(
-                        CupertinoPageRoute(
-                          builder: (_) => const LoginScreen(fromSettings: true),
-                        ),
-                      );
-                      onChanged();
-                    },
+              onPressed:
+                  !AuthService.isAvailable
+                      ? null
+                      : () async {
+                        await Navigator.of(context).push(
+                          CupertinoPageRoute(
+                            builder:
+                                (_) => const LoginScreen(fromSettings: true),
+                          ),
+                        );
+                        onChanged();
+                      },
               child: Text(tr('ui_beb869eecc12')),
             )
           else
@@ -435,15 +454,17 @@ class _AccountCard extends StatelessWidget {
                           if (!context.mounted) return;
                           await showCupertinoDialog<void>(
                             context: context,
-                            builder: (dialogContext) => CupertinoAlertDialog(
-                              content: Text(error.message),
-                              actions: [
-                                CupertinoDialogAction(
-                                  onPressed: () => Navigator.pop(dialogContext),
-                                  child: Text(tr('ui_a64b3d93816b')),
+                            builder:
+                                (dialogContext) => CupertinoAlertDialog(
+                                  content: Text(error.message),
+                                  actions: [
+                                    CupertinoDialogAction(
+                                      onPressed:
+                                          () => Navigator.pop(dialogContext),
+                                      child: Text(tr('ui_a64b3d93816b')),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
                           );
                         }
                       },
@@ -508,41 +529,43 @@ class _AccountCard extends StatelessWidget {
                           ValueListenableBuilder<bool>(
                             valueListenable:
                                 FirestoreConnectionDiagnostics.running,
-                            builder: (context, running, _) => CupertinoButton(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 9,
-                              ),
-                              color: p.accentSoft,
-                              onPressed: running
-                                  ? null
-                                  : FirestoreConnectionDiagnostics.run,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  if (running)
-                                    const CupertinoActivityIndicator()
-                                  else
-                                    Icon(
-                                      CupertinoIcons
-                                          .antenna_radiowaves_left_right,
-                                      color: p.accent,
-                                      size: 18,
-                                    ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    running
-                                        ? tr('firestoreDiagnosticRunning')
-                                        : tr('firestoreDiagnosticButton'),
-                                    style: TextStyle(
-                                      color: p.accent,
-                                      fontSize: V16Type.caption,
-                                      fontWeight: V16Type.semibold,
-                                    ),
+                            builder:
+                                (context, running, _) => CupertinoButton(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 9,
                                   ),
-                                ],
-                              ),
-                            ),
+                                  color: p.accentSoft,
+                                  onPressed:
+                                      running
+                                          ? null
+                                          : FirestoreConnectionDiagnostics.run,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      if (running)
+                                        const CupertinoActivityIndicator()
+                                      else
+                                        Icon(
+                                          CupertinoIcons
+                                              .antenna_radiowaves_left_right,
+                                          color: p.accent,
+                                          size: 18,
+                                        ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        running
+                                            ? tr('firestoreDiagnosticRunning')
+                                            : tr('firestoreDiagnosticButton'),
+                                        style: TextStyle(
+                                          color: p.accent,
+                                          fontSize: V16Type.caption,
+                                          fontWeight: V16Type.semibold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                           ),
                           ValueListenableBuilder<
                             FirestoreConnectionDiagnostic?
@@ -686,9 +709,10 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
             value: tr('firestoreDiagnosticAppCheckValue', {
               'enabled': _yesNo(AuthService.appCheckEnabled),
               'provider': AuthService.appCheckProviderName,
-              'token': AuthService.appCheckTokenObtained.value == null
-                  ? tr('firestoreDiagnosticNotRequired')
-                  : _yesNo(AuthService.appCheckTokenObtained.value!),
+              'token':
+                  AuthService.appCheckTokenObtained.value == null
+                      ? tr('firestoreDiagnosticNotRequired')
+                      : _yesNo(AuthService.appCheckTokenObtained.value!),
             }),
           ),
           Padding(
@@ -706,9 +730,10 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
           const SizedBox(height: 6),
           _DiagnosticLine(
             label: tr('firestoreDiagnosticHttpStatus'),
-            value: rest.commitHttpStatus == null
-                ? rest.httpStatus?.toString() ?? '-'
-                : 'GET ${rest.httpStatus} | commit ${rest.commitHttpStatus}',
+            value:
+                rest.commitHttpStatus == null
+                    ? rest.httpStatus?.toString() ?? '-'
+                    : 'GET ${rest.httpStatus} | commit ${rest.commitHttpStatus}',
           ),
           _DiagnosticLine(
             label: tr('firestoreDiagnosticDns'),
@@ -750,9 +775,10 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
           ),
           _DiagnosticLine(
             label: tr('firestoreDiagnosticDocumentExists'),
-            value: native.documentExists == null
-                ? '-'
-                : _yesNo(native.documentExists!),
+            value:
+                native.documentExists == null
+                    ? '-'
+                    : _yesNo(native.documentExists!),
           ),
           _DiagnosticLine(
             label: tr('firestoreDiagnosticFirebaseCode'),
@@ -776,17 +802,19 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
           ),
           _DiagnosticLine(
             label: tr('firestoreDiagnosticNativeResult'),
-            value: native.succeeded
-                ? tr('firestoreDiagnosticServerConfirmed')
-                : sync.delivery == CloudSyncDelivery.queuedLocally
-                ? tr('firestoreDiagnosticQueuedLocally')
-                : tr('firestoreDiagnosticFailed'),
+            value:
+                native.succeeded
+                    ? tr('firestoreDiagnosticServerConfirmed')
+                    : sync.delivery == CloudSyncDelivery.queuedLocally
+                    ? tr('firestoreDiagnosticQueuedLocally')
+                    : tr('firestoreDiagnosticFailed'),
           ),
           _DiagnosticLine(
             label: tr('firestoreDiagnosticPendingWrites'),
-            value: sync.hasPendingWrites == null
-                ? '-'
-                : _yesNo(sync.hasPendingWrites!),
+            value:
+                sync.hasPendingWrites == null
+                    ? '-'
+                    : _yesNo(sync.hasPendingWrites!),
           ),
           _DiagnosticLine(
             label: tr('firestoreDiagnosticDuration'),
@@ -1146,12 +1174,13 @@ class _AboutCard extends StatelessWidget {
           Divider(height: 1, color: p.stroke),
           CupertinoButton(
             padding: EdgeInsets.zero,
-            onPressed: () => launchUrl(
-              Uri.parse(
-                'https://github.com/basilsa77/ishtirakati/blob/main/PRIVACY_POLICY.md',
-              ),
-              mode: LaunchMode.externalApplication,
-            ),
+            onPressed:
+                () => launchUrl(
+                  Uri.parse(
+                    'https://github.com/basilsa77/ishtirakati/blob/main/PRIVACY_POLICY.md',
+                  ),
+                  mode: LaunchMode.externalApplication,
+                ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(

@@ -19,11 +19,12 @@ const String kGitCommit = String.fromEnvironment(
 );
 String get kGitCommitShort =>
     kGitCommit.length <= 7 ? kGitCommit : kGitCommit.substring(0, 7);
-String get kAppBuildMode => kReleaseMode
-    ? tr('buildRelease')
-    : kProfileMode
-    ? tr('buildProfile')
-    : tr('buildDebug');
+String get kAppBuildMode =>
+    kReleaseMode
+        ? tr('buildRelease')
+        : kProfileMode
+        ? tr('buildProfile')
+        : tr('buildDebug');
 
 const String _pubspecUrl =
     'https://raw.githubusercontent.com/basilsa77/ishtirakati/main/pubspec.yaml';

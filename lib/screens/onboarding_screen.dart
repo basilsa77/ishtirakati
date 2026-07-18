@@ -118,19 +118,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   horizontal: V16Space.md,
                   vertical: V16Space.xxs,
                 ),
-                child: isLast
-                    ? const SizedBox(height: 40)
-                    : TextButton(
-                        onPressed: _finish,
-                        child: Text(
-                          tr('ui_98874a5521b6'),
-                          style: TextStyle(
-                            color: palette.textMuted,
-                            fontSize: V16Type.label,
-                            fontWeight: V16Type.semibold,
+                child:
+                    isLast
+                        ? const SizedBox(height: 40)
+                        : TextButton(
+                          onPressed: _finish,
+                          child: Text(
+                            tr('ui_98874a5521b6'),
+                            style: TextStyle(
+                              color: palette.textMuted,
+                              fontSize: V16Type.label,
+                              fontWeight: V16Type.semibold,
+                            ),
                           ),
                         ),
-                      ),
               ),
             ),
             Expanded(
@@ -163,9 +164,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     ),
                                     boxShadow:
                                         Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? V16Elevation.darkLow
-                                        : V16Elevation.medium,
+                                                Brightness.dark
+                                            ? V16Elevation.darkLow
+                                            : V16Elevation.medium,
                                   ),
                                   child: Icon(
                                     p.icon,
@@ -193,9 +194,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               children: [
                 for (var i = 0; i < _pages.length; i++)
                   AnimatedContainer(
-                    duration: reduceMotion(context)
-                        ? Duration.zero
-                        : V16Motion.quick,
+                    duration:
+                        reduceMotion(context) ? Duration.zero : V16Motion.quick,
                     width: i == _index ? 26 : 8,
                     height: 8,
                     margin: const EdgeInsets.symmetric(

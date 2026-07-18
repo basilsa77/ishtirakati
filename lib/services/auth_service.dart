@@ -38,17 +38,17 @@ class AuthService {
   static bool get appCheckDebugEnabled =>
       FirebaseBuildConfig.appCheckDebugEnabled;
 
-  static String get appCheckProviderName => !appCheckEnabled
-      ? 'disabled'
-      : appCheckDebugEnabled
+  static String get appCheckProviderName =>
+      !appCheckEnabled
+          ? 'disabled'
+          : appCheckDebugEnabled
           ? 'debug'
           : 'app-attest/device-check';
 
   static bool _initialized = false;
   static bool _googleInitialized = false;
   static final ValueNotifier<String?> appCheckWarning = ValueNotifier(null);
-  static final ValueNotifier<bool?> appCheckTokenObtained =
-      ValueNotifier(null);
+  static final ValueNotifier<bool?> appCheckTokenObtained = ValueNotifier(null);
 
   /// هل المزامنة السحابية متاحة (الإعداد مكتمل والتهيئة نجحت)؟
   static bool get isAvailable =>
@@ -80,9 +80,10 @@ class AuthService {
       if (appCheckEnabled) {
         try {
           await FirebaseAppCheck.instance.activate(
-            providerApple: appCheckDebugEnabled
-                ? const AppleDebugProvider()
-                : const AppleAppAttestWithDeviceCheckFallbackProvider(),
+            providerApple:
+                appCheckDebugEnabled
+                    ? const AppleDebugProvider()
+                    : const AppleAppAttestWithDeviceCheckFallbackProvider(),
           );
           final token = await FirebaseAppCheck.instance.getToken(false);
           appCheckTokenObtained.value = token?.isNotEmpty;
@@ -129,18 +130,21 @@ class AuthService {
     try {
       final account = await GoogleSignIn.instance.authenticate();
       final credential = await _googleCredential(account);
-      final result =
-          await FirebaseAuth.instance.signInWithCredential(credential);
+      final result = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
       return result.user;
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled ||
           e.code == GoogleSignInExceptionCode.interrupted) {
         return null; // ألغى المستخدم
       }
-      throw AuthException(tr('googleSignInFailed', {
-        'code': e.code.name,
-        'description': e.description ?? tr('firebaseNotConfigured'),
-      }));
+      throw AuthException(
+        tr('googleSignInFailed', {
+          'code': e.code.name,
+          'description': e.description ?? tr('firebaseNotConfigured'),
+        }),
+      );
     } on FirebaseAuthException catch (e) {
       throw AuthException(tr('signInFailed', {'code': e.code}));
     } catch (error) {
@@ -154,8 +158,9 @@ class AuthService {
     }
     try {
       final credential = await _appleCredential();
-      final result =
-          await FirebaseAuth.instance.signInWithCredential(credential);
+      final result = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
       return result.user;
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) return null;
@@ -185,7 +190,9 @@ class AuthService {
         }
         await GoogleSignIn.instance.signOut();
         final account = await GoogleSignIn.instance.authenticate();
-        await user.reauthenticateWithCredential(await _googleCredential(account));
+        await user.reauthenticateWithCredential(
+          await _googleCredential(account),
+        );
         return;
       }
       if (providers.contains('apple.com')) {
@@ -243,10 +250,9 @@ class AuthService {
     if (identityToken == null || identityToken.isEmpty) {
       throw AuthException(tr('missingAppleToken'));
     }
-    return OAuthProvider('apple.com').credential(
-      idToken: identityToken,
-      rawNonce: rawNonce,
-    );
+    return OAuthProvider(
+      'apple.com',
+    ).credential(idToken: identityToken, rawNonce: rawNonce);
   }
 
   static String _newNonce([int length = 32]) {

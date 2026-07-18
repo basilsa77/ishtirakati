@@ -59,6 +59,5 @@ class FirebaseBuildConfig {
     required bool internal,
     required bool appCheck,
     required bool requested,
-  }) =>
-      internal && appCheck && requested;
+  }) => internal && appCheck && requested;
 }

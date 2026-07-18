@@ -31,10 +31,7 @@ void main() {
     });
 
     test('أسبوعي: 4-5 مرات في الشهر', () {
-      final s = _sub(
-        cycle: BillingCycle.weekly,
-        anchor: DateTime(2026, 7, 1),
-      );
+      final s = _sub(cycle: BillingCycle.weekly, anchor: DateTime(2026, 7, 1));
       final n = s.renewalsInMonth(2026, 8).length;
       expect(n >= 4 && n <= 5, isTrue);
     });
@@ -100,13 +97,14 @@ void main() {
 
   group('الاشتراك العائلي', () {
     test('roundtrip JSON ونصيب الفرد', () {
-      final s = _sub(
-        cycle: BillingCycle.monthly,
-        anchor: DateTime(2026, 1, 1),
-        price: 60,
-      )
-        ..isFamily = true
-        ..familyMembers = 4;
+      final s =
+          _sub(
+              cycle: BillingCycle.monthly,
+              anchor: DateTime(2026, 1, 1),
+              price: 60,
+            )
+            ..isFamily = true
+            ..familyMembers = 4;
       expect(s.pricePerMember, closeTo(15, 0.001));
       final back = Subscription.fromJson(s.toJson());
       expect(back.isFamily, isTrue);

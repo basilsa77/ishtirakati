@@ -29,25 +29,32 @@ abstract final class NotificationPlanner {
       if (trial != null) {
         final when = DateTime(trial.year, trial.month, trial.day - 2, 10);
         if (when.isAfter(now)) {
-          planned.add(PlannedNotification(
-            when: when,
-            title: privateContent
-                ? tr('notificationTrialPrivateTitle')
-                : tr('notificationTrialTitle', {'name': subscription.name}),
-            body: privateContent
-                ? tr('notificationTrialPrivateBody')
-                : tr('notificationTrialBody', {
-                    'date': localizedDate(trial),
-                  }),
-            priority: 120,
-          ));
+          planned.add(
+            PlannedNotification(
+              when: when,
+              title:
+                  privateContent
+                      ? tr('notificationTrialPrivateTitle')
+                      : tr('notificationTrialTitle', {
+                        'name': subscription.name,
+                      }),
+              body:
+                  privateContent
+                      ? tr('notificationTrialPrivateBody')
+                      : tr('notificationTrialBody', {
+                        'date': localizedDate(trial),
+                      }),
+              priority: 120,
+            ),
+          );
         }
       }
       if (!subscription.autoRenews) continue;
       final renewal = subscription.nextRenewal(now);
-      final leadDays = subscription.reminderDays > 0
-          ? subscription.reminderDays
-          : (subscription.cycle == BillingCycle.yearly ? 7 : 3);
+      final leadDays =
+          subscription.reminderDays > 0
+              ? subscription.reminderDays
+              : (subscription.cycle == BillingCycle.yearly ? 7 : 3);
       final when = DateTime(
         renewal.year,
         renewal.month,
@@ -55,24 +62,29 @@ abstract final class NotificationPlanner {
         10,
       );
       if (!when.isAfter(now)) continue;
-      planned.add(PlannedNotification(
-        when: when,
-        title: privateContent
-            ? tr('notificationRenewalPrivateTitle')
-            : tr('notificationRenewalTitle', {'name': subscription.name}),
-        body: privateContent
-            ? tr('notificationRenewalPrivateBody')
-            : tr('notificationRenewalBody', {
-                'amount': fmtMoneyWithCurrency(
-                  subscription.price,
-                  subscription.currency,
-                ),
-                'afterDays': localizedDaysAfter(leadDays),
-              }),
-        priority: 70 +
-            (subscription.isEssential ? 10 : 0) +
-            (subscription.cycle == BillingCycle.yearly ? 8 : 0),
-      ));
+      planned.add(
+        PlannedNotification(
+          when: when,
+          title:
+              privateContent
+                  ? tr('notificationRenewalPrivateTitle')
+                  : tr('notificationRenewalTitle', {'name': subscription.name}),
+          body:
+              privateContent
+                  ? tr('notificationRenewalPrivateBody')
+                  : tr('notificationRenewalBody', {
+                    'amount': fmtMoneyWithCurrency(
+                      subscription.price,
+                      subscription.currency,
+                    ),
+                    'afterDays': localizedDaysAfter(leadDays),
+                  }),
+          priority:
+              70 +
+              (subscription.isEssential ? 10 : 0) +
+              (subscription.cycle == BillingCycle.yearly ? 8 : 0),
+        ),
+      );
     }
     planned.sort((a, b) {
       final date = a.when.compareTo(b.when);

@@ -58,8 +58,8 @@ class FinancialReviewScreen extends StatelessWidget {
                   child: _ReviewRow(
                     item: item,
                     currency: currency,
-                    onPressed: () =>
-                        _showActions(context, store, item.subscription),
+                    onPressed:
+                        () => _showActions(context, store, item.subscription),
                   ),
                 );
               },
@@ -79,30 +79,31 @@ class FinancialReviewScreen extends StatelessWidget {
     if (!context.mounted) return;
     await showCupertinoModalPopup<void>(
       context: context,
-      builder: (sheetContext) => CupertinoActionSheet(
-        title: Text(subscription.name),
-        message: Text(tr('ui_fe79a06b79f9')),
-        actions: [
-          CupertinoActionSheetAction(
-            onPressed: () async {
-              Navigator.pop(sheetContext);
-              await store.recordUsage(subscription.id);
-            },
-            child: Text(tr('ui_2af3653b0c9f')),
+      builder:
+          (sheetContext) => CupertinoActionSheet(
+            title: Text(subscription.name),
+            message: Text(tr('ui_fe79a06b79f9')),
+            actions: [
+              CupertinoActionSheetAction(
+                onPressed: () async {
+                  Navigator.pop(sheetContext);
+                  await store.recordUsage(subscription.id);
+                },
+                child: Text(tr('ui_2af3653b0c9f')),
+              ),
+              CupertinoActionSheetAction(
+                onPressed: () async {
+                  Navigator.pop(sheetContext);
+                  await store.markReviewed(subscription.id);
+                },
+                child: Text(tr('ui_abb7607440cf')),
+              ),
+            ],
+            cancelButton: CupertinoActionSheetAction(
+              onPressed: () => Navigator.pop(sheetContext),
+              child: Text(tr('ui_9a30dc2a96b8')),
+            ),
           ),
-          CupertinoActionSheetAction(
-            onPressed: () async {
-              Navigator.pop(sheetContext);
-              await store.markReviewed(subscription.id);
-            },
-            child: Text(tr('ui_abb7607440cf')),
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(sheetContext),
-          child: Text(tr('ui_9a30dc2a96b8')),
-        ),
-      ),
     );
   }
 }
@@ -194,9 +195,8 @@ class _ReviewRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.palette;
     final saving = _monthlySaving(item);
-    final savingLabel = saving > 0
-        ? fmtMoneyWithCurrency(saving, currency)
-        : '';
+    final savingLabel =
+        saving > 0 ? fmtMoneyWithCurrency(saving, currency) : '';
     return AppCard(
       onTap: onPressed,
       semanticsLabel:
@@ -275,14 +275,13 @@ class _ReviewRow extends StatelessWidget {
     FinancialReviewReason.overdueReview => CupertinoIcons.checkmark_seal,
   };
 
-  static double _monthlySaving(FinancialReviewItem item) =>
-      switch (item.reason) {
-        FinancialReviewReason.duplicate ||
-        FinancialReviewReason.unusedAutoRenewal =>
-          item.subscription.monthlyCost,
-        FinancialReviewReason.priceIncrease ||
-        FinancialReviewReason.overdueReview => 0,
-      };
+  static double _monthlySaving(FinancialReviewItem item) => switch (item
+      .reason) {
+    FinancialReviewReason.duplicate ||
+    FinancialReviewReason.unusedAutoRenewal => item.subscription.monthlyCost,
+    FinancialReviewReason.priceIncrease ||
+    FinancialReviewReason.overdueReview => 0,
+  };
 }
 
 class _ReviewEmpty extends StatelessWidget {

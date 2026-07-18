@@ -1,10 +1,10 @@
 /// مستشار الاشتراكات الذكي: يرسل ملخص اشتراكاتك إلى Gemini
 /// ويعيد تحليلًا عربيًا عمليًا — فرص توفير، تكرارات، ومقارنات أسعار.
 library;
+
 import '../l10n/app_localizations.dart';
 import '../models/subscription.dart';
-import 'ai_extractor.dart'
-    show AiExtractionException, aiGenerateText;
+import 'ai_extractor.dart' show AiExtractionException, aiGenerateText;
 
 /// يبني ملخص الاشتراكات المُرسل للنموذج — دالة نقية قابلة للاختبار.
 String buildAdvisorSummary(List<Subscription> subs) {
@@ -55,14 +55,14 @@ class AiAdvisor {
   }) async {
     final summary = buildAdvisorSummary(subs);
     final prompt = isEnglishLocale ? _advisorPromptEn : _advisorPrompt;
-    final answer = (await aiGenerateText(
-      '$prompt\n$summary',
-      apiKey,
-      providerId: providerId,
-      temperature: 0.4,
-      timeout: const Duration(seconds: 60),
-    ))
-        .trim();
+    final answer =
+        (await aiGenerateText(
+          '$prompt\n$summary',
+          apiKey,
+          providerId: providerId,
+          temperature: 0.4,
+          timeout: const Duration(seconds: 60),
+        )).trim();
     return answer.isEmpty ? tr('aiNoAnalysis') : answer;
   }
 }
