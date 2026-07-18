@@ -34,6 +34,23 @@ void main() {
       );
     });
 
+    test('does not misclassify a database-level 404 as a missing document', () {
+      expect(
+        FirestoreConnectionDiagnostics.outcomeForProbeStatuses(
+          documentStatus: 404,
+          commitStatus: 404,
+        ),
+        FirestoreRestOutcome.invalidTarget,
+      );
+      expect(
+        FirestoreConnectionDiagnostics.outcomeForProbeStatuses(
+          documentStatus: 404,
+          commitStatus: 200,
+        ),
+        FirestoreRestOutcome.missingDocument,
+      );
+    });
+
     test('redacts uid, token, email, and line breaks from native messages', () {
       const uid = 'private-user-id-123';
       final safe = FirestoreConnectionDiagnostics.redactSensitive(

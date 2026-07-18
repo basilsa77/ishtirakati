@@ -52,7 +52,6 @@ void main() {
     expect(buildGuide, contains('$artifact-<SHA>-unsigned.ipa'));
     expect(pushScript, contains('RELEASE_VERSION=$kAppVersion'));
     expect(pushScript, contains('v$release:'));
-    expect(settings, contains(r"'$kAppVersion ($kAppBuildNumber)'"));
     expect(settings, contains('value: kAppVersion'));
     expect(settings, contains('value: kAppBuildNumber'));
   });

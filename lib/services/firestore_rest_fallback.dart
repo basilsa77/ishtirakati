@@ -6,6 +6,10 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'firebase_build_config.dart';
+import 'firebase_rest_auth.dart';
+import 'firestore_config.dart';
+
 enum FirestoreRestCreateOutcome {
   serverConfirmed,
   conflict,
@@ -122,7 +126,6 @@ class FirestoreRestFallback {
   FirestoreRestFallback._();
 
   static const projectId = 'ishtirakati-260f7';
-  static const databaseId = '(default)';
   static const _host = 'firestore.googleapis.com';
   static const _timeout = Duration(seconds: 30);
   static const _maxAttempts = 3;
@@ -131,6 +134,8 @@ class FirestoreRestFallback {
     required String uid,
     required String backup,
     required Future<String?> Function(bool forceRefresh) tokenProvider,
+    bool appCheckEnabled = FirebaseBuildConfig.appCheckEnabled,
+    FirebaseTokenProvider? appCheckTokenProvider,
     http.Client? client,
     Future<void> Function(Duration delay)? sleeper,
     Random? random,
@@ -153,6 +158,7 @@ class FirestoreRestFallback {
     var attempts = 0;
     var refreshedAfterUnauthorized = false;
     String? token;
+    Map<String, String>? requestHeaders;
     try {
       token = await tokenProvider(true).timeout(_timeout);
       if (token == null || token.isEmpty) {
@@ -164,6 +170,24 @@ class FirestoreRestFallback {
           elapsed: watch.elapsed,
         );
       }
+      try {
+        requestHeaders = await FirebaseRestAuthHeaders.build(
+          idToken: token,
+          appCheckEnabled: appCheckEnabled,
+          appCheckTokenProvider: appCheckTokenProvider,
+          includeJsonContentType: true,
+          timeout: _timeout,
+        );
+      } on FirebaseRestAppCheckException catch (error) {
+        watch.stop();
+        return FirestoreRestCreateResult(
+          outcome: FirestoreRestCreateOutcome.permissionDenied,
+          httpStatus: null,
+          attempts: attempts,
+          elapsed: watch.elapsed,
+          exceptionType: error.safeType,
+        );
+      }
 
       while (attempts < _maxAttempts) {
         attempts++;
@@ -171,10 +195,7 @@ class FirestoreRestFallback {
           final response = await httpClient
               .post(
                 _commitUri,
-                headers: <String, String>{
-                  HttpHeaders.authorizationHeader: 'Bearer $token',
-                  HttpHeaders.contentTypeHeader: 'application/json',
-                },
+                headers: requestHeaders,
                 body: jsonEncode(buildCreateOnlyCommitBody(
                   uid: uid,
                   backup: backup,
@@ -206,6 +227,7 @@ class FirestoreRestFallback {
                 serverStatus: serverStatus,
               );
             }
+            requestHeaders[HttpHeaders.authorizationHeader] = 'Bearer $token';
             continue;
           }
           if (_isConflict(response.statusCode, serverStatus)) {
@@ -278,6 +300,7 @@ class FirestoreRestFallback {
       return _networkFailure(watch, attempts, error);
     } finally {
       token = null;
+      requestHeaders?.clear();
       if (shouldClose) httpClient.close();
     }
 
@@ -293,6 +316,8 @@ class FirestoreRestFallback {
   static Future<FirestoreRestReadResult> readEncryptedBackup({
     required String uid,
     required Future<String?> Function(bool forceRefresh) tokenProvider,
+    bool appCheckEnabled = FirebaseBuildConfig.appCheckEnabled,
+    FirebaseTokenProvider? appCheckTokenProvider,
     http.Client? client,
     Future<void> Function(Duration delay)? sleeper,
     Random? random,
@@ -305,6 +330,7 @@ class FirestoreRestFallback {
     var attempts = 0;
     var refreshedAfterUnauthorized = false;
     String? token;
+    Map<String, String>? requestHeaders;
     try {
       token = await tokenProvider(true).timeout(_timeout);
       if (token == null || token.isEmpty) {
@@ -315,15 +341,29 @@ class FirestoreRestFallback {
           attempts,
         );
       }
+      try {
+        requestHeaders = await FirebaseRestAuthHeaders.build(
+          idToken: token,
+          appCheckEnabled: appCheckEnabled,
+          appCheckTokenProvider: appCheckTokenProvider,
+          timeout: _timeout,
+        );
+      } on FirebaseRestAppCheckException catch (error) {
+        return _readResult(
+          watch,
+          FirestoreRestReadOutcome.permissionDenied,
+          null,
+          attempts,
+          exceptionType: error.safeType,
+        );
+      }
       while (attempts < _maxAttempts) {
         attempts++;
         try {
           final response = await httpClient
               .get(
                 _documentUri(uid),
-                headers: <String, String>{
-                  HttpHeaders.authorizationHeader: 'Bearer $token',
-                },
+                headers: requestHeaders,
               )
               .timeout(_timeout);
           final serverStatus = _safeServerStatus(response.body);
@@ -360,6 +400,7 @@ class FirestoreRestFallback {
                 serverStatus: serverStatus,
               );
             }
+            requestHeaders[HttpHeaders.authorizationHeader] = 'Bearer $token';
             continue;
           }
           if (response.statusCode == 401 || response.statusCode == 403) {
@@ -407,6 +448,7 @@ class FirestoreRestFallback {
       return _readNetworkFailure(watch, attempts, error);
     } finally {
       token = null;
+      requestHeaders?.clear();
       if (shouldClose) httpClient.close();
     }
     return _readResult(
@@ -423,6 +465,8 @@ class FirestoreRestFallback {
     required int nextRevision,
     required String remoteUpdateTime,
     required Future<String?> Function(bool forceRefresh) tokenProvider,
+    bool appCheckEnabled = FirebaseBuildConfig.appCheckEnabled,
+    FirebaseTokenProvider? appCheckTokenProvider,
     http.Client? client,
     Future<void> Function(Duration delay)? sleeper,
     Random? random,
@@ -445,6 +489,7 @@ class FirestoreRestFallback {
     var attempts = 0;
     var refreshedAfterUnauthorized = false;
     String? token;
+    Map<String, String>? requestHeaders;
     try {
       token = await tokenProvider(true).timeout(_timeout);
       if (token == null || token.isEmpty) {
@@ -455,16 +500,30 @@ class FirestoreRestFallback {
           attempts,
         );
       }
+      try {
+        requestHeaders = await FirebaseRestAuthHeaders.build(
+          idToken: token,
+          appCheckEnabled: appCheckEnabled,
+          appCheckTokenProvider: appCheckTokenProvider,
+          includeJsonContentType: true,
+          timeout: _timeout,
+        );
+      } on FirebaseRestAppCheckException catch (error) {
+        return _updateResult(
+          watch,
+          FirestoreRestUpdateOutcome.permissionDenied,
+          null,
+          attempts,
+          exceptionType: error.safeType,
+        );
+      }
       while (attempts < _maxAttempts) {
         attempts++;
         try {
           final response = await httpClient
               .post(
                 _commitUri,
-                headers: <String, String>{
-                  HttpHeaders.authorizationHeader: 'Bearer $token',
-                  HttpHeaders.contentTypeHeader: 'application/json',
-                },
+                headers: requestHeaders,
                 body: jsonEncode(buildRevisionUpdateCommitBody(
                   uid: uid,
                   backup: backup,
@@ -495,6 +554,7 @@ class FirestoreRestFallback {
                 serverStatus: serverStatus,
               );
             }
+            requestHeaders[HttpHeaders.authorizationHeader] = 'Bearer $token';
             continue;
           }
           if (_isConflict(response.statusCode, serverStatus)) {
@@ -551,6 +611,7 @@ class FirestoreRestFallback {
       return _updateNetworkFailure(watch, attempts, error);
     } finally {
       token = null;
+      requestHeaders?.clear();
       if (shouldClose) httpClient.close();
     }
     return _updateResult(
@@ -563,14 +624,22 @@ class FirestoreRestFallback {
 
   static Uri get _commitUri => Uri.https(
         _host,
-        '/v1/projects/$projectId/databases/$databaseId/documents:commit',
+        '/v1/projects/$projectId/databases/'
+        '${FirestoreConfig.databaseId}/documents:commit',
       );
+
+  @visibleForTesting
+  static Uri get commitUriForTesting => _commitUri;
 
   static Uri _documentUri(String uid) => Uri.https(
         _host,
-        '/v1/projects/$projectId/databases/$databaseId/documents/users/'
+        '/v1/projects/$projectId/databases/'
+        '${FirestoreConfig.databaseId}/documents/users/'
         '${Uri.encodeComponent(uid)}',
       );
+
+  @visibleForTesting
+  static Uri documentUriForTesting(String uid) => _documentUri(uid);
 
   @visibleForTesting
   static Map<String, Object> buildCreateOnlyCommitBody({
@@ -578,7 +647,8 @@ class FirestoreRestFallback {
     required String backup,
   }) {
     final documentName =
-        'projects/$projectId/databases/$databaseId/documents/users/$uid';
+        'projects/$projectId/databases/'
+        '${FirestoreConfig.databaseId}/documents/users/$uid';
     return <String, Object>{
       'writes': <Object>[
         <String, Object>{
@@ -613,7 +683,8 @@ class FirestoreRestFallback {
     required String remoteUpdateTime,
   }) {
     final documentName =
-        'projects/$projectId/databases/$databaseId/documents/users/$uid';
+        'projects/$projectId/databases/'
+        '${FirestoreConfig.databaseId}/documents/users/$uid';
     return <String, Object>{
       'writes': <Object>[
         <String, Object>{

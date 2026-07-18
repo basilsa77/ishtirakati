@@ -10,8 +10,8 @@ if errorlevel 1 (
   )
 )
 
-set "RELEASE_VERSION=16.0.0"
-set "COMMIT_MESSAGE=v16.0.0+44: publish reviewed changes"
+set "RELEASE_VERSION=16.0.1"
+set "COMMIT_MESSAGE=v16.0.1+45: publish reviewed changes"
 
 git rev-parse --is-inside-work-tree >nul 2>&1
 if errorlevel 1 (

@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   deploy-firestore:
-    name: Deploy rules and indexes to ishtirakati-260f7
+    name: Deploy rules and indexes to ishtirakati-260f7/default
     if: github.ref == 'refs/heads/main'
     environment: firebase-production
     runs-on: ubuntu-24.04
@@ -29,6 +29,9 @@ jobs:
 
       - name: Verify Firestore authorization rules
         run: npm run test:rules
+
+      - name: Verify named Firestore deployment target
+        run: node -e "const c=require('./firebase.json');if(c.firestore?.database!=='default')throw new Error('Firestore database must be default.');"
 
       - name: Configure production service account
         env:

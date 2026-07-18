@@ -17,6 +17,8 @@ import 'cloud_account_binding.dart';
 import 'secure_data_codec.dart';
 import 'subscription_store.dart';
 import 'firebase_build_config.dart';
+import 'firebase_rest_auth.dart';
+import 'firestore_config.dart';
 import 'firestore_rest_fallback.dart';
 import 'firestore_retry.dart';
 
@@ -203,13 +205,12 @@ class CloudSync {
   static const _legacySchemaVersion = 1;
   static const _encryption = 'AES-256-GCM';
 
-  /// The production project uses Firestore's default database. Named database
-  /// instances must not be used for this path.
-  static const databaseId = '(default)';
   static const _maxBackupBytes = 850000;
   static const _revisionKeyPrefix = CloudAccountBinding.revisionKeyPrefix;
   static const _pendingRevisionKeyPrefix =
       CloudAccountBinding.pendingRevisionKeyPrefix;
+  static FirebaseTokenProvider? get _appCheckTokenProvider =>
+      FirebaseBuildConfig.appCheckEnabled ? AuthService.getAppCheckToken : null;
   static final ValueNotifier<CloudSyncStatus> status = ValueNotifier(
     const CloudSyncStatus(CloudSyncPhase.idle),
   );
@@ -217,7 +218,7 @@ class CloudSync {
   static DocumentReference<Map<String, dynamic>>? _doc() {
     final user = AuthService.currentUser;
     if (user == null) return null;
-    return FirebaseFirestore.instance.collection('users').doc(user.uid);
+    return FirestoreConfig.instance.collection('users').doc(user.uid);
   }
 
   static const _safeDocumentPath = 'users/<uid>';
@@ -458,7 +459,7 @@ class CloudSync {
 
   static String _safeFirebaseTarget() {
     final options = Firebase.app().options;
-    return 'project=${options.projectId} database=$databaseId '
+    return 'project=${options.projectId} database=${FirestoreConfig.databaseId} '
         'document=$_safeDocumentPath';
   }
 
@@ -760,7 +761,7 @@ class CloudSync {
     );
     _logFirebaseOperation('firestore.transaction-update');
     final revision = await _runFirestoreOperation(
-      () => FirebaseFirestore.instance.runTransaction<int>((transaction) async {
+      () => FirestoreConfig.instance.runTransaction<int>((transaction) async {
         final snapshot = await transaction.get(doc);
         final remoteRevision =
             (snapshot.data()?['revision'] as num?)?.toInt() ?? 0;
@@ -803,6 +804,7 @@ class CloudSync {
     final probe = await FirestoreRestFallback.readEncryptedBackup(
       uid: user.uid,
       tokenProvider: user.getIdToken,
+      appCheckTokenProvider: _appCheckTokenProvider,
     );
     _recordRestResult(
       httpStatus: probe.httpStatus,
@@ -853,6 +855,7 @@ class CloudSync {
       uid: user.uid,
       backup: backup,
       tokenProvider: user.getIdToken,
+      appCheckTokenProvider: _appCheckTokenProvider,
     );
     _recordRestResult(
       httpStatus: create.httpStatus,
@@ -922,6 +925,7 @@ class CloudSync {
     final probe = await FirestoreRestFallback.readEncryptedBackup(
       uid: user.uid,
       tokenProvider: user.getIdToken,
+      appCheckTokenProvider: _appCheckTokenProvider,
     );
     _recordRestResult(
       httpStatus: probe.httpStatus,
@@ -960,6 +964,7 @@ class CloudSync {
       nextRevision: nextRevision,
       remoteUpdateTime: remote.updateTime,
       tokenProvider: user.getIdToken,
+      appCheckTokenProvider: _appCheckTokenProvider,
     );
     _recordRestResult(
       httpStatus: update.httpStatus,
@@ -1115,6 +1120,7 @@ class CloudSync {
       uid: user.uid,
       backup: backup,
       tokenProvider: user.getIdToken,
+      appCheckTokenProvider: _appCheckTokenProvider,
     );
     _recordRestResult(
       httpStatus: rest.httpStatus,
@@ -1242,6 +1248,7 @@ class CloudSync {
     final result = await FirestoreRestFallback.readEncryptedBackup(
       uid: user.uid,
       tokenProvider: user.getIdToken,
+      appCheckTokenProvider: _appCheckTokenProvider,
     );
     _recordRestResult(
       httpStatus: result.httpStatus,
