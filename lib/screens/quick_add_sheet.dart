@@ -45,9 +45,9 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
     );
     if (name.isEmpty || price == null || price <= 0) {
       setState(
-        () => _validationMessage = name.isEmpty
-            ? tr('ui_8836a5db4038')
-            : tr('ui_881dedd25de1'),
+        () =>
+            _validationMessage =
+                name.isEmpty ? tr('ui_8836a5db4038') : tr('ui_881dedd25de1'),
       );
       return;
     }
@@ -200,9 +200,10 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                                 child: Text(
                                   tr('ui_e16e5870ecd8'),
                                   style: TextStyle(
-                                    color: _cycle == BillingCycle.weekly
-                                        ? V16Colors.white
-                                        : p.text,
+                                    color:
+                                        _cycle == BillingCycle.weekly
+                                            ? V16Colors.white
+                                            : p.text,
                                     fontSize: V16Type.labelSmall,
                                     fontWeight: V16Type.semibold,
                                   ),
@@ -215,9 +216,10 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                                 child: Text(
                                   tr('ui_9c677bb93912'),
                                   style: TextStyle(
-                                    color: _cycle == BillingCycle.monthly
-                                        ? V16Colors.white
-                                        : p.text,
+                                    color:
+                                        _cycle == BillingCycle.monthly
+                                            ? V16Colors.white
+                                            : p.text,
                                     fontSize: V16Type.labelSmall,
                                     fontWeight: V16Type.semibold,
                                   ),
@@ -232,9 +234,10 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                                     BillingCycle.quarterly.name,
                                   ),
                                   style: TextStyle(
-                                    color: _cycle == BillingCycle.quarterly
-                                        ? V16Colors.white
-                                        : p.text,
+                                    color:
+                                        _cycle == BillingCycle.quarterly
+                                            ? V16Colors.white
+                                            : p.text,
                                     fontSize: V16Type.labelSmall,
                                     fontWeight: V16Type.semibold,
                                   ),
@@ -247,9 +250,10 @@ class _QuickAddSheetState extends State<_QuickAddSheet> {
                                 child: Text(
                                   tr('ui_1beeff0b0fec'),
                                   style: TextStyle(
-                                    color: _cycle == BillingCycle.yearly
-                                        ? V16Colors.white
-                                        : p.text,
+                                    color:
+                                        _cycle == BillingCycle.yearly
+                                            ? V16Colors.white
+                                            : p.text,
                                     fontSize: V16Type.labelSmall,
                                     fontWeight: V16Type.semibold,
                                   ),

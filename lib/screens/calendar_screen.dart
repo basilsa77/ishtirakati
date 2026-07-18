@@ -6,8 +6,11 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/subscription.dart';
+import '../services/financial_assistant.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
+import '../widgets/potential_duplicate_badge.dart';
+import 'financial_review_screen.dart';
 import 'subscriptions_screen.dart';
 
 /// صفحة مستقلة للتقويم تُستخدم عند فتحه من خارج الشريط السفلي.
@@ -117,6 +120,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
               return first.key.compareTo(second.key);
             });
         final orderedTotals = Map<String, double>.fromEntries(orderedEntries);
+        final duplicateGroupsBySubscriptionId =
+            FinancialAssistant.indexDuplicateGroupsBySubscriptionId(
+              FinancialAssistant.findDuplicateGroups(store.items),
+            );
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(
@@ -203,6 +210,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   _CalendarPayment(
                     date: DateTime(_month.year, _month.month, day),
                     subscription: subscription,
+                    duplicateGroup:
+                        duplicateGroupsBySubscriptionId[subscription.id],
                   ),
                   const SizedBox(height: V16Space.sm),
                 ],
@@ -218,6 +227,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
     List<Subscription> subscriptions,
   ) {
     final renewalDate = DateTime(_month.year, _month.month, day);
+    final duplicateGroupsBySubscriptionId =
+        FinancialAssistant.indexDuplicateGroupsBySubscriptionId(
+          FinancialAssistant.findDuplicateGroups(
+            SubscriptionStore.instance.items,
+          ),
+        );
     showCupertinoModalPopup<void>(
       context: context,
       builder: (sheetContext) {
@@ -281,54 +296,76 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         );
                       }
                       final subscription = subscriptions[index - 1];
-                      return CupertinoButton(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: V16Space.xs,
-                        ),
-                        onPressed: () {
-                          Navigator.pop(sheetContext);
-                          showSubscriptionDetails(context, subscription);
-                        },
-                        child: Row(
-                          children: [
-                            ServiceAvatar(
-                              name: subscription.name,
-                              emoji: subscription.emoji,
-                              manageUrl: subscription.manageUrl,
-                              iconUrl: subscription.iconUrl,
-                              tint: categoryColor(subscription.category),
-                              size: 42,
+                      final duplicateGroup =
+                          duplicateGroupsBySubscriptionId[subscription.id];
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CupertinoButton(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: V16Space.xs,
                             ),
-                            const SizedBox(width: V16Space.sm),
-                            Expanded(
-                              child: Text(
-                                subscription.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: p.text,
-                                  fontWeight: V16Type.semibold,
+                            onPressed: () {
+                              Navigator.pop(sheetContext);
+                              showSubscriptionDetails(context, subscription);
+                            },
+                            child: Row(
+                              children: [
+                                ServiceAvatar(
+                                  name: subscription.name,
+                                  emoji: subscription.emoji,
+                                  manageUrl: subscription.manageUrl,
+                                  iconUrl: subscription.iconUrl,
+                                  tint: categoryColor(subscription.category),
+                                  size: 42,
                                 ),
+                                const SizedBox(width: V16Space.sm),
+                                Expanded(
+                                  child: Text(
+                                    subscription.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: p.text,
+                                      fontWeight: V16Type.semibold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: V16Space.xs),
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 96,
+                                  ),
+                                  child: Text(
+                                    fmtMoneyWithCurrency(
+                                      subscription.priceAt(renewalDate),
+                                      subscription.currency,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: p.accent,
+                                      fontWeight: V16Type.semibold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (duplicateGroup != null)
+                            PotentialDuplicateBadge(
+                              key: ValueKey(
+                                'duplicate-badge-sheet-${subscription.id}',
                               ),
+                              onTap: () {
+                                Navigator.pop(sheetContext);
+                                openPotentialDuplicateReview(
+                                  context,
+                                  duplicateGroup,
+                                );
+                              },
                             ),
-                            const SizedBox(width: V16Space.xs),
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 96),
-                              child: Text(
-                                fmtMoneyWithCurrency(
-                                  subscription.priceAt(renewalDate),
-                                  subscription.currency,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: p.accent,
-                                  fontWeight: V16Type.semibold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                        ],
                       );
                     },
                   ),
@@ -386,9 +423,35 @@ class _CalendarHeader extends StatelessWidget {
   const _CalendarHeader({required this.totals, required this.itemCount});
 
   @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      AppPageIntro(
+        title: tr('ui_43268af638e5'),
+        description: tr('ui_dfba2e3d71cb'),
+      ),
+      const SizedBox(height: V16Space.md),
+      RenewalsSummaryCard(totals: totals, itemCount: itemCount),
+    ],
+  );
+}
+
+@visibleForTesting
+class RenewalsSummaryCard extends StatelessWidget {
+  final Map<String, double> totals;
+  final int itemCount;
+
+  const RenewalsSummaryCard({
+    super.key,
+    required this.totals,
+    required this.itemCount,
+  });
+
+  @override
   Widget build(BuildContext context) {
     final countLabel = Text(
       tr('ui_c594d3d42dde', {'value0': itemCount}),
+      key: const Key('renewals-summary-count'),
       style: const TextStyle(
         color: V16Colors.white,
         fontWeight: V16Type.semibold,
@@ -401,6 +464,7 @@ class _CalendarHeader extends StatelessWidget {
       children: [
         for (final entry in totals.entries)
           AnimatedMoney(
+            key: ValueKey('renewals-summary-amount-${entry.key}'),
             value: entry.value,
             currency: entry.key,
             style: const TextStyle(
@@ -410,53 +474,37 @@ class _CalendarHeader extends StatelessWidget {
           ),
       ],
     );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppPageIntro(
-          title: tr('ui_43268af638e5'),
-          description: tr('ui_dfba2e3d71cb'),
-        ),
-        const SizedBox(height: V16Space.md),
-        AppCard(
-          tone: AppCardTone.accent,
-          padding: const EdgeInsets.all(V16Space.lg),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final stack =
-                  constraints.maxWidth < 360 ||
-                  MediaQuery.textScalerOf(context).scale(1) > 1.3;
-              final heading = Row(
-                children: [
-                  const Icon(
-                    Icons.event_available_rounded,
-                    color: V16Colors.white,
-                  ),
-                  const SizedBox(width: V16Space.sm),
-                  Expanded(child: countLabel),
-                ],
-              );
-              if (stack) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    heading,
-                    const SizedBox(height: V16Space.sm),
-                    amounts,
-                  ],
-                );
-              }
-              return Row(
-                children: [
-                  Expanded(child: heading),
-                  const SizedBox(width: V16Space.sm),
-                  Flexible(child: amounts),
-                ],
-              );
-            },
-          ),
-        ),
-      ],
+    return AppCard(
+      key: const Key('renewals-summary-card'),
+      tone: AppCardTone.accent,
+      padding: const EdgeInsets.all(V16Space.lg),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stack =
+              constraints.maxWidth < 360 ||
+              MediaQuery.textScalerOf(context).scale(1) > 1.3;
+          final heading = Row(
+            children: [
+              const Icon(Icons.event_available_rounded, color: V16Colors.white),
+              const SizedBox(width: V16Space.sm),
+              Expanded(child: countLabel),
+            ],
+          );
+          if (stack) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [heading, const SizedBox(height: V16Space.sm), amounts],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(child: heading),
+              const SizedBox(width: V16Space.sm),
+              Flexible(child: amounts),
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -632,71 +680,95 @@ class _CalendarGrid extends StatelessWidget {
 class _CalendarPayment extends StatelessWidget {
   final DateTime date;
   final Subscription subscription;
+  final DuplicateSubscriptionGroup? duplicateGroup;
 
-  const _CalendarPayment({required this.date, required this.subscription});
+  const _CalendarPayment({
+    required this.date,
+    required this.subscription,
+    this.duplicateGroup,
+  });
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
     final day = date.day;
-    return AppCard(
-      onTap: () => showSubscriptionDetails(context, subscription),
-      padding: const EdgeInsets.all(V16Space.md),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: p.accentSoft,
-              borderRadius: BorderRadius.circular(V16Radius.compact),
-            ),
-            child: Text(
-              '$day',
-              style: TextStyle(color: p.accent, fontWeight: V16Type.semibold),
-            ),
-          ),
-          const SizedBox(width: V16Space.sm),
-          ServiceAvatar(
-            name: subscription.name,
-            emoji: subscription.emoji,
-            manageUrl: subscription.manageUrl,
-            iconUrl: subscription.iconUrl,
-            tint: categoryColor(subscription.category),
-            size: 40,
-          ),
-          const SizedBox(width: V16Space.sm),
-          Expanded(
-            child: Text(
-              subscription.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: p.text,
-                fontWeight: V16Type.semibold,
-                fontSize: V16Type.label,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppCard(
+          onTap: () => showSubscriptionDetails(context, subscription),
+          padding: const EdgeInsets.all(V16Space.md),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: p.accentSoft,
+                  borderRadius: BorderRadius.circular(V16Radius.compact),
+                ),
+                child: Text(
+                  '$day',
+                  style: TextStyle(
+                    color: p.accent,
+                    fontWeight: V16Type.semibold,
+                  ),
+                ),
               ),
+              const SizedBox(width: V16Space.sm),
+              ServiceAvatar(
+                name: subscription.name,
+                emoji: subscription.emoji,
+                manageUrl: subscription.manageUrl,
+                iconUrl: subscription.iconUrl,
+                tint: categoryColor(subscription.category),
+                size: 40,
+              ),
+              const SizedBox(width: V16Space.sm),
+              Expanded(
+                child: Text(
+                  subscription.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: p.text,
+                    fontWeight: V16Type.semibold,
+                    fontSize: V16Type.label,
+                  ),
+                ),
+              ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 92),
+                child: Text(
+                  fmtMoneyWithCurrency(
+                    subscription.priceAt(date),
+                    subscription.currency,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: p.accent,
+                    fontWeight: V16Type.semibold,
+                    fontSize: V16Type.labelSmall,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (duplicateGroup case final group?)
+          Padding(
+            padding: const EdgeInsetsDirectional.only(
+              top: V16Space.xs,
+              start: V16Space.md,
+            ),
+            child: PotentialDuplicateBadge(
+              key: ValueKey('duplicate-badge-${subscription.id}'),
+              onTap: () => openPotentialDuplicateReview(context, group),
             ),
           ),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 92),
-            child: Text(
-              fmtMoneyWithCurrency(
-                subscription.priceAt(date),
-                subscription.currency,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: p.accent,
-                fontWeight: V16Type.semibold,
-                fontSize: V16Type.labelSmall,
-              ),
-            ),
-          ),
-        ],
-      ),
+      ],
     );
   }
 }

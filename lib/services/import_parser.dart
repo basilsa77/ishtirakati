@@ -53,30 +53,54 @@ class _Service {
 const List<_Service> _services = [
   _Service('Netflix', '🍿', 'ترفيه ومشاهدة', ['netflix', 'نتفلكس', 'نتفليكس']),
   _Service('شاهد VIP', '🎬', 'ترفيه ومشاهدة', ['shahid', 'شاهد']),
-  _Service('اشتراك Apple', '🍎', 'مالية وفواتير',
-      ['apple.com/bill', 'apple.com bill', 'itunes.com', 'إيصالك من apple']),
+  _Service('اشتراك Apple', '🍎', 'مالية وفواتير', [
+    'apple.com/bill',
+    'apple.com bill',
+    'itunes.com',
+    'إيصالك من apple',
+  ]),
   _Service('Apple Music', '🎶', 'موسيقى وبودكاست', ['apple music']),
   _Service('Apple TV+', '🍏', 'ترفيه ومشاهدة', ['apple tv']),
   _Service('iCloud+', '☁️', 'تخزين سحابي', ['icloud']),
   _Service('Apple One', '🅰️', 'إنتاجية وذكاء اصطناعي', ['apple one']),
   _Service('Spotify Premium', '🎧', 'موسيقى وبودكاست', ['spotify', 'سبوتيفاي']),
-  _Service('أنغامي بلس', '🎵', 'موسيقى وبودكاست', ['anghami', 'أنغامي', 'انغامي']),
-  _Service('YouTube Premium', '▶️', 'ترفيه ومشاهدة',
-      ['youtube premium', 'youtube', 'يوتيوب']),
-  _Service('ChatGPT Plus', '🤖', 'إنتاجية وذكاء اصطناعي',
-      ['chatgpt', 'openai', 'chatgpt plus']),
+  _Service('أنغامي بلس', '🎵', 'موسيقى وبودكاست', [
+    'anghami',
+    'أنغامي',
+    'انغامي',
+  ]),
+  _Service('YouTube Premium', '▶️', 'ترفيه ومشاهدة', [
+    'youtube premium',
+    'youtube',
+    'يوتيوب',
+  ]),
+  _Service('ChatGPT Plus', '🤖', 'إنتاجية وذكاء اصطناعي', [
+    'chatgpt',
+    'openai',
+    'chatgpt plus',
+  ]),
   _Service('Claude Pro', '✨', 'إنتاجية وذكاء اصطناعي', ['claude', 'anthropic']),
   _Service('Google Gemini', '💎', 'إنتاجية وذكاء اصطناعي', ['gemini']),
-  _Service('Microsoft 365', '📊', 'إنتاجية وذكاء اصطناعي',
-      ['microsoft 365', 'office 365', 'microsoft']),
+  _Service('Microsoft 365', '📊', 'إنتاجية وذكاء اصطناعي', [
+    'microsoft 365',
+    'office 365',
+    'microsoft',
+  ]),
   _Service('Canva Pro', '🎨', 'إنتاجية وذكاء اصطناعي', ['canva', 'كانفا']),
   _Service('Adobe Creative Cloud', '🖌️', 'إنتاجية وذكاء اصطناعي', ['adobe']),
   _Service('Notion', '🗒️', 'إنتاجية وذكاء اصطناعي', ['notion']),
   _Service('Dropbox', '📦', 'تخزين سحابي', ['dropbox']),
-  _Service('Google One', '🗂️', 'تخزين سحابي', ['google one', 'google storage']),
+  _Service('Google One', '🗂️', 'تخزين سحابي', [
+    'google one',
+    'google storage',
+  ]),
   _Service('LinkedIn Premium', '💼', 'إنتاجية وذكاء اصطناعي', ['linkedin']),
-  _Service('PlayStation Plus', '🎮', 'ألعاب',
-      ['playstation', 'plusstation', 'بلايستيشن', 'sony interactive']),
+  _Service('PlayStation Plus', '🎮', 'ألعاب', [
+    'playstation',
+    'plusstation',
+    'بلايستيشن',
+    'sony interactive',
+  ]),
   _Service('Xbox Game Pass', '🕹️', 'ألعاب', ['xbox', 'game pass']),
   _Service('Nintendo Switch Online', '🍄', 'ألعاب', ['nintendo']),
   _Service('Steam', '🎲', 'ألعاب', ['steam']),
@@ -86,21 +110,49 @@ const List<_Service> _services = [
   _Service('Jawwy TV', '📡', 'ترفيه ومشاهدة', ['jawwy', 'جوّي', 'جوي tv']),
   _Service('TOD', '⚽', 'ترفيه ومشاهدة', ['tod tv', ' tod ']),
   _Service('Yango Play', '🎥', 'ترفيه ومشاهدة', ['yango']),
-  _Service('Snapchat+', '👻', 'ترفيه ومشاهدة', ['snapchat', 'سناب شات', 'سناب']),
+  _Service('Snapchat+', '👻', 'ترفيه ومشاهدة', [
+    'snapchat',
+    'سناب شات',
+    'سناب',
+  ]),
   _Service('X Premium', '❌', 'أخبار ومجلات', ['x premium', 'twitter']),
-  _Service('Telegram Premium', '✈️', 'إنتاجية وذكاء اصطناعي', ['telegram', 'تيليجرام', 'تلغرام']),
-  _Service('Amazon Prime', '🛒', 'تسوق وتوصيل',
-      ['amazon prime', 'prime video', 'امازون برايم', 'أمازون']),
+  _Service('Telegram Premium', '✈️', 'إنتاجية وذكاء اصطناعي', [
+    'telegram',
+    'تيليجرام',
+    'تلغرام',
+  ]),
+  _Service('Amazon Prime', '🛒', 'تسوق وتوصيل', [
+    'amazon prime',
+    'prime video',
+    'امازون برايم',
+    'أمازون',
+  ]),
   _Service('Careem Plus', '🛵', 'تسوق وتوصيل', ['careem', 'كريم']),
-  _Service('HungerStation Plus', '🍔', 'تسوق وتوصيل',
-      ['hungerstation', 'هنقرستيشن']),
+  _Service('HungerStation Plus', '🍔', 'تسوق وتوصيل', [
+    'hungerstation',
+    'هنقرستيشن',
+  ]),
   _Service('Duolingo Super', '🦉', 'تعليم', ['duolingo', 'دولينجو']),
-  _Service('نادي رياضي', '🏋️', 'رياضة وصحة',
-      ['fitness time', 'وقت اللياقة', 'gym', 'نادي']),
-  _Service('باقة الجوال', '📱', 'اتصالات وإنترنت',
-      ['mobily', 'موبايلي', 'zain', 'زين', 'salam', 'سلام موبايل']),
-  _Service('إنترنت المنزل', '🌐', 'اتصالات وإنترنت',
-      ['فايبر', 'fiber', 'انترنت المنزل', 'إنترنت المنزل']),
+  _Service('نادي رياضي', '🏋️', 'رياضة وصحة', [
+    'fitness time',
+    'وقت اللياقة',
+    'gym',
+    'نادي',
+  ]),
+  _Service('باقة الجوال', '📱', 'اتصالات وإنترنت', [
+    'mobily',
+    'موبايلي',
+    'zain',
+    'زين',
+    'salam',
+    'سلام موبايل',
+  ]),
+  _Service('إنترنت المنزل', '🌐', 'اتصالات وإنترنت', [
+    'فايبر',
+    'fiber',
+    'انترنت المنزل',
+    'إنترنت المنزل',
+  ]),
 ];
 
 const Map<String, String> _currencyTokens = {
@@ -154,11 +206,11 @@ double? _findAmount(String line) {
   double? best;
   for (final m in matches) {
     final original = m.group(1)!;
-    final raw = original.contains(',') &&
-            RegExp(r'^\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?$')
-                .hasMatch(original)
-        ? original.replaceAll(',', '')
-        : original.replaceAll(',', '.');
+    final raw =
+        original.contains(',') &&
+                RegExp(r'^\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?$').hasMatch(original)
+            ? original.replaceAll(',', '')
+            : original.replaceAll(',', '.');
     final v = double.tryParse(raw);
     if (v == null || v <= 0 || v > 100000) continue;
     // تجاهل ما يبدو كسنة أو رقم بطاقة.
@@ -232,11 +284,12 @@ DateTime? _findDate(String line) {
 /// يحلل نصًا حرًا ويعيد الاشتراكات المكتشفة (بدون تكرار للخدمة الواحدة).
 List<ImportCandidate> parseSubscriptionsText(String text) {
   final normalized = normalizeDigits(text);
-  final lines = normalized
-      .split(RegExp(r'[\n\r]+'))
-      .map((l) => l.trim())
-      .where((l) => l.isNotEmpty)
-      .toList();
+  final lines =
+      normalized
+          .split(RegExp(r'[\n\r]+'))
+          .map((l) => l.trim())
+          .where((l) => l.isNotEmpty)
+          .toList();
 
   final found = <String, ImportCandidate>{};
 

@@ -7,14 +7,34 @@ import '../services/financial_assistant.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
 
+Future<void> openPotentialDuplicateReview(
+  BuildContext context,
+  DuplicateSubscriptionGroup group,
+) => Navigator.of(context).push(
+  CupertinoPageRoute<void>(
+    builder:
+        (_) => FinancialReviewScreen(
+          currency: group.subscriptions.first.currency,
+          initialDuplicateGroupKey: group.groupKey,
+        ),
+  ),
+);
+
 class FinancialReviewScreen extends StatelessWidget {
   final String currency;
+  final String? initialDuplicateGroupKey;
+  final SubscriptionStore? store;
 
-  const FinancialReviewScreen({super.key, required this.currency});
+  const FinancialReviewScreen({
+    super.key,
+    required this.currency,
+    this.initialDuplicateGroupKey,
+    this.store,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final store = SubscriptionStore.instance;
+    final store = this.store ?? SubscriptionStore.instance;
     final p = context.palette;
     return CupertinoPageScaffold(
       backgroundColor: p.canvas,
@@ -31,9 +51,22 @@ class FinancialReviewScreen extends StatelessWidget {
               store.items,
               currency: currency,
             );
-            if (analysis.reviewItems.isEmpty) {
+            final duplicateGroups = FinancialAssistant.findDuplicateGroups(
+              store.items,
+              currency: currency,
+            );
+            final targetGroup =
+                initialDuplicateGroupKey == null
+                    ? null
+                    : duplicateGroups
+                        .where(
+                          (group) => group.groupKey == initialDuplicateGroupKey,
+                        )
+                        .firstOrNull;
+            if (analysis.reviewItems.isEmpty && targetGroup == null) {
               return const _ReviewEmpty();
             }
+            final prefixCount = targetGroup == null ? 1 : 2;
             return ListView.separated(
               padding: const EdgeInsetsDirectional.fromSTEB(
                 V16Space.ml,
@@ -41,7 +74,7 @@ class FinancialReviewScreen extends StatelessWidget {
                 V16Space.ml,
                 V16Space.xl,
               ),
-              itemCount: analysis.reviewItems.length + 1,
+              itemCount: analysis.reviewItems.length + prefixCount,
               separatorBuilder: (_, __) => const SizedBox(height: V16Space.sm),
               itemBuilder: (context, index) {
                 if (index == 0) {
@@ -52,14 +85,29 @@ class FinancialReviewScreen extends StatelessWidget {
                     ),
                   );
                 }
-                final item = analysis.reviewItems[index - 1];
+                if (targetGroup != null && index == 1) {
+                  return FadeSlideIn(
+                    delayMs: 35,
+                    child: _FocusedDuplicateGroup(
+                      group: targetGroup,
+                      onIgnore:
+                          () => _ignoreGroup(
+                            context,
+                            store,
+                            targetGroup,
+                            closeScreen: true,
+                          ),
+                    ),
+                  );
+                }
+                final item = analysis.reviewItems[index - prefixCount];
                 return FadeSlideIn(
                   delayMs: index * 35,
                   child: _ReviewRow(
                     item: item,
                     currency: currency,
-                    onPressed: () =>
-                        _showActions(context, store, item.subscription),
+                    onPressed:
+                        () => _showActions(context, store, item.subscription),
                   ),
                 );
               },
@@ -77,31 +125,155 @@ class FinancialReviewScreen extends StatelessWidget {
   ) async {
     await HapticFeedback.selectionClick();
     if (!context.mounted) return;
+    final duplicateGroup =
+        FinancialAssistant.findDuplicateGroups(store.items, currency: currency)
+            .where((group) => group.containsSubscription(subscription.id))
+            .firstOrNull;
     await showCupertinoModalPopup<void>(
       context: context,
-      builder: (sheetContext) => CupertinoActionSheet(
-        title: Text(subscription.name),
-        message: Text(tr('ui_fe79a06b79f9')),
-        actions: [
-          CupertinoActionSheetAction(
-            onPressed: () async {
-              Navigator.pop(sheetContext);
-              await store.recordUsage(subscription.id);
-            },
-            child: Text(tr('ui_2af3653b0c9f')),
+      builder:
+          (sheetContext) => CupertinoActionSheet(
+            title: Text(subscription.name),
+            message: Text(tr('ui_fe79a06b79f9')),
+            actions: [
+              CupertinoActionSheetAction(
+                onPressed: () async {
+                  Navigator.pop(sheetContext);
+                  await store.recordUsage(subscription.id);
+                },
+                child: Text(tr('ui_2af3653b0c9f')),
+              ),
+              CupertinoActionSheetAction(
+                onPressed: () async {
+                  Navigator.pop(sheetContext);
+                  await store.markReviewed(subscription.id);
+                },
+                child: Text(tr('ui_abb7607440cf')),
+              ),
+              if (duplicateGroup != null)
+                CupertinoActionSheetAction(
+                  onPressed: () async {
+                    Navigator.pop(sheetContext);
+                    await _ignoreGroup(context, store, duplicateGroup);
+                  },
+                  child: Text(tr('v17IgnoreDuplicate')),
+                ),
+            ],
+            cancelButton: CupertinoActionSheetAction(
+              onPressed: () => Navigator.pop(sheetContext),
+              child: Text(tr('ui_9a30dc2a96b8')),
+            ),
           ),
-          CupertinoActionSheetAction(
-            onPressed: () async {
-              Navigator.pop(sheetContext);
-              await store.markReviewed(subscription.id);
-            },
-            child: Text(tr('ui_abb7607440cf')),
+    );
+  }
+
+  Future<void> _ignoreGroup(
+    BuildContext context,
+    SubscriptionStore store,
+    DuplicateSubscriptionGroup group, {
+    bool closeScreen = false,
+  }) async {
+    try {
+      final ignored = await store.ignoreDuplicateGroup(group);
+      if (!context.mounted) return;
+      if (!ignored) {
+        await _showIgnoreFailure(context);
+        return;
+      }
+      await HapticFeedback.selectionClick();
+      if (closeScreen && context.mounted) Navigator.of(context).pop();
+    } catch (_) {
+      if (context.mounted) await _showIgnoreFailure(context);
+    }
+  }
+
+  Future<void> _showIgnoreFailure(BuildContext context) =>
+      showCupertinoDialog<void>(
+        context: context,
+        builder:
+            (dialogContext) => CupertinoAlertDialog(
+              content: Text(tr('v17DuplicateIgnoreFailed')),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(tr('ui_8f7d74ac0eac')),
+                ),
+              ],
+            ),
+      );
+}
+
+class _FocusedDuplicateGroup extends StatelessWidget {
+  final DuplicateSubscriptionGroup group;
+  final Future<void> Function() onIgnore;
+
+  const _FocusedDuplicateGroup({required this.group, required this.onIgnore});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return AppCard(
+      key: ValueKey('duplicate-review-${group.groupKey}'),
+      tone: AppCardTone.warning,
+      padding: const EdgeInsets.all(V16Space.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            tr('v17DuplicateGroupTitle'),
+            style: TextStyle(
+              color: p.text,
+              fontSize: V16Type.titleSmall,
+              fontWeight: V16Type.semibold,
+            ),
+          ),
+          const SizedBox(height: V16Space.xs),
+          Text(
+            tr('v17DuplicateGroupDescription'),
+            style: TextStyle(
+              color: p.textMuted,
+              fontSize: V16Type.bodySmall,
+              height: V16Type.bodyHeight,
+            ),
+          ),
+          const SizedBox(height: V16Space.md),
+          for (final subscription in group.subscriptions)
+            Padding(
+              padding: const EdgeInsets.only(bottom: V16Space.xs),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      subscription.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: p.text,
+                        fontWeight: V16Type.semibold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: V16Space.sm),
+                  Text(
+                    fmtMoneyWithCurrency(
+                      subscription.price,
+                      subscription.currency,
+                    ),
+                    style: TextStyle(color: p.textMuted),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: V16Space.sm),
+          SizedBox(
+            width: double.infinity,
+            child: CupertinoButton.filled(
+              key: const Key('ignore-duplicate-group'),
+              onPressed: onIgnore,
+              child: Text(tr('v17IgnoreDuplicate')),
+            ),
           ),
         ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(sheetContext),
-          child: Text(tr('ui_9a30dc2a96b8')),
-        ),
       ),
     );
   }
@@ -194,9 +366,8 @@ class _ReviewRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = context.palette;
     final saving = _monthlySaving(item);
-    final savingLabel = saving > 0
-        ? fmtMoneyWithCurrency(saving, currency)
-        : '';
+    final savingLabel =
+        saving > 0 ? fmtMoneyWithCurrency(saving, currency) : '';
     return AppCard(
       onTap: onPressed,
       semanticsLabel:
@@ -275,14 +446,13 @@ class _ReviewRow extends StatelessWidget {
     FinancialReviewReason.overdueReview => CupertinoIcons.checkmark_seal,
   };
 
-  static double _monthlySaving(FinancialReviewItem item) =>
-      switch (item.reason) {
-        FinancialReviewReason.duplicate ||
-        FinancialReviewReason.unusedAutoRenewal =>
-          item.subscription.monthlyCost,
-        FinancialReviewReason.priceIncrease ||
-        FinancialReviewReason.overdueReview => 0,
-      };
+  static double _monthlySaving(FinancialReviewItem item) => switch (item
+      .reason) {
+    FinancialReviewReason.duplicate ||
+    FinancialReviewReason.unusedAutoRenewal => item.subscription.monthlyCost,
+    FinancialReviewReason.priceIncrease ||
+    FinancialReviewReason.overdueReview => 0,
+  };
 }
 
 class _ReviewEmpty extends StatelessWidget {

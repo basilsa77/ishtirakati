@@ -14,8 +14,9 @@ import 'package:ishtirakati/widgets/app_material_root.dart';
 import 'package:ishtirakati/widgets/app_media_query.dart';
 
 void main() {
-  testWidgets('app root provides Material and themed text to every route',
-      (tester) async {
+  testWidgets('app root provides Material and themed text to every route', (
+    tester,
+  ) async {
     TextStyle? inheritedStyle;
     TextStyle? routeStyle;
     TextStyle? overlayStyle;
@@ -31,31 +32,35 @@ void main() {
                 const Text('نص موروث من الثيم'),
                 TextButton(
                   key: const Key('open-cupertino-route'),
-                  onPressed: () => Navigator.of(context).push(
-                    CupertinoPageRoute<void>(
-                      builder: (_) => Builder(
-                        builder: (routeContext) {
-                          routeStyle = DefaultTextStyle.of(routeContext).style;
-                          return const Text('نص داخل مسار Cupertino');
-                        },
+                  onPressed:
+                      () => Navigator.of(context).push(
+                        CupertinoPageRoute<void>(
+                          builder:
+                              (_) => Builder(
+                                builder: (routeContext) {
+                                  routeStyle =
+                                      DefaultTextStyle.of(routeContext).style;
+                                  return const Text('نص داخل مسار Cupertino');
+                                },
+                              ),
+                        ),
                       ),
-                    ),
-                  ),
                   child: const Text('فتح مسار'),
                 ),
                 TextButton(
                   key: const Key('open-overlay'),
-                  onPressed: () => showCupertinoModalPopup<void>(
-                    context: context,
-                    builder: (overlayContext) {
-                      overlayStyle =
-                          DefaultTextStyle.of(overlayContext).style;
-                      return const Align(
-                        alignment: Alignment.bottomCenter,
-                        child: Text('نص داخل Overlay'),
-                      );
-                    },
-                  ),
+                  onPressed:
+                      () => showCupertinoModalPopup<void>(
+                        context: context,
+                        builder: (overlayContext) {
+                          overlayStyle =
+                              DefaultTextStyle.of(overlayContext).style;
+                          return const Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Text('نص داخل Overlay'),
+                          );
+                        },
+                      ),
                   child: const Text('فتح طبقة'),
                 ),
               ],
@@ -102,8 +107,9 @@ void main() {
     expect(overlayStyle?.decorationStyle, isNot(TextDecorationStyle.double));
   });
 
-  testWidgets('v15 limits extreme iOS text scaling without disabling it',
-      (tester) async {
+  testWidgets('v15 limits extreme iOS text scaling without disabling it', (
+    tester,
+  ) async {
     double? scaled;
     await tester.pumpWidget(
       MaterialApp(
@@ -124,8 +130,9 @@ void main() {
     expect(scaled, 1.4);
   });
 
-  testWidgets('v15 primary pages render on a small iPhone with large text',
-      (tester) async {
+  testWidgets('v15 primary pages render on a small iPhone with large text', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -166,10 +173,7 @@ void main() {
       CloudSync.messageForFirebaseCode('permission-denied'),
       contains('App Check'),
     );
-    expect(
-      CloudSync.messageForFirebaseCode('unavailable'),
-      contains('مؤقتًا'),
-    );
+    expect(CloudSync.messageForFirebaseCode('unavailable'), contains('مؤقتًا'));
     expect(
       CloudSync.messageForFirebaseCode('unauthenticated'),
       contains('سجّل الدخول'),
@@ -256,13 +260,11 @@ void main() {
     expect(resolveAppThemeMode('unexpected'), ThemeMode.system);
   });
 
-  testWidgets('calendar segment opens and closes the calendar grid',
-      (tester) async {
+  testWidgets('calendar segment opens and closes the calendar grid', (
+    tester,
+  ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        theme: buildAppTheme(),
-        home: const CalendarScreen(),
-      ),
+      MaterialApp(theme: buildAppTheme(), home: const CalendarScreen()),
     );
 
     expect(find.byKey(const Key('renewals-calendar-grid')), findsNothing);
@@ -275,8 +277,9 @@ void main() {
     expect(find.byKey(const Key('renewals-calendar-grid')), findsNothing);
   });
 
-  testWidgets('subscription form keeps switch and plan labels on body scale',
-      (tester) async {
+  testWidgets('subscription form keeps switch and plan labels on body scale', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -301,14 +304,11 @@ void main() {
     expect(renewalCycle, findsOneWidget);
     final renewalCycleText = tester.widget<Text>(renewalCycle);
     final renewalCycleContext = tester.element(renewalCycle);
-    final renewalCycleStyle = DefaultTextStyle.of(renewalCycleContext)
-        .style
-        .merge(renewalCycleText.style);
+    final renewalCycleStyle = DefaultTextStyle.of(
+      renewalCycleContext,
+    ).style.merge(renewalCycleText.style);
     expect(renewalCycleStyle.fontSize, V15Type.body);
-    expect(
-      renewalCycleStyle.decoration,
-      isNot(TextDecoration.underline),
-    );
+    expect(renewalCycleStyle.decoration, isNot(TextDecoration.underline));
     expect(
       renewalCycleStyle.decorationStyle,
       isNot(TextDecorationStyle.double),

@@ -56,7 +56,8 @@ void main() {
     });
 
     test('JSON داخل أسوار كود ونص زائد', () {
-      const raw = 'إليك النتيجة:\n```json\n'
+      const raw =
+          'إليك النتيجة:\n```json\n'
           '[{"name":"Spotify","category":"موسيقى وبودكاست",'
           '"price":21.99,"currency":"SAR","cycle":"monthly"}]\n'
           '```\nانتهى.';
@@ -72,7 +73,8 @@ void main() {
     });
 
     test('لا يكرر الخدمة الواحدة', () {
-      const raw = '[{"name":"Netflix","cycle":"monthly"},'
+      const raw =
+          '[{"name":"Netflix","cycle":"monthly"},'
           '{"name":"Netflix","cycle":"yearly"}]';
       expect(parseAiCandidates(raw).length, 1);
     });

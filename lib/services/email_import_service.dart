@@ -104,8 +104,18 @@ class EmailFetchResult {
 
 class EmailImportService {
   static const List<String> _months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   static String _imapDate(DateTime d) =>
@@ -134,8 +144,7 @@ class EmailImportService {
       final ids = <int>{};
       Future<void> search(String criteria) async {
         try {
-          final result =
-              await client.searchMessages(searchCriteria: criteria);
+          final result = await client.searchMessages(searchCriteria: criteria);
           final seq = result.matchingSequence;
           if (seq != null) {
             ids.addAll(seq.toList());
@@ -163,8 +172,7 @@ class EmailImportService {
             combinedText: '',
           );
         }
-        final start =
-            total - maxMessages + 1 < 1 ? 1 : total - maxMessages + 1;
+        final start = total - maxMessages + 1 < 1 ? 1 : total - maxMessages + 1;
         for (var i = start; i <= total; i++) {
           ids.add(i);
         }
@@ -195,11 +203,10 @@ class EmailImportService {
             'التاريخ: ${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
           );
         }
-        final text = msg.decodeTextPlainPart() ??
+        final text =
+            msg.decodeTextPlainPart() ??
             _stripHtml(msg.decodeTextHtmlPart() ?? '');
-        buffer.writeln(
-          text.length > 3000 ? text.substring(0, 3000) : text,
-        );
+        buffer.writeln(text.length > 3000 ? text.substring(0, 3000) : text);
       }
       return EmailFetchResult(
         scanned: fetch.messages.length,
@@ -215,10 +222,22 @@ class EmailImportService {
 
   static String _stripHtml(String html) {
     return html
-        .replaceAll(RegExp(r'<style[^>]*>.*?</style>',
-            dotAll: true, caseSensitive: false), ' ')
-        .replaceAll(RegExp(r'<script[^>]*>.*?</script>',
-            dotAll: true, caseSensitive: false), ' ')
+        .replaceAll(
+          RegExp(
+            r'<style[^>]*>.*?</style>',
+            dotAll: true,
+            caseSensitive: false,
+          ),
+          ' ',
+        )
+        .replaceAll(
+          RegExp(
+            r'<script[^>]*>.*?</script>',
+            dotAll: true,
+            caseSensitive: false,
+          ),
+          ' ',
+        )
         .replaceAll(RegExp(r'<[^>]+>'), ' ')
         .replaceAll('&nbsp;', ' ')
         .replaceAll('&amp;', '&')

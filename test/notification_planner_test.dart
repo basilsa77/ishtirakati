@@ -10,24 +10,23 @@ void main() {
     bool autoRenews = true,
     DateTime? trialEnd,
   }) => Subscription(
-        id: id,
-        name: 'خدمة خاصة',
-        emoji: 'خ',
-        price: 50,
-        currency: 'SAR',
-        cycle: BillingCycle.monthly,
-        anchorDate: DateTime(2026, 1, 10),
-        category: 'أخرى',
-        reminderDays: 3,
-        trialEndDate: trialEnd,
-        autoRenews: autoRenews,
-      );
+    id: id,
+    name: 'خدمة خاصة',
+    emoji: 'خ',
+    price: 50,
+    currency: 'SAR',
+    cycle: BillingCycle.monthly,
+    anchorDate: DateTime(2026, 1, 10),
+    category: 'أخرى',
+    reminderDays: 3,
+    trialEndDate: trialEnd,
+    autoRenews: autoRenews,
+  );
 
   test('لا يجدول تجديدًا عند إيقاف التجديد التلقائي', () {
-    final result = NotificationPlanner.build(
-      [subscription(autoRenews: false)],
-      now: now,
-    );
+    final result = NotificationPlanner.build([
+      subscription(autoRenews: false),
+    ], now: now);
 
     expect(result, isEmpty);
   });
@@ -48,7 +47,10 @@ void main() {
     );
 
     expect(result, hasLength(2));
-    expect(result.map((item) => item.priority).reduce((a, b) => a > b ? a : b), 120);
+    expect(
+      result.map((item) => item.priority).reduce((a, b) => a > b ? a : b),
+      120,
+    );
   });
 
   test('لا يتجاوز حد iOS الآمن', () {

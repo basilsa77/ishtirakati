@@ -151,15 +151,14 @@ void main() {
     });
 
     test('إجمالي المدفوع يستخدم السعر التاريخي لكل دفعة', () {
-      final s =
-          _sub(
-              cycle: BillingCycle.monthly,
-              anchor: DateTime(2026, 1, 15),
-              price: 80,
-            )
-            ..priceHistory = [
-              PriceChange(oldPrice: 50, changedAt: DateTime(2026, 3, 1)),
-            ];
+      final s = _sub(
+          cycle: BillingCycle.monthly,
+          anchor: DateTime(2026, 1, 15),
+          price: 80,
+        )
+        ..priceHistory = [
+          PriceChange(oldPrice: 50, changedAt: DateTime(2026, 3, 1)),
+        ];
 
       expect(s.priceAt(DateTime(2026, 2, 15)), 50);
       expect(s.priceAt(DateTime(2026, 3, 15)), 80);

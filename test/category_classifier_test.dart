@@ -6,8 +6,14 @@ void main() {
   test('يصنف الخدمات الشائعة محليًا بدل أخرى', () {
     expect(CategoryClassifier.suggest('Netflix').category, 'ترفيه ومشاهدة');
     expect(CategoryClassifier.suggest('NordVPN').category, 'اتصالات وإنترنت');
-    expect(CategoryClassifier.suggest('باقة إنترنت المنزل').category, 'اتصالات وإنترنت');
-    expect(CategoryClassifier.suggest('Apple One').category, 'إنتاجية وذكاء اصطناعي');
+    expect(
+      CategoryClassifier.suggest('باقة إنترنت المنزل').category,
+      'اتصالات وإنترنت',
+    );
+    expect(
+      CategoryClassifier.suggest('Apple One').category,
+      'إنتاجية وذكاء اصطناعي',
+    );
   });
 
   test('يفضل تصنيف الكتالوج البعيد عند توفره', () {

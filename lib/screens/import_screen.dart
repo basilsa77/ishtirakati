@@ -57,9 +57,8 @@ class _ImportScreenState extends State<ImportScreen> {
           ..clear()
           ..addAll(local.map((c) => c.name));
         _analyzed = true;
-        _aiNote = apiKey.isEmpty
-            ? tr('ui_dee07a5c1274')
-            : tr('ui_229f0d67f339');
+        _aiNote =
+            apiKey.isEmpty ? tr('ui_dee07a5c1274') : tr('ui_229f0d67f339');
       });
       return;
     }
@@ -120,24 +119,25 @@ class _ImportScreenState extends State<ImportScreen> {
     final provider = aiProviderById(SubscriptionStore.instance.aiProvider);
     final approved = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(tr('ui_705db619b661')),
-        content: Text(
-          tr('ui_c11e01eb5eb6', {'value0': provider.localizedLabel}) +
-              tr('ui_d230610f0657') +
-              tr('ui_a4c994f880a4'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(tr('ui_945994bd18bf')),
+      builder:
+          (ctx) => AlertDialog(
+            title: Text(tr('ui_705db619b661')),
+            content: Text(
+              tr('ui_c11e01eb5eb6', {'value0': provider.localizedLabel}) +
+                  tr('ui_d230610f0657') +
+                  tr('ui_a4c994f880a4'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(tr('ui_945994bd18bf')),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(tr('ui_77eea08e3919')),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(tr('ui_77eea08e3919')),
-          ),
-        ],
-      ),
     );
     if (!mounted) return;
     await _analyze(useAi: approved == true);
@@ -257,9 +257,10 @@ class _ImportScreenState extends State<ImportScreen> {
             AppCard(
               tone: AppCardTone.accent,
               semanticsLabel: tr('ui_3caf822da7ef'),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const EmailLinkScreen()),
-              ),
+              onTap:
+                  () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const EmailLinkScreen()),
+                  ),
               child: Row(
                 children: [
                   Container(
@@ -375,18 +376,19 @@ class _ImportScreenState extends State<ImportScreen> {
                     minimumSize: const Size.fromHeight(V16Space.xxl),
                   ),
                   onPressed: _aiBusy ? null : _analyzeWithAi,
-                  icon: _aiBusy
-                      ? const SizedBox.square(
-                          dimension: V16Space.ml,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: V16Colors.white,
+                  icon:
+                      _aiBusy
+                          ? const SizedBox.square(
+                            dimension: V16Space.ml,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: V16Colors.white,
+                            ),
+                          )
+                          : const Icon(
+                            Icons.auto_awesome_rounded,
+                            size: V16Space.ml,
                           ),
-                        )
-                      : const Icon(
-                          Icons.auto_awesome_rounded,
-                          size: V16Space.ml,
-                        ),
                   label: Text(
                     _aiBusy ? tr('ui_8c53372aebc9') : tr('ui_bcace51b5ecb'),
                   ),
@@ -459,13 +461,14 @@ class _ImportScreenState extends State<ImportScreen> {
                     alreadyExists: SubscriptionStore.instance.items.any(
                       (s) => s.name == c.name,
                     ),
-                    onToggle: () => setState(() {
-                      if (_selected.contains(c.name)) {
-                        _selected.remove(c.name);
-                      } else {
-                        _selected.add(c.name);
-                      }
-                    }),
+                    onToggle:
+                        () => setState(() {
+                          if (_selected.contains(c.name)) {
+                            _selected.remove(c.name);
+                          } else {
+                            _selected.add(c.name);
+                          }
+                        }),
                   ),
                 ),
               const SizedBox(height: V16Space.xs),

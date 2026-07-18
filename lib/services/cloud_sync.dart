@@ -228,9 +228,10 @@ class CloudSync {
       phase: CloudSyncPhase.failure,
       failure: failure,
       message: message,
-      delivery: failure == CloudSyncFailure.conflict
-          ? CloudSyncDelivery.conflict
-          : CloudSyncDelivery.failed,
+      delivery:
+          failure == CloudSyncFailure.conflict
+              ? CloudSyncDelivery.conflict
+              : CloudSyncDelivery.failed,
     );
     return false;
   }
@@ -443,17 +444,18 @@ class CloudSync {
           .replaceAll(uid, '<uid>')
           .replaceAll(Uri.encodeComponent(uid), '<uid>');
     }
-    safe = safe
-        .replaceAll(
-          RegExp(r'Bearer\s+[A-Za-z0-9._~-]+', caseSensitive: false),
-          'Bearer <token>',
-        )
-        .replaceAll(
-          RegExp(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'),
-          '<email>',
-        )
-        .replaceAll(RegExp(r'[\r\n]+'), ' ')
-        .trim();
+    safe =
+        safe
+            .replaceAll(
+              RegExp(r'Bearer\s+[A-Za-z0-9._~-]+', caseSensitive: false),
+              'Bearer <token>',
+            )
+            .replaceAll(
+              RegExp(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'),
+              '<email>',
+            )
+            .replaceAll(RegExp(r'[\r\n]+'), ' ')
+            .trim();
     return safe.length <= 500 ? safe : safe.substring(0, 500);
   }
 
@@ -556,9 +558,10 @@ class CloudSync {
       return CloudSyncResult.failed(uploadFailure());
     }
     return CloudSyncResult.success(
-      imported: restoreResult.outcome == CloudRestRestoreOutcome.restored
-          ? restoreResult.imported
-          : 0,
+      imported:
+          restoreResult.outcome == CloudRestRestoreOutcome.restored
+              ? restoreResult.imported
+              : 0,
     );
   }
 
@@ -596,8 +599,8 @@ class CloudSync {
     _setSyncing();
     var firebaseOperation = 'firestore.prepare-encrypted-backup';
     try {
-      final backup = await SubscriptionStore.instance
-          .exportEncryptedCloudBackup();
+      final backup =
+          await SubscriptionStore.instance.exportEncryptedCloudBackup();
       if (utf8.encode(backup).length > _maxBackupBytes) {
         return _fail(
           CloudSyncFailure.payloadTooLarge,
@@ -634,9 +637,10 @@ class CloudSync {
       status.value = CloudSyncStatus(
         CloudSyncPhase.success,
         updatedAt: DateTime.now(),
-        message: outcome.operation == CloudSyncWriteOperation.firstCreate
-            ? tr('cloudFirstCreateSuccess')
-            : tr('cloudUpdateSuccess'),
+        message:
+            outcome.operation == CloudSyncWriteOperation.firstCreate
+                ? tr('cloudFirstCreateSuccess')
+                : tr('cloudUpdateSuccess'),
         operation: switch (outcome.operation) {
           CloudSyncWriteOperation.firstCreate => 'first-create',
           CloudSyncWriteOperation.transactionUpdate => 'transaction-update',
@@ -729,8 +733,8 @@ class CloudSync {
     restFirstCreate: () => _createFirstCloudDocumentViaRest(backup),
     nativeFirstCreate: () => _createFirstCloudDocument(doc, backup),
     restUpdate: () => _updateCloudDocumentViaRest(backup, localRevision),
-    nativeUpdate: () =>
-        _transactionUpdateCloudDocument(doc, backup, localRevision),
+    nativeUpdate:
+        () => _transactionUpdateCloudDocument(doc, backup, localRevision),
   );
 
   @visibleForTesting
@@ -811,11 +815,12 @@ class CloudSync {
       outcome: 'probe-${probe.outcome.name}',
       attempts: probe.attempts,
       exceptionType: probe.exceptionType,
-      documentExisted: probe.outcome == FirestoreRestReadOutcome.found
-          ? true
-          : probe.outcome == FirestoreRestReadOutcome.missing
-          ? false
-          : null,
+      documentExisted:
+          probe.outcome == FirestoreRestReadOutcome.found
+              ? true
+              : probe.outcome == FirestoreRestReadOutcome.missing
+              ? false
+              : null,
     );
     if (probe.outcome == FirestoreRestReadOutcome.found) {
       throw const _CloudRevisionConflict();
@@ -932,11 +937,12 @@ class CloudSync {
       outcome: 'probe-${probe.outcome.name}',
       attempts: probe.attempts,
       exceptionType: probe.exceptionType,
-      documentExisted: probe.outcome == FirestoreRestReadOutcome.found
-          ? true
-          : probe.outcome == FirestoreRestReadOutcome.missing
-          ? false
-          : null,
+      documentExisted:
+          probe.outcome == FirestoreRestReadOutcome.found
+              ? true
+              : probe.outcome == FirestoreRestReadOutcome.missing
+              ? false
+              : null,
     );
     if (probe.outcome == FirestoreRestReadOutcome.missing) {
       throw const _CloudRevisionConflict();
@@ -1000,11 +1006,12 @@ class CloudSync {
     }
     throw FirebaseException(
       plugin: 'firestore_rest',
-      code: update.outcome == FirestoreRestUpdateOutcome.networkFailure
-          ? 'unavailable'
-          : update.outcome == FirestoreRestUpdateOutcome.invalidPayload
-          ? 'invalid-argument'
-          : 'unavailable',
+      code:
+          update.outcome == FirestoreRestUpdateOutcome.networkFailure
+              ? 'unavailable'
+              : update.outcome == FirestoreRestUpdateOutcome.invalidPayload
+              ? 'invalid-argument'
+              : 'unavailable',
     );
   }
 
@@ -1200,9 +1207,10 @@ class CloudSync {
         return -1;
       }
       final encrypted = schemaVersion == _schemaVersion;
-      final count = encrypted
-          ? await SubscriptionStore.instance.importEncryptedCloudBackup(raw)
-          : await SubscriptionStore.instance.importJson(raw);
+      final count =
+          encrypted
+              ? await SubscriptionStore.instance.importEncryptedCloudBackup(raw)
+              : await SubscriptionStore.instance.importJson(raw);
       if (count < 0) {
         _fail(
           encrypted
@@ -1255,11 +1263,12 @@ class CloudSync {
       outcome: 'restore-${result.outcome.name}',
       attempts: result.attempts,
       exceptionType: result.exceptionType,
-      documentExisted: result.outcome == FirestoreRestReadOutcome.found
-          ? true
-          : result.outcome == FirestoreRestReadOutcome.missing
-          ? false
-          : null,
+      documentExisted:
+          result.outcome == FirestoreRestReadOutcome.found
+              ? true
+              : result.outcome == FirestoreRestReadOutcome.missing
+              ? false
+              : null,
     );
     if (result.outcome != FirestoreRestReadOutcome.found ||
         result.document == null) {
@@ -1332,9 +1341,10 @@ class CloudSync {
       );
     }
     try {
-      final exists = (await _runFirestoreOperation(
-        () => doc.get(const GetOptions(source: Source.server)),
-      )).exists;
+      final exists =
+          (await _runFirestoreOperation(
+            () => doc.get(const GetOptions(source: Source.server)),
+          )).exists;
       if (!exists) {
         final uploaded = await push();
         return uploaded

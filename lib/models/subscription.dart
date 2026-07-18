@@ -114,9 +114,10 @@ String fmtMoney(double v, String currency) {
 
 /// صياغة واضحة للقوائم التي يجب أن تبيّن العملة بجانب المبلغ.
 String fmtMoneyWithCurrency(double value, String currency) {
-  final symbol = isEnglishLocale && currency == 'SAR'
-      ? 'SAR'
-      : currencySymbols[currency] ?? currency;
+  final symbol =
+      isEnglishLocale && currency == 'SAR'
+          ? 'SAR'
+          : currencySymbols[currency] ?? currency;
   final amount = fmtMoney(value, currency);
   return (isEnglishLocale ? '$symbol $amount' : '$amount $symbol').trim();
 }
@@ -181,6 +182,12 @@ class Subscription {
   /// آخر مرة راجع فيها المستخدم جدوى الاشتراك أو خطته.
   DateTime? lastReviewedAt;
 
+  /// Stable duplicate-group decisions stored inside the encrypted record.
+  ///
+  /// A set is used so repeated review actions remain idempotent. The group key
+  /// is derived exclusively from stable subscription IDs, never display data.
+  final Set<String> ignoredDuplicateGroupKeys;
+
   Subscription({
     required this.id,
     required this.name,
@@ -206,9 +213,11 @@ class Subscription {
     this.isEssential = false,
     this.planName = '',
     this.lastReviewedAt,
+    Set<String>? ignoredDuplicateGroupKeys,
     this.kind = PaymentKind.subscription,
     this.totalInstallments,
-  }) : priceHistory = priceHistory ?? [];
+  }) : priceHistory = priceHistory ?? [],
+       ignoredDuplicateGroupKeys = {...?ignoredDuplicateGroupKeys};
 
   /// هل اكتمل سداد القسط؟
   bool isCompleted([DateTime? from]) {
@@ -516,13 +525,14 @@ class Subscription {
     'isEssential': isEssential,
     'planName': planName,
     'lastReviewedAt': lastReviewedAt?.toIso8601String(),
+    'ignoredDuplicateGroupKeys': ignoredDuplicateGroupKeys.toList()..sort(),
     'iconUrl': iconUrl,
     'kind': kind.index,
     'totalInstallments': totalInstallments,
   };
 
   factory Subscription.fromJson(Map<String, dynamic> json) {
-    final data = SubscriptionSchema.migrateToV13(json);
+    final data = SubscriptionSchema.migrateToV14(json);
     final cycleIndex = (data['cycle'] as num?)?.toInt() ?? 1;
     return Subscription(
       id:
@@ -532,8 +542,11 @@ class Subscription {
       emoji: (data['emoji'] as String?) ?? '🔖',
       price: (data['price'] as num?)?.toDouble() ?? 0,
       currency: (data['currency'] as String?) ?? 'SAR',
-      cycle: BillingCycle
-          .values[cycleIndex.clamp(0, BillingCycle.values.length - 1)],
+      cycle:
+          BillingCycle.values[cycleIndex.clamp(
+            0,
+            BillingCycle.values.length - 1,
+          )],
       anchorDate:
           DateTime.tryParse((data['anchor'] as String?) ?? '') ??
           DateTime.now(),
@@ -550,14 +563,16 @@ class Subscription {
             if (PriceChange.fromJson(e) case final change?) change,
       ],
       isFamily: (data['isFamily'] as bool?) ?? false,
-      familyMembers: (((data['familyMembers'] as num?)?.toInt() ?? 2).clamp(
-        1,
-        20,
-      )).toInt(),
-      usageCount: (((data['usageCount'] as num?)?.toInt() ?? 0).clamp(
-        0,
-        100000,
-      )).toInt(),
+      familyMembers:
+          (((data['familyMembers'] as num?)?.toInt() ?? 2).clamp(
+            1,
+            20,
+          )).toInt(),
+      usageCount:
+          (((data['usageCount'] as num?)?.toInt() ?? 0).clamp(
+            0,
+            100000,
+          )).toInt(),
       lastUsedAt: DateTime.tryParse((data['lastUsedAt'] as String?) ?? ''),
       autoRenews: (data['autoRenews'] as bool?) ?? true,
       isEssential: (data['isEssential'] as bool?) ?? false,
@@ -565,6 +580,12 @@ class Subscription {
       lastReviewedAt: DateTime.tryParse(
         (data['lastReviewedAt'] as String?) ?? '',
       ),
+      ignoredDuplicateGroupKeys: {
+        if (data['ignoredDuplicateGroupKeys'] is List)
+          for (final value in data['ignoredDuplicateGroupKeys'] as List)
+            if (value is String && value.isNotEmpty && value.length <= 2048)
+              value,
+      },
       iconUrl: (data['iconUrl'] as String?) ?? '',
       kind:
           PaymentKind.values[((data['kind'] as num?)?.toInt() ?? 0).clamp(

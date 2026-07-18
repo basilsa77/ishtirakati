@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../models/subscription.dart';
 
 class MonthlyForecast {
@@ -13,15 +15,22 @@ class MonthlyForecast {
 }
 
 class DuplicateSubscriptionGroup {
+  final String groupKey;
   final String serviceName;
   final List<Subscription> subscriptions;
   final double avoidableMonthlyCost;
+  final bool isIgnored;
 
   const DuplicateSubscriptionGroup({
+    required this.groupKey,
     required this.serviceName,
     required this.subscriptions,
     required this.avoidableMonthlyCost,
+    required this.isIgnored,
   });
+
+  bool containsSubscription(String subscriptionId) =>
+      subscriptions.any((item) => item.id == subscriptionId);
 }
 
 enum FinancialReviewReason {
@@ -52,8 +61,7 @@ class PlanComparison {
     required this.alternativeMonthlyCost,
   });
 
-  double get monthlyDifference =>
-      alternativeMonthlyCost - currentMonthlyCost;
+  double get monthlyDifference => alternativeMonthlyCost - currentMonthlyCost;
   double get annualDifference => monthlyDifference * 12;
   bool get alternativeSavesMoney => monthlyDifference < 0;
 }
@@ -79,9 +87,9 @@ class FinancialAssistantSnapshot {
 
   /// عدد السجلات الإضافية المحتمل الاستغناء عنها داخل مجموعات التكرار.
   int get duplicateCandidateCount => duplicateGroups.fold(
-        0,
-        (sum, group) => sum + group.subscriptions.length - 1,
-      );
+    0,
+    (sum, group) => sum + group.subscriptions.length - 1,
+  );
 }
 
 abstract final class FinancialAssistant {
@@ -91,14 +99,21 @@ abstract final class FinancialAssistant {
     DateTime? now,
   }) {
     final today = _day(now ?? DateTime.now());
-    final active = subscriptions
-        .where((item) =>
-            item.currency == currency &&
-            !item.isPaused &&
-            !item.isCompleted(today))
-        .toList();
+    final active =
+        subscriptions
+            .where(
+              (item) =>
+                  item.currency == currency &&
+                  !item.isPaused &&
+                  !item.isCompleted(today),
+            )
+            .toList();
     final forecast = _forecast(active, today);
-    final duplicateGroups = _duplicates(active);
+    final duplicateGroups = findDuplicateGroups(
+      active,
+      currency: currency,
+      now: today,
+    );
     final duplicateIds = <String>{
       for (final group in duplicateGroups)
         for (final item in group.subscriptions) item.id,
@@ -112,11 +127,13 @@ abstract final class FinancialAssistant {
       final sorted = [...group.subscriptions]
         ..sort((a, b) => a.monthlyCost.compareTo(b.monthlyCost));
       for (final item in sorted.skip(1)) {
-        reviewItems.add(FinancialReviewItem(
-          subscription: item,
-          reason: FinancialReviewReason.duplicate,
-          priority: 100,
-        ));
+        reviewItems.add(
+          FinancialReviewItem(
+            subscription: item,
+            reason: FinancialReviewReason.duplicate,
+            priority: 100,
+          ),
+        );
         reviewedIds.add(item.id);
         if (!item.isEssential && savingsIds.add(item.id)) {
           savings += item.monthlyCost;
@@ -128,37 +145,41 @@ abstract final class FinancialAssistant {
       if (item.isEssential) continue;
       if (reviewedIds.contains(item.id)) continue;
       final reviewedAt = item.lastReviewedAt;
-      final hasMeasuredUsageWindow = reviewedAt != null &&
-          today.difference(_day(reviewedAt)).inDays >= 30;
-      if (item.usageCount == 0 &&
-          item.autoRenews &&
-          hasMeasuredUsageWindow) {
-        reviewItems.add(FinancialReviewItem(
-          subscription: item,
-          reason: FinancialReviewReason.unusedAutoRenewal,
-          priority: 90 - item.daysUntilRenewal(today).clamp(0, 30).toInt(),
-        ));
+      final hasMeasuredUsageWindow =
+          reviewedAt != null && today.difference(_day(reviewedAt)).inDays >= 30;
+      if (item.usageCount == 0 && item.autoRenews && hasMeasuredUsageWindow) {
+        reviewItems.add(
+          FinancialReviewItem(
+            subscription: item,
+            reason: FinancialReviewReason.unusedAutoRenewal,
+            priority: 90 - item.daysUntilRenewal(today).clamp(0, 30).toInt(),
+          ),
+        );
         if (savingsIds.add(item.id)) savings += item.monthlyCost;
         continue;
       }
       final increase = item.priceChangePercent;
       if (increase != null && increase >= 10) {
-        reviewItems.add(FinancialReviewItem(
-          subscription: item,
-          reason: FinancialReviewReason.priceIncrease,
-          priority: 70 + increase.clamp(0, 25).round(),
-        ));
+        reviewItems.add(
+          FinancialReviewItem(
+            subscription: item,
+            reason: FinancialReviewReason.priceIncrease,
+            priority: 70 + increase.clamp(0, 25).round(),
+          ),
+        );
         continue;
       }
       if (item.autoRenews &&
           !duplicateIds.contains(item.id) &&
           reviewedAt != null &&
           today.difference(_day(reviewedAt)).inDays >= 180) {
-        reviewItems.add(FinancialReviewItem(
-          subscription: item,
-          reason: FinancialReviewReason.overdueReview,
-          priority: 45,
-        ));
+        reviewItems.add(
+          FinancialReviewItem(
+            subscription: item,
+            reason: FinancialReviewReason.overdueReview,
+            priority: 45,
+          ),
+        );
       }
     }
     reviewItems.sort((a, b) => b.priority.compareTo(a.priority));
@@ -185,6 +206,59 @@ abstract final class FinancialAssistant {
     );
   }
 
+  /// Finds active duplicate groups using the same engine as [analyze].
+  ///
+  /// Omitting [currency] returns groups across all currencies without ever
+  /// mixing different currencies into the same cost calculation. Ignored
+  /// decisions are excluded unless [includeIgnored] is explicitly requested.
+  static List<DuplicateSubscriptionGroup> findDuplicateGroups(
+    Iterable<Subscription> subscriptions, {
+    DateTime? now,
+    String? currency,
+    bool includeIgnored = false,
+  }) {
+    final today = _day(now ?? DateTime.now());
+    final active =
+        subscriptions
+            .where(
+              (item) =>
+                  (currency == null || item.currency == currency) &&
+                  !item.isPaused &&
+                  !item.isCompleted(today),
+            )
+            .toList();
+    return _duplicates(active, includeIgnored: includeIgnored);
+  }
+
+  /// Builds a direct lookup for list badges and deep links to a review group.
+  static Map<String, DuplicateSubscriptionGroup>
+  indexDuplicateGroupsBySubscriptionId(
+    Iterable<DuplicateSubscriptionGroup> groups,
+  ) {
+    final index = <String, DuplicateSubscriptionGroup>{};
+    for (final group in groups) {
+      for (final subscription in group.subscriptions) {
+        index[subscription.id] = group;
+      }
+    }
+    return Map.unmodifiable(index);
+  }
+
+  /// A collision-safe identity based only on stable subscription IDs.
+  static String duplicateGroupKey(Iterable<String> subscriptionIds) {
+    final ids =
+        subscriptionIds.where((id) => id.isNotEmpty).toSet().toList()..sort();
+    if (ids.length < 2) {
+      throw ArgumentError.value(
+        subscriptionIds,
+        'subscriptionIds',
+        'A duplicate group requires at least two unique IDs.',
+      );
+    }
+    final encoded = base64Url.encode(utf8.encode(jsonEncode(ids)));
+    return 'duplicate:v1:$encoded';
+  }
+
   static List<MonthlyForecast> _forecast(
     List<Subscription> active,
     DateTime today,
@@ -197,7 +271,9 @@ abstract final class FinancialAssistant {
       for (final item in active) {
         for (final renewal in _renewalsBetween(item, periodStart, periodEnd)) {
           final lastInstallment = item.lastInstallmentDate;
-          if (lastInstallment != null && renewal.isAfter(lastInstallment)) continue;
+          if (lastInstallment != null && renewal.isAfter(lastInstallment)) {
+            continue;
+          }
           total += item.price;
           count += 1;
         }
@@ -230,28 +306,40 @@ abstract final class FinancialAssistant {
   }
 
   static List<DuplicateSubscriptionGroup> _duplicates(
-    List<Subscription> active,
-  ) {
-    final grouped = <String, List<Subscription>>{};
+    List<Subscription> active, {
+    required bool includeIgnored,
+  }) {
+    final grouped = <(String, String), List<Subscription>>{};
     for (final item in active) {
       final key = _serviceKey(item);
       if (key.length < 3) continue;
-      grouped.putIfAbsent(key, () => []).add(item);
+      grouped.putIfAbsent((item.currency, key), () => []).add(item);
     }
     final output = <DuplicateSubscriptionGroup>[];
     for (final entry in grouped.entries) {
       if (entry.value.length < 2) continue;
       final sorted = [...entry.value]
         ..sort((a, b) => a.monthlyCost.compareTo(b.monthlyCost));
-      output.add(DuplicateSubscriptionGroup(
-        serviceName: sorted.first.name,
-        subscriptions: sorted,
-        avoidableMonthlyCost:
-            sorted.skip(1).fold(0.0, (sum, item) => sum + item.monthlyCost),
-      ));
+      final groupKey = duplicateGroupKey(sorted.map((item) => item.id));
+      final isIgnored = sorted.any(
+        (item) => item.ignoredDuplicateGroupKeys.contains(groupKey),
+      );
+      if (isIgnored && !includeIgnored) continue;
+      output.add(
+        DuplicateSubscriptionGroup(
+          groupKey: groupKey,
+          serviceName: sorted.first.name,
+          subscriptions: sorted,
+          avoidableMonthlyCost: sorted
+              .skip(1)
+              .fold(0.0, (sum, item) => sum + item.monthlyCost),
+          isIgnored: isIgnored,
+        ),
+      );
     }
-    output.sort((a, b) =>
-        b.avoidableMonthlyCost.compareTo(a.avoidableMonthlyCost));
+    output.sort(
+      (a, b) => b.avoidableMonthlyCost.compareTo(a.avoidableMonthlyCost),
+    );
     return output;
   }
 
@@ -272,13 +360,27 @@ abstract final class FinancialAssistant {
       return host;
     }
     const ignored = {
-      'pro', 'plus', 'premium', 'basic', 'family', 'monthly', 'yearly',
-      'احترافي', 'برو', 'بلس', 'عائلي', 'شهري', 'سنوي', 'الخطة', 'اشتراك',
+      'pro',
+      'plus',
+      'premium',
+      'basic',
+      'family',
+      'monthly',
+      'yearly',
+      'احترافي',
+      'برو',
+      'بلس',
+      'عائلي',
+      'شهري',
+      'سنوي',
+      'الخطة',
+      'اشتراك',
     };
-    final normalized = item.name
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9\u0600-\u06ff]+'), ' ')
-        .trim();
+    final normalized =
+        item.name
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^a-z0-9\u0600-\u06ff]+'), ' ')
+            .trim();
     return normalized
         .split(RegExp(r'\s+'))
         .where((token) => token.isNotEmpty && !ignored.contains(token))

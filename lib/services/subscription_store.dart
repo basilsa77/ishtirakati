@@ -16,6 +16,7 @@ import 'notification_service.dart';
 import 'remote_catalog.dart';
 import 'cloud_sync.dart';
 import 'email_identity_store.dart';
+import 'financial_assistant.dart';
 import 'secure_data_codec.dart';
 
 class SubscriptionStore extends ChangeNotifier {
@@ -346,12 +347,83 @@ class SubscriptionStore extends ChangeNotifier {
         sub.usageCount = old.usageCount;
         sub.lastUsedAt = old.lastUsedAt;
       }
+      _preserveLocalReviewMetadata(old, sub);
       _items[index] = sub;
     } else {
       _items.insert(0, sub);
     }
     await _persist();
     notifyListeners();
+  }
+
+  void _preserveLocalReviewMetadata(
+    Subscription existing,
+    Subscription replacement,
+  ) {
+    replacement.ignoredDuplicateGroupKeys.addAll(
+      existing.ignoredDuplicateGroupKeys,
+    );
+  }
+
+  /// Persists a duplicate-review dismissal in the existing encrypted record.
+  ///
+  /// The operation is idempotent and fails closed: every in-memory mutation is
+  /// rolled back if encryption or persistence fails.
+  Future<bool> ignoreDuplicateGroup(DuplicateSubscriptionGroup group) async {
+    final ids =
+        group.subscriptions
+            .map((item) => item.id)
+            .where((id) => id.isNotEmpty)
+            .toList();
+    if (ids.toSet().length < 2 ||
+        FinancialAssistant.duplicateGroupKey(ids) != group.groupKey) {
+      return false;
+    }
+    return ignoreDuplicateGroupBySubscriptionIds(ids);
+  }
+
+  @visibleForTesting
+  Future<bool> ignoreDuplicateGroupBySubscriptionIds(
+    Iterable<String> subscriptionIds,
+  ) async {
+    _ensureWritable();
+    final ids =
+        subscriptionIds.where((id) => id.isNotEmpty).toSet().toList()..sort();
+    if (ids.length < 2) return false;
+
+    final members = <Subscription>[];
+    for (final id in ids) {
+      final index = _items.indexWhere((item) => item.id == id);
+      if (index < 0) return false;
+      members.add(_items[index]);
+    }
+
+    final groupKey = FinancialAssistant.duplicateGroupKey(ids);
+    if (members.every(
+      (item) => item.ignoredDuplicateGroupKeys.contains(groupKey),
+    )) {
+      return true;
+    }
+
+    final previous = <Subscription, Set<String>>{
+      for (final item in members)
+        item: Set<String>.of(item.ignoredDuplicateGroupKeys),
+    };
+    for (final item in members) {
+      item.ignoredDuplicateGroupKeys.add(groupKey);
+    }
+    try {
+      await _persist();
+    } catch (_) {
+      for (final entry in previous.entries) {
+        entry.key.ignoredDuplicateGroupKeys
+          ..clear()
+          ..addAll(entry.value);
+      }
+      rethrow;
+    }
+    notifyListeners();
+    return true;
   }
 
   void _applyLocalCategory(Subscription sub) {
@@ -525,6 +597,7 @@ class SubscriptionStore extends ChangeNotifier {
         final sub = Subscription.fromJson(e);
         final index = candidateItems.indexWhere((s) => s.id == sub.id);
         if (index >= 0) {
+          _preserveLocalReviewMetadata(candidateItems[index], sub);
           candidateItems[index] = sub;
         } else {
           candidateItems.add(sub);

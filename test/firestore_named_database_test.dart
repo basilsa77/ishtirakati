@@ -8,14 +8,10 @@ void main() {
   test('production database ID is the Enterprise named database default', () {
     expect(FirestoreConfig.databaseId, 'default');
     final firebaseConfig = File('firebase.json').readAsStringSync();
-    final deploymentWorkflow = File(
-      '.github/workflows/deploy-firestore.yml',
-    ).readAsStringSync();
+    final deploymentWorkflow =
+        File('.github/workflows/deploy-firestore.yml').readAsStringSync();
     expect(firebaseConfig, contains('"database": "default"'));
-    expect(
-      deploymentWorkflow,
-      contains("c.firestore?.database!=='default'"),
-    );
+    expect(deploymentWorkflow, contains("c.firestore?.database!=='default'"));
   });
 
   test('production operations never use the implicit Firestore instance', () {
@@ -40,16 +36,18 @@ void main() {
       expect(uri.path, isNot(contains('/databases/(default)/')));
     }
 
-    final createBody = FirestoreRestFallback.buildCreateOnlyCommitBody(
-      uid: 'test-user',
-      backup: '{"v":2,"n":"AA","c":"AA","m":"AA"}',
-    ).toString();
-    final updateBody = FirestoreRestFallback.buildRevisionUpdateCommitBody(
-      uid: 'test-user',
-      backup: '{"v":2,"n":"AA","c":"AA","m":"AA"}',
-      revision: 2,
-      remoteUpdateTime: '2026-07-18T00:00:00.000000Z',
-    ).toString();
+    final createBody =
+        FirestoreRestFallback.buildCreateOnlyCommitBody(
+          uid: 'test-user',
+          backup: '{"v":2,"n":"AA","c":"AA","m":"AA"}',
+        ).toString();
+    final updateBody =
+        FirestoreRestFallback.buildRevisionUpdateCommitBody(
+          uid: 'test-user',
+          backup: '{"v":2,"n":"AA","c":"AA","m":"AA"}',
+          revision: 2,
+          remoteUpdateTime: '2026-07-18T00:00:00.000000Z',
+        ).toString();
     expect(createBody, contains('/databases/default/'));
     expect(updateBody, contains('/databases/default/'));
     expect('$createBody$updateBody', isNot(contains('/databases/(default)/')));
@@ -70,9 +68,8 @@ void main() {
       remoteUpdateTime: '2026-07-18T00:00:00.000000Z',
     );
     final updateWrite = (update['writes']! as List).single as Map;
-    expect(
-      updateWrite['currentDocument'],
-      <String, Object>{'updateTime': '2026-07-18T00:00:00.000000Z'},
-    );
+    expect(updateWrite['currentDocument'], <String, Object>{
+      'updateTime': '2026-07-18T00:00:00.000000Z',
+    });
   });
 }

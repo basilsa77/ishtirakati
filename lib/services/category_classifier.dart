@@ -20,11 +20,12 @@ class CategorySuggestion {
 class CategoryClassifier {
   CategoryClassifier._();
 
-  static String _normalize(String value) => value
-      .toLowerCase()
-      .replaceAll(RegExp(r'[+_\-./]'), ' ')
-      .replaceAll(RegExp(r'\s+'), ' ')
-      .trim();
+  static String _normalize(String value) =>
+      value
+          .toLowerCase()
+          .replaceAll(RegExp(r'[+_\-./]'), ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
 
   static const Map<String, String> _known = {
     'netflix': 'ترفيه ومشاهدة',

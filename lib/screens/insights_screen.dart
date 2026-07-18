@@ -13,8 +13,12 @@ import '../services/ai_consent_service.dart';
 import '../services/ai_extractor.dart'
     show AiExtractionException, LocalizedAiProviderInfo, aiProviderById;
 import '../services/financial_assistant.dart';
+import '../services/financial_distribution.dart';
+import '../services/spending_history.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
+import '../widgets/potential_duplicate_badge.dart';
+import 'financial_review_screen.dart';
 
 class InsightsScreen extends StatelessWidget {
   const InsightsScreen({super.key});
@@ -33,7 +37,14 @@ class InsightsScreen extends StatelessWidget {
           0,
           (sum, entry) => sum + entry.value,
         );
-        final history = store.monthlySpendHistory(currency, months: 6);
+        final distribution = FinancialDistribution.calculate(entries);
+        // The current data model has schedules, not a ledger of completed
+        // payments. Keep historical months explicitly unavailable rather than
+        // presenting reconstructed schedules as actual spending.
+        final history = SpendingHistory.unavailable(
+          now: DateTime.now(),
+          months: 6,
+        );
         final top =
             store.active.where((item) => item.currency == currency).toList()
               ..sort((a, b) => b.monthlyCost.compareTo(a.monthlyCost));
@@ -43,6 +54,10 @@ class InsightsScreen extends StatelessWidget {
           store.items,
           currency: currency,
         );
+        final duplicateGroupsBySubscriptionId =
+            FinancialAssistant.indexDuplicateGroupsBySubscriptionId(
+              FinancialAssistant.findDuplicateGroups(store.items),
+            );
 
         return ListView(
           padding: const EdgeInsetsDirectional.fromSTEB(
@@ -67,7 +82,7 @@ class InsightsScreen extends StatelessWidget {
               const SizedBox(height: V16Space.md),
               FadeSlideIn(
                 delayMs: 40,
-                child: _ForecastCard(snapshot: assistant),
+                child: ForecastCard(snapshot: assistant),
               ),
               const SizedBox(height: V16Space.md),
               _MetricsGrid(
@@ -76,13 +91,9 @@ class InsightsScreen extends StatelessWidget {
                 upcoming: upcoming,
               ),
               const SizedBox(height: V16Space.xl),
-              _DistributionCard(
-                entries: entries,
-                total: total,
-                currency: currency,
-              ),
+              DistributionCard(distribution: distribution, currency: currency),
               const SizedBox(height: V16Space.xl),
-              _TrendCard(history: history, currency: currency),
+              SpendingHistoryCard(history: history, currency: currency),
               const SizedBox(height: V16Space.xl),
               _InsightsLabel(tr('ui_38304db9f15d')),
               const SizedBox(height: V16Space.sm),
@@ -92,6 +103,8 @@ class InsightsScreen extends StatelessWidget {
                   child: _TopServiceRow(
                     subscription: top[index],
                     rank: index + 1,
+                    duplicateGroup:
+                        duplicateGroupsBySubscriptionId[top[index].id],
                   ),
                 ),
                 const SizedBox(height: V16Space.sm),
@@ -106,10 +119,10 @@ class InsightsScreen extends StatelessWidget {
   }
 }
 
-class _ForecastCard extends StatelessWidget {
+class ForecastCard extends StatelessWidget {
   final FinancialAssistantSnapshot snapshot;
 
-  const _ForecastCard({required this.snapshot});
+  const ForecastCard({super.key, required this.snapshot});
 
   @override
   Widget build(BuildContext context) {
@@ -158,48 +171,69 @@ class _ForecastCard extends StatelessWidget {
           ),
           const SizedBox(height: V16Space.md),
           SizedBox(
-            height: 116,
+            height: 128,
             child: ListView.separated(
+              key: const Key('forecast-chart-scroll'),
               scrollDirection: Axis.horizontal,
+              padding: const EdgeInsetsDirectional.symmetric(
+                horizontal: V16Space.xs,
+              ),
               itemCount: snapshot.forecast.length,
               separatorBuilder: (_, __) => const SizedBox(width: V16Space.xs),
               itemBuilder: (context, index) {
                 final item = snapshot.forecast[index];
                 final ratio = maxValue <= 0 ? 0.0 : item.total / maxValue;
-                return SizedBox(
-                  width: 48,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        item.total <= 0 ? '0' : item.total.toStringAsFixed(0),
-                        maxLines: 1,
-                        overflow: TextOverflow.fade,
-                        style: TextStyle(
-                          color: p.textMuted,
-                          fontSize: V16Type.captionSmall,
-                          fontWeight: V16Type.semibold,
+                final fullAmount = fmtMoneyWithCurrency(
+                  item.total,
+                  snapshot.currency,
+                );
+                return Tooltip(
+                  triggerMode: TooltipTriggerMode.tap,
+                  message: fullAmount,
+                  child: SizedBox(
+                    key: ValueKey('forecast-month-${item.month.month}'),
+                    width: 52,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          localizedCompactNumber(item.total),
+                          maxLines: 1,
+                          overflow: TextOverflow.fade,
+                          style: TextStyle(
+                            color: p.textMuted,
+                            fontSize: V16Type.captionSmall,
+                            fontWeight: V16Type.semibold,
+                          ),
                         ),
-                      ),
-                      Text(
-                        tr('ui_4e55769aaac7', {'value0': item.paymentCount}),
-                        maxLines: 1,
-                        style: TextStyle(
-                          color: p.textMuted,
-                          fontSize: V16Type.captionSmall,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            tr('ui_4e55769aaac7', {
+                              'value0': item.paymentCount,
+                            }),
+                            maxLines: 1,
+                            style: TextStyle(
+                              color: p.textMuted,
+                              fontSize: V16Type.captionSmall,
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: V16Space.xxs),
-                      _ForecastBar(ratio: ratio, highlighted: index == 0),
-                      const SizedBox(height: V16Space.xxs),
-                      Text(
-                        _monthName(item.month.month),
-                        style: TextStyle(
-                          color: p.textMuted,
-                          fontSize: V16Type.captionSmall,
+                        const SizedBox(height: V16Space.xxs),
+                        _ForecastBar(ratio: ratio, highlighted: index == 0),
+                        const SizedBox(height: V16Space.xxs),
+                        Text(
+                          _monthName(item.month.month),
+                          maxLines: 1,
+                          overflow: TextOverflow.visible,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: p.textMuted,
+                            fontSize: V16Type.captionSmall,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               },
@@ -297,7 +331,7 @@ class _MetricsGrid extends StatelessWidget {
     final tiles = <Widget>[
       AppMetricTile(
         label: tr('ui_d734d8e10283'),
-        value: fmtMoney(average, currency),
+        value: fmtMoneyWithCurrency(average, currency),
         icon: CupertinoIcons.money_dollar_circle,
       ),
       AppMetricTile(
@@ -344,7 +378,7 @@ class _InsightHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalLabel = fmtMoney(total, currency);
+    final totalLabel = fmtMoneyWithCurrency(total, currency);
     return Semantics(
       container: true,
       label:
@@ -442,33 +476,48 @@ class _InsightsLabel extends StatelessWidget {
   );
 }
 
-class _DistributionCard extends StatelessWidget {
-  final List<MapEntry<String, double>> entries;
-  final double total;
+@visibleForTesting
+class DistributionCard extends StatefulWidget {
+  final FinancialDistributionResult distribution;
   final String currency;
 
-  const _DistributionCard({
-    required this.entries,
-    required this.total,
+  const DistributionCard({
+    super.key,
+    required this.distribution,
     required this.currency,
   });
 
   @override
+  State<DistributionCard> createState() => _DistributionCardState();
+}
+
+class _DistributionCardState extends State<DistributionCard> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    final semanticParts = entries
-        .take(5)
-        .map((entry) {
-          final percentage =
-              total <= 0 ? 0 : (entry.value / total * 100).round();
-          return '${localizedCategory(entry.key)} $percentage%';
-        })
+    final distribution = widget.distribution;
+    final collapsed = _collapsedSlices(distribution.slices);
+    final legendEntries = _expanded ? distribution.expandedEntries : collapsed;
+    final visibleSourceCount =
+        collapsed.where((slice) => !slice.isAggregate).length;
+    final hiddenCount = math.max(
+      0,
+      distribution.sourceCategoryCount - visibleSourceCount,
+    );
+    final canExpand = hiddenCount > 0;
+    final semanticParts = distribution.expandedEntries
+        .map(
+          (entry) =>
+              '${localizedCategory(entry.category)} ${entry.percentage}%',
+        )
         .join('. ');
     return AppChartSurface(
       title: tr('ui_5721f95a7e69'),
-      subtitle: fmtMoney(total, currency),
+      subtitle: fmtMoneyWithCurrency(distribution.total, widget.currency),
       semanticsLabel:
-          '${tr('ui_5721f95a7e69')}. ${fmtMoney(total, currency)}. $semanticParts',
+          '${tr('ui_5721f95a7e69')}. ${fmtMoneyWithCurrency(distribution.total, widget.currency)}. $semanticParts',
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact =
@@ -479,8 +528,8 @@ class _DistributionCard extends StatelessWidget {
             height: compact ? 116 : 132,
             child: CustomPaint(
               painter: _DistributionPainter(
-                entries: entries,
-                total: total,
+                entries: distribution.slices,
+                total: distribution.total,
                 track: p.surfaceAlt,
               ),
               child: Center(
@@ -488,7 +537,7 @@ class _DistributionCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '${entries.length}',
+                      localizedNumber(distribution.sourceCategoryCount),
                       style: TextStyle(
                         color: p.text,
                         fontSize: V16Type.headlineSmall,
@@ -508,8 +557,9 @@ class _DistributionCard extends StatelessWidget {
             ),
           );
           final legend = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              for (final entry in entries.take(5))
+              for (final entry in legendEntries)
                 Padding(
                   padding: const EdgeInsets.only(bottom: V16Space.sm),
                   child: Row(
@@ -518,14 +568,14 @@ class _DistributionCard extends StatelessWidget {
                         width: V16Space.xs,
                         height: V16Space.xs,
                         decoration: BoxDecoration(
-                          color: categoryColor(entry.key),
+                          color: categoryColor(entry.category),
                           shape: BoxShape.circle,
                         ),
                       ),
                       const SizedBox(width: V16Space.xs),
                       Expanded(
                         child: Text(
-                          localizedCategory(entry.key),
+                          localizedCategory(entry.category),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -536,12 +586,7 @@ class _DistributionCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        tr('ui_bb234490a0b0', {
-                          'value0':
-                              total <= 0
-                                  ? 0
-                                  : (entry.value / total * 100).round(),
-                        }),
+                        tr('ui_bb234490a0b0', {'value0': entry.percentage}),
                         style: TextStyle(
                           color: p.textMuted,
                           fontSize: V16Type.caption,
@@ -549,6 +594,25 @@ class _DistributionCard extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                ),
+              if (canExpand)
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: CupertinoButton(
+                    key: const Key('distribution-expand-categories'),
+                    padding: const EdgeInsets.symmetric(vertical: V16Space.xs),
+                    onPressed: () => setState(() => _expanded = !_expanded),
+                    child: Text(
+                      _expanded
+                          ? tr('v17ShowFewerCategories')
+                          : tr('v17MoreCategories', {'count': hiddenCount}),
+                      style: TextStyle(
+                        color: p.accent,
+                        fontSize: V16Type.caption,
+                        fontWeight: V16Type.semibold,
+                      ),
+                    ),
                   ),
                 ),
             ],
@@ -573,10 +637,21 @@ class _DistributionCard extends StatelessWidget {
       ),
     );
   }
+
+  static List<FinancialDistributionSlice> _collapsedSlices(
+    List<FinancialDistributionSlice> slices,
+  ) {
+    if (slices.length <= 5) return slices;
+    final last = slices.last;
+    if (last.category == FinancialDistribution.defaultOtherCategory) {
+      return [...slices.take(4), last];
+    }
+    return slices.take(5).toList(growable: false);
+  }
 }
 
 class _DistributionPainter extends CustomPainter {
-  final List<MapEntry<String, double>> entries;
+  final List<FinancialDistributionSlice> entries;
   final double total;
   final Color track;
 
@@ -598,15 +673,15 @@ class _DistributionPainter extends CustomPainter {
           ..strokeCap = StrokeCap.round;
     canvas.drawCircle(center, radius, base);
     if (total <= 0) return;
-    final visible = entries.where((entry) => entry.value > 0).toList();
+    final visible = entries.where((entry) => entry.amount > 0).toList();
     final gap = visible.length > 1 ? .04 : 0.0;
     final availableSweep = math.pi * 2 - (gap * visible.length);
     var start = -math.pi / 2;
     for (final entry in visible) {
-      final sweep = entry.value / total * availableSweep;
+      final sweep = entry.amount / total * availableSweep;
       final paint =
           Paint()
-            ..color = categoryColor(entry.key)
+            ..color = categoryColor(entry.category)
             ..style = PaintingStyle.stroke
             ..strokeWidth = V16Space.md
             ..strokeCap = StrokeCap.round;
@@ -628,27 +703,74 @@ class _DistributionPainter extends CustomPainter {
       oldDelegate.track != track;
 }
 
-class _TrendCard extends StatelessWidget {
-  final List<MapEntry<String, double>> history;
+@visibleForTesting
+class SpendingHistoryCard extends StatelessWidget {
+  final List<SpendingPoint> history;
   final String currency;
 
-  const _TrendCard({required this.history, required this.currency});
+  const SpendingHistoryCard({
+    super.key,
+    required this.history,
+    required this.currency,
+  });
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    final maxValue = history.fold<double>(
+    final actual = history
+        .where(
+          (point) =>
+              point.status == SpendingPointStatus.actual && point.hasAmount,
+        )
+        .toList(growable: false);
+    if (actual.isEmpty) {
+      final message = tr('v17PaymentHistoryUnavailable');
+      return AppChartSurface(
+        key: const Key('payment-history-no-data'),
+        title: tr('v17PaymentHistoryTitle'),
+        subtitle: message,
+        semanticsLabel: '${tr('v17PaymentHistoryTitle')}. $message',
+        child: SizedBox(
+          height: 88,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(CupertinoIcons.chart_bar, color: p.textMuted),
+              const SizedBox(width: V16Space.sm),
+              Flexible(
+                child: Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: p.textMuted,
+                    fontSize: V16Type.bodySmall,
+                    height: V16Type.bodyHeight,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    final maxValue = actual.fold<double>(
       0,
-      (max, item) => math.max(max, item.value),
+      (max, item) => math.max(max, item.amount!),
     );
-    final current = history.isEmpty ? 0.0 : history.last.value;
+    final current = actual.last.amount!;
     final summary = history
-        .map((item) => '${item.key} ${fmtMoney(item.value, currency)}')
+        .map(
+          (item) =>
+              item.hasAmount
+                  ? '${localizedDate(item.month, skeleton: 'MMM')} ${fmtMoneyWithCurrency(item.amount!, currency)}'
+                  : '${localizedDate(item.month, skeleton: 'MMM')} ${tr('v17PaymentHistoryUnavailable')}',
+        )
         .join('. ');
     return AppChartSurface(
-      title: tr('ui_12e08f28e326'),
-      subtitle: '${tr('ui_67636ff4cd0e')}: ${fmtMoney(current, currency)}',
-      semanticsLabel: '${tr('ui_12e08f28e326')}. $summary',
+      title: tr('v17PaymentHistoryTitle'),
+      subtitle:
+          '${tr('ui_67636ff4cd0e')}: ${fmtMoneyWithCurrency(current, currency)}',
+      semanticsLabel: '${tr('v17PaymentHistoryTitle')}. $summary',
       child: SizedBox(
         height: 128,
         child: Row(
@@ -664,20 +786,27 @@ class _TrendCard extends StatelessWidget {
                       Expanded(
                         child: Align(
                           alignment: Alignment.bottomCenter,
-                          child: _TrendBar(
-                            ratio:
-                                maxValue <= 0
-                                    ? .05
-                                    : (history[index].value / maxValue)
-                                        .clamp(.05, 1.0)
-                                        .toDouble(),
-                            highlighted: index == history.length - 1,
-                          ),
+                          child:
+                              history[index].hasAmount
+                                  ? _TrendBar(
+                                    ratio:
+                                        maxValue <= 0
+                                            ? 0
+                                            : (history[index].amount! /
+                                                    maxValue)
+                                                .clamp(0.0, 1.0)
+                                                .toDouble(),
+                                    highlighted: history[index] == actual.last,
+                                  )
+                                  : Text(
+                                    '—',
+                                    style: TextStyle(color: p.textMuted),
+                                  ),
                         ),
                       ),
                       const SizedBox(height: V16Space.xs),
                       Text(
-                        history[index].key,
+                        localizedDate(history[index].month, skeleton: 'MMM'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -727,7 +856,7 @@ class _TrendBar extends StatelessWidget {
       );
     }
     return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: .05, end: ratio),
+      tween: Tween<double>(begin: 0, end: ratio),
       duration: V16Motion.entrance,
       curve: V16Motion.standardCurve,
       builder:
@@ -744,99 +873,120 @@ class _TrendBar extends StatelessWidget {
 class _TopServiceRow extends StatelessWidget {
   final Subscription subscription;
   final int rank;
+  final DuplicateSubscriptionGroup? duplicateGroup;
 
-  const _TopServiceRow({required this.subscription, required this.rank});
+  const _TopServiceRow({
+    required this.subscription,
+    required this.rank,
+    this.duplicateGroup,
+  });
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    return Semantics(
-      container: true,
-      label:
-          '$rank. ${subscription.name}. ${fmtMoneyWithCurrency(subscription.monthlyCost, subscription.currency)}',
-      child: ExcludeSemantics(
-        child: AppCard(
-          elevated: false,
-          padding: const EdgeInsets.symmetric(
-            horizontal: V16Space.md,
-            vertical: V16Space.sm,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 25,
-                height: 25,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: rank == 1 ? p.warningSoft : p.surfaceAlt,
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
-                  '$rank',
-                  style: TextStyle(
-                    color: rank == 1 ? p.warning : p.textMuted,
-                    fontSize: V16Type.caption,
-                    fontWeight: V16Type.semibold,
-                  ),
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          container: true,
+          label:
+              '$rank. ${subscription.name}. ${fmtMoneyWithCurrency(subscription.monthlyCost, subscription.currency)}',
+          child: ExcludeSemantics(
+            child: AppCard(
+              elevated: false,
+              padding: const EdgeInsets.symmetric(
+                horizontal: V16Space.md,
+                vertical: V16Space.sm,
               ),
-              const SizedBox(width: V16Space.sm),
-              ServiceAvatar(
-                name: subscription.name,
-                emoji: subscription.emoji,
-                manageUrl: subscription.manageUrl,
-                iconUrl: subscription.iconUrl,
-                tint: categoryColor(subscription.category),
-                size: 40,
-              ),
-              const SizedBox(width: V16Space.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      subscription.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              child: Row(
+                children: [
+                  Container(
+                    width: 25,
+                    height: 25,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: rank == 1 ? p.warningSoft : p.surfaceAlt,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '$rank',
                       style: TextStyle(
-                        color: p.text,
-                        fontSize: V16Type.label,
+                        color: rank == 1 ? p.warning : p.textMuted,
+                        fontSize: V16Type.caption,
                         fontWeight: V16Type.semibold,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subscription.displayQualifier,
+                  ),
+                  const SizedBox(width: V16Space.sm),
+                  ServiceAvatar(
+                    name: subscription.name,
+                    emoji: subscription.emoji,
+                    manageUrl: subscription.manageUrl,
+                    iconUrl: subscription.iconUrl,
+                    tint: categoryColor(subscription.category),
+                    size: 40,
+                  ),
+                  const SizedBox(width: V16Space.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          subscription.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: p.text,
+                            fontSize: V16Type.label,
+                            fontWeight: V16Type.semibold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subscription.displayQualifier,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: p.textMuted,
+                            fontSize: V16Type.caption,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 92),
+                    child: Text(
+                      fmtMoneyWithCurrency(
+                        subscription.monthlyCost,
+                        subscription.currency,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: p.textMuted,
-                        fontSize: V16Type.caption,
+                        color: p.accent,
+                        fontSize: V16Type.labelSmall,
+                        fontWeight: V16Type.semibold,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 92),
-                child: Text(
-                  fmtMoneyWithCurrency(
-                    subscription.monthlyCost,
-                    subscription.currency,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: p.accent,
-                    fontSize: V16Type.labelSmall,
-                    fontWeight: V16Type.semibold,
-                  ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
-      ),
+        if (duplicateGroup case final group?)
+          Padding(
+            padding: const EdgeInsetsDirectional.only(
+              top: V16Space.xs,
+              start: V16Space.md,
+            ),
+            child: PotentialDuplicateBadge(
+              key: ValueKey('duplicate-badge-insights-${subscription.id}'),
+              onTap: () => openPotentialDuplicateReview(context, group),
+            ),
+          ),
+      ],
     );
   }
 }

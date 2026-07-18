@@ -28,15 +28,15 @@ class _MemoryKeyStore implements SecureKeyStore {
 }
 
 Subscription _sensitiveSubscription() => Subscription(
-      id: 'cloud-encryption-test',
-      name: 'Confidential Service Name',
-      emoji: '',
-      price: 149.99,
-      currency: 'SAR',
-      cycle: BillingCycle.monthly,
-      anchorDate: DateTime(2026, 7, 1),
-      category: 'أخرى',
-    );
+  id: 'cloud-encryption-test',
+  name: 'Confidential Service Name',
+  emoji: '',
+  price: 149.99,
+  currency: 'SAR',
+  cycle: BillingCycle.monthly,
+  anchorDate: DateTime(2026, 7, 1),
+  category: 'أخرى',
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

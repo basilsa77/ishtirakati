@@ -32,21 +32,21 @@ void main() {
   final now = DateTime(2026, 7, 10);
 
   test('اللقطة تفصل المبالغ حسب العملة وتتجاهل المتوقف', () {
-    final snapshot = RenewalIntelligence.snapshot([
-      _sub(id: 'a', anchor: DateTime(2026, 6, 12), price: 20),
-      _sub(id: 'b', anchor: DateTime(2026, 6, 15), price: 30),
-      _sub(
-        id: 'usd',
-        anchor: DateTime(2026, 6, 11),
-        price: 9,
-        currency: 'USD',
-      ),
-      _sub(
-        id: 'paused',
-        anchor: DateTime(2026, 6, 11),
-        paused: true,
-      ),
-    ], currency: 'SAR', now: now);
+    final snapshot = RenewalIntelligence.snapshot(
+      [
+        _sub(id: 'a', anchor: DateTime(2026, 6, 12), price: 20),
+        _sub(id: 'b', anchor: DateTime(2026, 6, 15), price: 30),
+        _sub(
+          id: 'usd',
+          anchor: DateTime(2026, 6, 11),
+          price: 9,
+          currency: 'USD',
+        ),
+        _sub(id: 'paused', anchor: DateTime(2026, 6, 11), paused: true),
+      ],
+      currency: 'SAR',
+      now: now,
+    );
 
     expect(snapshot.activeCount, 3);
     expect(snapshot.dueIn7Days, 3);
@@ -67,34 +67,25 @@ void main() {
   });
 
   test('ارتفاع السعر يظهر بعد حالات التجديد العاجلة', () {
-    final urgent = _sub(
-      id: 'urgent',
-      anchor: DateTime(2026, 6, 11),
-    );
+    final urgent = _sub(id: 'urgent', anchor: DateTime(2026, 6, 11));
     final increased = _sub(
       id: 'increase',
       anchor: DateTime(2026, 6, 25),
       price: 130,
       usage: 4,
-      history: [
-        PriceChange(oldPrice: 100, changedAt: DateTime(2026, 7, 1)),
-      ],
+      history: [PriceChange(oldPrice: 100, changedAt: DateTime(2026, 7, 1))],
     );
-    final decisions = RenewalIntelligence.decisions(
-      [increased, urgent],
-      now: now,
-    );
+    final decisions = RenewalIntelligence.decisions([
+      increased,
+      urgent,
+    ], now: now);
     expect(decisions.first.subscription.id, 'urgent');
     expect(decisions.last.kind, DecisionKind.priceIncrease);
   });
 
   test('لا يقترح مراجعة الاشتراكات المتوقفة', () {
     final decisions = RenewalIntelligence.decisions([
-      _sub(
-        id: 'paused',
-        anchor: DateTime(2026, 6, 11),
-        paused: true,
-      ),
+      _sub(id: 'paused', anchor: DateTime(2026, 6, 11), paused: true),
     ], now: now);
     expect(decisions, isEmpty);
   });

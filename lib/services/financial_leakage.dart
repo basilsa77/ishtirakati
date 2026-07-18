@@ -19,9 +19,10 @@ class FinancialLeakageSnapshot {
     required this.unused,
   });
 
-  double get leakageRatio => annualCommitment <= 0
-      ? 0
-      : (unusedAnnualExposure / annualCommitment).clamp(0, 1);
+  double get leakageRatio =>
+      annualCommitment <= 0
+          ? 0
+          : (unusedAnnualExposure / annualCommitment).clamp(0, 1);
 }
 
 abstract final class FinancialLeakage {
@@ -29,23 +30,35 @@ abstract final class FinancialLeakage {
     Iterable<Subscription> subscriptions, {
     required String currency,
   }) {
-    final active = subscriptions
-        .where((item) =>
-            item.currency == currency && !item.isPaused && !item.isCompleted())
-        .toList();
-    final unused = active.where((item) => item.usageCount == 0).toList()
-      ..sort((a, b) => b.yearlyCost.compareTo(a.yearlyCost));
+    final active =
+        subscriptions
+            .where(
+              (item) =>
+                  item.currency == currency &&
+                  !item.isPaused &&
+                  !item.isCompleted(),
+            )
+            .toList();
+    final unused =
+        active.where((item) => item.usageCount == 0).toList()
+          ..sort((a, b) => b.yearlyCost.compareTo(a.yearlyCost));
     final sorted = [...active]
       ..sort((a, b) => b.yearlyCost.compareTo(a.yearlyCost));
 
     return FinancialLeakageSnapshot(
       currency: currency,
-      monthlyCommitment:
-          active.fold(0, (total, item) => total + item.monthlyCost),
-      annualCommitment:
-          active.fold(0, (total, item) => total + item.yearlyCost),
-      unusedAnnualExposure:
-          unused.fold(0, (total, item) => total + item.yearlyCost),
+      monthlyCommitment: active.fold(
+        0,
+        (total, item) => total + item.monthlyCost,
+      ),
+      annualCommitment: active.fold(
+        0,
+        (total, item) => total + item.yearlyCost,
+      ),
+      unusedAnnualExposure: unused.fold(
+        0,
+        (total, item) => total + item.yearlyCost,
+      ),
       familyMonthlyShare: active
           .where((item) => item.isFamily)
           .fold(0, (total, item) => total + item.pricePerMember),

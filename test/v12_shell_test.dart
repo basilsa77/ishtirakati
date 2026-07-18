@@ -5,25 +5,27 @@ import 'package:ishtirakati/screens/command_palette.dart';
 import 'package:ishtirakati/widgets/adaptive_cycle_shell.dart';
 
 void main() {
-  testWidgets('صدفة الهاتف تعرض خمس وجهات والإعدادات متاحة مباشرة',
-      (tester) async {
+  testWidgets('صدفة الهاتف تعرض خمس وجهات والإعدادات متاحة مباشرة', (
+    tester,
+  ) async {
     V12Destination selected = V12Destination.home;
     await tester.pumpWidget(
       MaterialApp(
         home: StatefulBuilder(
-          builder: (context, setState) => Scaffold(
-            body: AdaptiveCycleShell(
-              destination: selected,
-              onDestination: (value) => setState(() => selected = value),
-              pages: const [
-                Center(child: Text('home')),
-                Center(child: Text('subscriptions')),
-                Center(child: Text('insights')),
-                Center(child: Text('calendar')),
-                Center(child: Text('settings')),
-              ],
-            ),
-          ),
+          builder:
+              (context, setState) => Scaffold(
+                body: AdaptiveCycleShell(
+                  destination: selected,
+                  onDestination: (value) => setState(() => selected = value),
+                  pages: const [
+                    Center(child: Text('home')),
+                    Center(child: Text('subscriptions')),
+                    Center(child: Text('insights')),
+                    Center(child: Text('calendar')),
+                    Center(child: Text('settings')),
+                  ],
+                ),
+              ),
         ),
       ),
     );
@@ -41,8 +43,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('صدفة iPad تتحول إلى rail وتبقي الإعدادات متاحة',
-      (tester) async {
+  testWidgets('صدفة iPad تتحول إلى rail وتبقي الإعدادات متاحة', (tester) async {
     tester.view.physicalSize = const Size(1024, 1366);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);

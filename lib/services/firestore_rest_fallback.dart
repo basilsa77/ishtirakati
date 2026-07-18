@@ -196,10 +196,9 @@ class FirestoreRestFallback {
               .post(
                 _commitUri,
                 headers: requestHeaders,
-                body: jsonEncode(buildCreateOnlyCommitBody(
-                  uid: uid,
-                  backup: backup,
-                )),
+                body: jsonEncode(
+                  buildCreateOnlyCommitBody(uid: uid, backup: backup),
+                ),
               )
               .timeout(_timeout);
           final serverStatus = _safeServerStatus(response.body);
@@ -267,9 +266,10 @@ class FirestoreRestFallback {
           }
           watch.stop();
           return FirestoreRestCreateResult(
-            outcome: response.statusCode == 429
-                ? FirestoreRestCreateOutcome.rateLimited
-                : response.statusCode >= 500
+            outcome:
+                response.statusCode == 429
+                    ? FirestoreRestCreateOutcome.rateLimited
+                    : response.statusCode >= 500
                     ? FirestoreRestCreateOutcome.serviceUnavailable
                     : FirestoreRestCreateOutcome.unexpectedFailure,
             httpStatus: response.statusCode,
@@ -361,10 +361,7 @@ class FirestoreRestFallback {
         attempts++;
         try {
           final response = await httpClient
-              .get(
-                _documentUri(uid),
-                headers: requestHeaders,
-              )
+              .get(_documentUri(uid), headers: requestHeaders)
               .timeout(_timeout);
           final serverStatus = _safeServerStatus(response.body);
           if (response.statusCode == 200) {
@@ -424,8 +421,8 @@ class FirestoreRestFallback {
             response.statusCode == 429
                 ? FirestoreRestReadOutcome.rateLimited
                 : response.statusCode >= 500
-                    ? FirestoreRestReadOutcome.serviceUnavailable
-                    : FirestoreRestReadOutcome.unexpectedFailure,
+                ? FirestoreRestReadOutcome.serviceUnavailable
+                : FirestoreRestReadOutcome.unexpectedFailure,
             response.statusCode,
             attempts,
             serverStatus: serverStatus,
@@ -524,12 +521,14 @@ class FirestoreRestFallback {
               .post(
                 _commitUri,
                 headers: requestHeaders,
-                body: jsonEncode(buildRevisionUpdateCommitBody(
-                  uid: uid,
-                  backup: backup,
-                  revision: nextRevision,
-                  remoteUpdateTime: remoteUpdateTime,
-                )),
+                body: jsonEncode(
+                  buildRevisionUpdateCommitBody(
+                    uid: uid,
+                    backup: backup,
+                    revision: nextRevision,
+                    remoteUpdateTime: remoteUpdateTime,
+                  ),
+                ),
               )
               .timeout(_timeout);
           final serverStatus = _safeServerStatus(response.body);
@@ -587,8 +586,8 @@ class FirestoreRestFallback {
             response.statusCode == 429
                 ? FirestoreRestUpdateOutcome.rateLimited
                 : response.statusCode >= 500
-                    ? FirestoreRestUpdateOutcome.serviceUnavailable
-                    : FirestoreRestUpdateOutcome.unexpectedFailure,
+                ? FirestoreRestUpdateOutcome.serviceUnavailable
+                : FirestoreRestUpdateOutcome.unexpectedFailure,
             response.statusCode,
             attempts,
             serverStatus: serverStatus,
@@ -623,20 +622,20 @@ class FirestoreRestFallback {
   }
 
   static Uri get _commitUri => Uri.https(
-        _host,
-        '/v1/projects/$projectId/databases/'
-        '${FirestoreConfig.databaseId}/documents:commit',
-      );
+    _host,
+    '/v1/projects/$projectId/databases/'
+    '${FirestoreConfig.databaseId}/documents:commit',
+  );
 
   @visibleForTesting
   static Uri get commitUriForTesting => _commitUri;
 
   static Uri _documentUri(String uid) => Uri.https(
-        _host,
-        '/v1/projects/$projectId/databases/'
-        '${FirestoreConfig.databaseId}/documents/users/'
-        '${Uri.encodeComponent(uid)}',
-      );
+    _host,
+    '/v1/projects/$projectId/databases/'
+    '${FirestoreConfig.databaseId}/documents/users/'
+    '${Uri.encodeComponent(uid)}',
+  );
 
   @visibleForTesting
   static Uri documentUriForTesting(String uid) => _documentUri(uid);
@@ -658,9 +657,7 @@ class FirestoreRestFallback {
               'backup': <String, Object>{'stringValue': backup},
               'schemaVersion': <String, Object>{'integerValue': '2'},
               'revision': <String, Object>{'integerValue': '1'},
-              'encryption': <String, Object>{
-                'stringValue': 'AES-256-GCM',
-              },
+              'encryption': <String, Object>{'stringValue': 'AES-256-GCM'},
             },
           },
           'currentDocument': <String, Object>{'exists': false},
@@ -693,17 +690,11 @@ class FirestoreRestFallback {
             'fields': <String, Object>{
               'backup': <String, Object>{'stringValue': backup},
               'schemaVersion': <String, Object>{'integerValue': '2'},
-              'revision': <String, Object>{
-                'integerValue': revision.toString(),
-              },
-              'encryption': <String, Object>{
-                'stringValue': 'AES-256-GCM',
-              },
+              'revision': <String, Object>{'integerValue': revision.toString()},
+              'encryption': <String, Object>{'stringValue': 'AES-256-GCM'},
             },
           },
-          'currentDocument': <String, Object>{
-            'updateTime': remoteUpdateTime,
-          },
+          'currentDocument': <String, Object>{'updateTime': remoteUpdateTime},
           'updateTransforms': <Object>[
             <String, Object>{
               'fieldPath': 'updatedAt',
@@ -795,14 +786,13 @@ class FirestoreRestFallback {
     Stopwatch watch,
     int attempts,
     Object error,
-  ) =>
-      FirestoreRestCreateResult(
-        outcome: FirestoreRestCreateOutcome.networkFailure,
-        httpStatus: null,
-        attempts: attempts,
-        elapsed: watch.elapsed,
-        exceptionType: error.runtimeType.toString(),
-      );
+  ) => FirestoreRestCreateResult(
+    outcome: FirestoreRestCreateOutcome.networkFailure,
+    httpStatus: null,
+    attempts: attempts,
+    elapsed: watch.elapsed,
+    exceptionType: error.runtimeType.toString(),
+  );
 
   static FirestoreRestReadResult _readResult(
     Stopwatch watch,
@@ -829,14 +819,13 @@ class FirestoreRestFallback {
     Stopwatch watch,
     int attempts,
     Object error,
-  ) =>
-      _readResult(
-        watch,
-        FirestoreRestReadOutcome.networkFailure,
-        null,
-        attempts,
-        exceptionType: error.runtimeType.toString(),
-      );
+  ) => _readResult(
+    watch,
+    FirestoreRestReadOutcome.networkFailure,
+    null,
+    attempts,
+    exceptionType: error.runtimeType.toString(),
+  );
 
   static FirestoreRestUpdateResult _updateResult(
     Stopwatch watch,
@@ -861,12 +850,11 @@ class FirestoreRestFallback {
     Stopwatch watch,
     int attempts,
     Object error,
-  ) =>
-      _updateResult(
-        watch,
-        FirestoreRestUpdateOutcome.networkFailure,
-        null,
-        attempts,
-        exceptionType: error.runtimeType.toString(),
-      );
+  ) => _updateResult(
+    watch,
+    FirestoreRestUpdateOutcome.networkFailure,
+    null,
+    attempts,
+    exceptionType: error.runtimeType.toString(),
+  );
 }

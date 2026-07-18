@@ -125,9 +125,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               boxShadow:
                                   Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? V16Elevation.darkLow
-                                  : V16Elevation.medium,
+                                          Brightness.dark
+                                      ? V16Elevation.darkLow
+                                      : V16Elevation.medium,
                             ),
                             child: const Icon(
                               Icons.cloud_sync_rounded,
@@ -165,9 +165,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             _AuthButton(
                               backgroundColor: CupertinoColors.white,
                               foregroundColor: CupertinoColors.black,
-                              onPressed: (_busy || signedIn)
-                                  ? null
-                                  : () => _signIn(AuthService.signInWithApple),
+                              onPressed:
+                                  (_busy || signedIn)
+                                      ? null
+                                      : () =>
+                                          _signIn(AuthService.signInWithApple),
                               icon: const Icon(Icons.apple_rounded, size: 26),
                               label: Text(tr('ui_99e77aefca64')),
                             ),
@@ -175,26 +177,29 @@ class _LoginScreenState extends State<LoginScreen> {
                             _AuthButton(
                               backgroundColor: p.accentStrong,
                               foregroundColor: CupertinoColors.white,
-                              onPressed: _busy
-                                  ? null
-                                  : signedIn
-                                  ? _retrySync
-                                  : () => _signIn(AuthService.signInWithGoogle),
-                              icon: _busy
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CupertinoActivityIndicator(
-                                        color: CupertinoColors.white,
+                              onPressed:
+                                  _busy
+                                      ? null
+                                      : signedIn
+                                      ? _retrySync
+                                      : () =>
+                                          _signIn(AuthService.signInWithGoogle),
+                              icon:
+                                  _busy
+                                      ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CupertinoActivityIndicator(
+                                          color: CupertinoColors.white,
+                                        ),
+                                      )
+                                      : const Text(
+                                        'G',
+                                        style: TextStyle(
+                                          fontSize: V16Type.title,
+                                          fontWeight: V16Type.semibold,
+                                        ),
                                       ),
-                                    )
-                                  : const Text(
-                                      'G',
-                                      style: TextStyle(
-                                        fontSize: V16Type.title,
-                                        fontWeight: V16Type.semibold,
-                                      ),
-                                    ),
                               label: Text(
                                 signedIn
                                     ? tr('ui_eb496e41e621')
@@ -208,9 +213,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               message: _error!,
                               tone:
                                   CloudSync.status.value.phase ==
-                                      CloudSyncPhase.queued
-                                  ? IosStatusTone.queued
-                                  : IosStatusTone.error,
+                                          CloudSyncPhase.queued
+                                      ? IosStatusTone.queued
+                                      : IosStatusTone.error,
                               onRetry: signedIn && !_busy ? _retrySync : null,
                             ),
                           ],
@@ -278,18 +283,16 @@ class _AuthButton extends StatelessWidget {
       onPressed: onPressed,
       child: DefaultTextStyle(
         style: TextStyle(
-          color: onPressed == null
-              ? context.palette.textMuted
-              : foregroundColor,
+          color:
+              onPressed == null ? context.palette.textMuted : foregroundColor,
           fontFamily: V16Type.bodyFamily,
           fontSize: V16Type.body,
           fontWeight: V16Type.semibold,
         ),
         child: IconTheme(
           data: IconThemeData(
-            color: onPressed == null
-                ? context.palette.textMuted
-                : foregroundColor,
+            color:
+                onPressed == null ? context.palette.textMuted : foregroundColor,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,

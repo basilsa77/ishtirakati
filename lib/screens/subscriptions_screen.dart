@@ -8,11 +8,14 @@ import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../data/presets.dart';
 import '../models/subscription.dart';
+import '../services/financial_assistant.dart';
 import '../services/subscription_store.dart';
 import '../services/safe_url.dart';
 import '../theme.dart';
 import '../widgets/ios_controls.dart';
+import '../widgets/potential_duplicate_badge.dart';
 import 'edit_subscription_screen.dart';
+import 'financial_review_screen.dart';
 import 'import_screen.dart';
 import 'quick_add_sheet.dart';
 
@@ -44,6 +47,10 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       listenable: store,
       builder: (context, _) {
         final subscriptions = _filtered(store);
+        final duplicateGroupsBySubscriptionId =
+            FinancialAssistant.indexDuplicateGroupsBySubscriptionId(
+              FinancialAssistant.findDuplicateGroups(store.items),
+            );
         return CustomScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           slivers: [
@@ -58,9 +65,12 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                 child: _LibraryHeader(
                   total: store.active.length,
                   onAdd: () => showQuickAddSheet(context),
-                  onImport: () => Navigator.of(context).push(
-                    CupertinoPageRoute(builder: (_) => const ImportScreen()),
-                  ),
+                  onImport:
+                      () => Navigator.of(context).push(
+                        CupertinoPageRoute(
+                          builder: (_) => const ImportScreen(),
+                        ),
+                      ),
                 ),
               ),
             ),
@@ -89,18 +99,21 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                   usedCategories: {
                     for (final item in store.items) item.category,
                   },
-                  onKind: (value) => setState(() {
-                    _kind = value;
-                    _category = null;
-                  }),
-                  onCategory: (value) => setState(() {
-                    _category = value;
-                    _kind = null;
-                  }),
-                  onAll: () => setState(() {
-                    _kind = null;
-                    _category = null;
-                  }),
+                  onKind:
+                      (value) => setState(() {
+                        _kind = value;
+                        _category = null;
+                      }),
+                  onCategory:
+                      (value) => setState(() {
+                        _category = value;
+                        _kind = null;
+                      }),
+                  onAll:
+                      () => setState(() {
+                        _kind = null;
+                        _category = null;
+                      }),
                 ),
               ),
             ),
@@ -120,10 +133,15 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                 ),
                 sliver: SliverList.separated(
                   itemCount: subscriptions.length,
-                  separatorBuilder: (_, __) =>
-                      const SizedBox(height: V16Space.sm),
-                  itemBuilder: (context, index) =>
-                      _SubscriptionRow(subscription: subscriptions[index]),
+                  separatorBuilder:
+                      (_, __) => const SizedBox(height: V16Space.sm),
+                  itemBuilder:
+                      (context, index) => _SubscriptionRow(
+                        subscription: subscriptions[index],
+                        duplicateGroup:
+                            duplicateGroupsBySubscriptionId[subscriptions[index]
+                                .id],
+                      ),
                 ),
               ),
           ],
@@ -134,13 +152,15 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
 
   List<Subscription> _filtered(SubscriptionStore store) {
     final query = _search.text.trim().toLowerCase();
-    final output = store.items.where((item) {
-      final matchesName =
-          query.isEmpty || item.name.toLowerCase().contains(query);
-      final matchesKind = _kind == null || item.kind == _kind;
-      final matchesCategory = _category == null || item.category == _category;
-      return matchesName && matchesKind && matchesCategory;
-    }).toList();
+    final output =
+        store.items.where((item) {
+          final matchesName =
+              query.isEmpty || item.name.toLowerCase().contains(query);
+          final matchesKind = _kind == null || item.kind == _kind;
+          final matchesCategory =
+              _category == null || item.category == _category;
+          return matchesName && matchesKind && matchesCategory;
+        }).toList();
     switch (_sort) {
       case _SortOrder.renewal:
         output.sort(
@@ -351,9 +371,10 @@ class _FilterRail extends StatelessWidget {
                     _FilterChip(
                       label: category,
                       selected: selectedCategory == category,
-                      onTap: () => onCategory(
-                        selectedCategory == category ? null : category,
-                      ),
+                      onTap:
+                          () => onCategory(
+                            selectedCategory == category ? null : category,
+                          ),
                     ),
                     const SizedBox(width: V16Space.xs),
                   ],
@@ -409,8 +430,9 @@ class _FilterChip extends StatelessWidget {
 
 class _SubscriptionRow extends StatelessWidget {
   final Subscription subscription;
+  final DuplicateSubscriptionGroup? duplicateGroup;
 
-  const _SubscriptionRow({required this.subscription});
+  const _SubscriptionRow({required this.subscription, this.duplicateGroup});
 
   @override
   Widget build(BuildContext context) {
@@ -430,100 +452,116 @@ class _SubscriptionRow extends StatelessWidget {
       ),
       confirmDismiss: (_) => _confirmDelete(context, subscription.name),
       onDismissed: (_) => store.remove(subscription.id),
-      child: AppCard(
-        onTap: () => showSubscriptionDetails(context, subscription),
-        padding: const EdgeInsets.all(V16Space.md),
-        child: Row(
-          children: [
-            ServiceAvatar(
-              name: subscription.name,
-              emoji: subscription.emoji,
-              manageUrl: subscription.manageUrl,
-              iconUrl: subscription.iconUrl,
-              tint: categoryColor(subscription.category),
-              size: 50,
-            ),
-            const SizedBox(width: V16Space.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppCard(
+            onTap: () => showSubscriptionDetails(context, subscription),
+            padding: const EdgeInsets.all(V16Space.md),
+            child: Row(
+              children: [
+                ServiceAvatar(
+                  name: subscription.name,
+                  emoji: subscription.emoji,
+                  manageUrl: subscription.manageUrl,
+                  iconUrl: subscription.iconUrl,
+                  tint: categoryColor(subscription.category),
+                  size: 50,
+                ),
+                const SizedBox(width: V16Space.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          subscription.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: p.text,
-                            fontWeight: V16Type.semibold,
-                            fontSize: V16Type.bodySmall,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              subscription.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: p.text,
+                                fontWeight: V16Type.semibold,
+                                fontSize: V16Type.bodySmall,
+                              ),
+                            ),
                           ),
+                          if (subscription.isPaused)
+                            _StatePill(
+                              text: tr('ui_e858894dedb7'),
+                              color: p.warning,
+                              background: p.warningSoft,
+                            ),
+                          if (subscription.isTrialActive())
+                            _StatePill(
+                              text: tr('ui_87a9108dad6d'),
+                              color: p.danger,
+                              background: p.dangerSoft,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: V16Space.xxs),
+                      Text(
+                        '${localizedCategory(subscription.category)} · '
+                        '${localizedBillingCycle(subscription.cycle.name)}',
+                        style: TextStyle(
+                          color: p.textMuted,
+                          fontSize: V16Type.caption,
                         ),
                       ),
-                      if (subscription.isPaused)
-                        _StatePill(
-                          text: tr('ui_e858894dedb7'),
-                          color: p.warning,
-                          background: p.warningSoft,
-                        ),
-                      if (subscription.isTrialActive())
-                        _StatePill(
-                          text: tr('ui_87a9108dad6d'),
-                          color: p.danger,
-                          background: p.dangerSoft,
+                      const SizedBox(height: V16Space.xs),
+                      if (!subscription.isPaused)
+                        RenewalBadge(days: subscription.daysUntilRenewal())
+                      else
+                        Text(
+                          tr('ui_0494e50b7138'),
+                          style: TextStyle(
+                            color: p.textMuted,
+                            fontSize: V16Type.caption,
+                            fontWeight: V16Type.semibold,
+                          ),
                         ),
                     ],
                   ),
-                  const SizedBox(height: V16Space.xxs),
-                  Text(
-                    '${localizedCategory(subscription.category)} · '
-                    '${localizedBillingCycle(subscription.cycle.name)}',
-                    style: TextStyle(
-                      color: p.textMuted,
-                      fontSize: V16Type.caption,
-                    ),
-                  ),
-                  const SizedBox(height: V16Space.xs),
-                  if (!subscription.isPaused)
-                    RenewalBadge(days: subscription.daysUntilRenewal())
-                  else
-                    Text(
-                      tr('ui_0494e50b7138'),
-                      style: TextStyle(
-                        color: p.textMuted,
-                        fontSize: V16Type.caption,
-                        fontWeight: V16Type.semibold,
+                ),
+                const SizedBox(width: V16Space.xs),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 92),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        fmtMoneyWithCurrency(
+                          subscription.price,
+                          subscription.currency,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: p.accent,
+                          fontWeight: V16Type.semibold,
+                          fontSize: V16Type.label,
+                        ),
                       ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(width: V16Space.xs),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 92),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    fmtMoneyWithCurrency(
-                      subscription.price,
-                      subscription.currency,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: p.accent,
-                      fontWeight: V16Type.semibold,
-                      fontSize: V16Type.label,
-                    ),
+                    ],
                   ),
-                ],
+                ),
+              ],
+            ),
+          ),
+          if (duplicateGroup case final group?)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(
+                top: V16Space.xs,
+                start: V16Space.md,
+              ),
+              child: PotentialDuplicateBadge(
+                key: ValueKey('duplicate-badge-${subscription.id}'),
+                onTap: () => openPotentialDuplicateReview(context, group),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -610,194 +648,207 @@ Future<void> showSubscriptionDetails(
         initialChildSize: .72,
         minChildSize: .42,
         maxChildSize: .94,
-        builder: (context, controller) => SafeArea(
-          top: false,
-          child: Container(
-            decoration: BoxDecoration(
-              color: p.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(V16Radius.signature),
-              ),
-            ),
-            child: ListView(
-              controller: controller,
-              padding: const EdgeInsets.fromLTRB(
-                V16Space.lg,
-                V16Space.sm,
-                V16Space.lg,
-                V16Space.xl,
-              ),
-              children: [
-                Center(
-                  child: Container(
-                    width: 38,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: p.stroke,
-                      borderRadius: BorderRadius.circular(V16Radius.pill),
-                    ),
+        builder:
+            (context, controller) => SafeArea(
+              top: false,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: p.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(V16Radius.signature),
                   ),
                 ),
-                const SizedBox(height: V16Space.ml),
-                Row(
+                child: ListView(
+                  controller: controller,
+                  padding: const EdgeInsets.fromLTRB(
+                    V16Space.lg,
+                    V16Space.sm,
+                    V16Space.lg,
+                    V16Space.xl,
+                  ),
                   children: [
-                    ServiceAvatar(
-                      name: sub.name,
-                      emoji: sub.emoji,
-                      manageUrl: sub.manageUrl,
-                      iconUrl: sub.iconUrl,
-                      tint: categoryColor(sub.category),
-                      size: 54,
-                    ),
-                    const SizedBox(width: V16Space.sm),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            sub.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: p.text,
-                              fontSize: V16Type.titleSmall,
-                              fontWeight: V16Type.semibold,
-                            ),
-                          ),
-                          const SizedBox(height: V16Space.xxs),
-                          Text(
-                            '${localizedCategory(sub.category)} · ${localizedBillingCycle(sub.cycle.name)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: p.textMuted,
-                              fontSize: V16Type.caption,
-                            ),
-                          ),
-                        ],
+                    Center(
+                      child: Container(
+                        width: 38,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: p.stroke,
+                          borderRadius: BorderRadius.circular(V16Radius.pill),
+                        ),
                       ),
+                    ),
+                    const SizedBox(height: V16Space.ml),
+                    Row(
+                      children: [
+                        ServiceAvatar(
+                          name: sub.name,
+                          emoji: sub.emoji,
+                          manageUrl: sub.manageUrl,
+                          iconUrl: sub.iconUrl,
+                          tint: categoryColor(sub.category),
+                          size: 54,
+                        ),
+                        const SizedBox(width: V16Space.sm),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                sub.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: p.text,
+                                  fontSize: V16Type.titleSmall,
+                                  fontWeight: V16Type.semibold,
+                                ),
+                              ),
+                              const SizedBox(height: V16Space.xxs),
+                              Text(
+                                '${localizedCategory(sub.category)} · ${localizedBillingCycle(sub.cycle.name)}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: p.textMuted,
+                                  fontSize: V16Type.caption,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: V16Space.lg),
+                    AnimatedMoney(
+                      value: sub.price,
+                      currency:
+                          isEnglishLocale && sub.currency == 'SAR'
+                              ? 'SAR'
+                              : currencySymbols[sub.currency] ?? sub.currency,
+                      style: TextStyle(
+                        color: p.accent,
+                        fontWeight: V16Type.semibold,
+                        fontSize: V16Type.title,
+                      ),
+                    ),
+                    const SizedBox(height: V16Space.md),
+                    _DetailMetric(
+                      icon: Icons.event_repeat_rounded,
+                      label: tr('ui_b4f5658d61f3'),
+                      value: _renewalText(sub.daysUntilRenewal()),
+                    ),
+                    const SizedBox(height: V16Space.sm),
+                    _DetailMetric(
+                      icon: Icons.payments_outlined,
+                      label: tr('ui_118b84c4c576'),
+                      value: fmtMoneyWithCurrency(
+                        sub.monthlyCost,
+                        sub.currency,
+                      ),
+                    ),
+                    if (sub.notes.trim().isNotEmpty) ...[
+                      const SizedBox(height: V16Space.sm),
+                      _DetailMetric(
+                        icon: Icons.notes_rounded,
+                        label: tr('ui_0be7afd7e65f'),
+                        value: sub.notes,
+                      ),
+                    ],
+                    const SizedBox(height: V16Space.lg),
+                    LayoutBuilder(
+                      builder:
+                          (context, constraints) =>
+                              constraints.maxWidth < 340
+                                  ? Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      _actionButtons(
+                                        context,
+                                        sheetContext,
+                                        store,
+                                        sub,
+                                      ).first,
+                                      const SizedBox(height: V16Space.sm),
+                                      _actionButtons(
+                                        context,
+                                        sheetContext,
+                                        store,
+                                        sub,
+                                      ).last,
+                                    ],
+                                  )
+                                  : Row(
+                                    children: [
+                                      Expanded(
+                                        child:
+                                            _actionButtons(
+                                              context,
+                                              sheetContext,
+                                              store,
+                                              sub,
+                                            ).first,
+                                      ),
+                                      const SizedBox(width: V16Space.sm),
+                                      Expanded(
+                                        child:
+                                            _actionButtons(
+                                              context,
+                                              sheetContext,
+                                              store,
+                                              sub,
+                                            ).last,
+                                      ),
+                                    ],
+                                  ),
+                    ),
+                    if (sub.manageUrl.trim().isNotEmpty) ...[
+                      const SizedBox(height: V16Space.sm),
+                      CupertinoButton(
+                        color: p.surfaceAlt,
+                        onPressed: () async {
+                          final uri = normalizedHttpsUri(sub.manageUrl);
+                          if (uri == null) {
+                            if (sheetContext.mounted) {
+                              await showCupertinoDialog<void>(
+                                context: sheetContext,
+                                builder:
+                                    (dialogContext) => CupertinoAlertDialog(
+                                      title: Text(tr('ui_36f5ac81955e')),
+                                      content: Text(tr('ui_370a5905d9f7')),
+                                      actions: [
+                                        CupertinoDialogAction(
+                                          onPressed:
+                                              () =>
+                                                  Navigator.pop(dialogContext),
+                                          child: Text(tr('ui_a64b3d93816b')),
+                                        ),
+                                      ],
+                                    ),
+                              );
+                            }
+                            return;
+                          }
+                          await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        },
+                        child: Text(tr('ui_62501bf71e29')),
+                      ),
+                    ],
+                    const SizedBox(height: V16Space.xxs),
+                    CupertinoButton(
+                      onPressed: () async {
+                        await store.recordUsage(sub.id);
+                        if (sheetContext.mounted) Navigator.pop(sheetContext);
+                      },
+                      child: Text(tr('ui_0c361266d921')),
                     ),
                   ],
                 ),
-                const SizedBox(height: V16Space.lg),
-                AnimatedMoney(
-                  value: sub.price,
-                  currency: isEnglishLocale && sub.currency == 'SAR'
-                      ? 'SAR'
-                      : currencySymbols[sub.currency] ?? sub.currency,
-                  style: TextStyle(
-                    color: p.accent,
-                    fontWeight: V16Type.semibold,
-                    fontSize: V16Type.title,
-                  ),
-                ),
-                const SizedBox(height: V16Space.md),
-                _DetailMetric(
-                  icon: Icons.event_repeat_rounded,
-                  label: tr('ui_b4f5658d61f3'),
-                  value: _renewalText(sub.daysUntilRenewal()),
-                ),
-                const SizedBox(height: V16Space.sm),
-                _DetailMetric(
-                  icon: Icons.payments_outlined,
-                  label: tr('ui_118b84c4c576'),
-                  value: fmtMoneyWithCurrency(sub.monthlyCost, sub.currency),
-                ),
-                if (sub.notes.trim().isNotEmpty) ...[
-                  const SizedBox(height: V16Space.sm),
-                  _DetailMetric(
-                    icon: Icons.notes_rounded,
-                    label: tr('ui_0be7afd7e65f'),
-                    value: sub.notes,
-                  ),
-                ],
-                const SizedBox(height: V16Space.lg),
-                LayoutBuilder(
-                  builder: (context, constraints) => constraints.maxWidth < 340
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _actionButtons(
-                              context,
-                              sheetContext,
-                              store,
-                              sub,
-                            ).first,
-                            const SizedBox(height: V16Space.sm),
-                            _actionButtons(
-                              context,
-                              sheetContext,
-                              store,
-                              sub,
-                            ).last,
-                          ],
-                        )
-                      : Row(
-                          children: [
-                            Expanded(
-                              child: _actionButtons(
-                                context,
-                                sheetContext,
-                                store,
-                                sub,
-                              ).first,
-                            ),
-                            const SizedBox(width: V16Space.sm),
-                            Expanded(
-                              child: _actionButtons(
-                                context,
-                                sheetContext,
-                                store,
-                                sub,
-                              ).last,
-                            ),
-                          ],
-                        ),
-                ),
-                if (sub.manageUrl.trim().isNotEmpty) ...[
-                  const SizedBox(height: V16Space.sm),
-                  CupertinoButton(
-                    color: p.surfaceAlt,
-                    onPressed: () async {
-                      final uri = normalizedHttpsUri(sub.manageUrl);
-                      if (uri == null) {
-                        if (sheetContext.mounted) {
-                          await showCupertinoDialog<void>(
-                            context: sheetContext,
-                            builder: (dialogContext) => CupertinoAlertDialog(
-                              title: Text(tr('ui_36f5ac81955e')),
-                              content: Text(tr('ui_370a5905d9f7')),
-                              actions: [
-                                CupertinoDialogAction(
-                                  onPressed: () => Navigator.pop(dialogContext),
-                                  child: Text(tr('ui_a64b3d93816b')),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-                        return;
-                      }
-                      await launchUrl(
-                        uri,
-                        mode: LaunchMode.externalApplication,
-                      );
-                    },
-                    child: Text(tr('ui_62501bf71e29')),
-                  ),
-                ],
-                const SizedBox(height: V16Space.xxs),
-                CupertinoButton(
-                  onPressed: () async {
-                    await store.recordUsage(sub.id);
-                    if (sheetContext.mounted) Navigator.pop(sheetContext);
-                  },
-                  child: Text(tr('ui_0c361266d921')),
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
       );
     },
   );

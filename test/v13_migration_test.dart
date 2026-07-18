@@ -52,7 +52,8 @@ void main() {
     expect(subscription.isEssential, isFalse);
     expect(subscription.planName, isEmpty);
     expect(subscription.lastReviewedAt, isNull);
-    expect(encoded['schemaVersion'], 13);
+    expect(encoded['schemaVersion'], 14);
+    expect(encoded['ignoredDuplicateGroupKeys'], isEmpty);
   });
 
   test('ترحيل v13 لا يغيّر قيم الحقول الجديدة الموجودة', () {

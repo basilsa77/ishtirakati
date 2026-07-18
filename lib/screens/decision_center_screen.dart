@@ -4,9 +4,12 @@ library;
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/financial_assistant.dart';
 import '../services/renewal_intelligence.dart';
 import '../services/subscription_store.dart';
 import '../theme.dart';
+import '../widgets/potential_duplicate_badge.dart';
+import 'financial_review_screen.dart';
 import 'subscriptions_screen.dart' show showSubscriptionDetails;
 
 class DecisionCenterScreen extends StatefulWidget {
@@ -28,12 +31,18 @@ class _DecisionCenterScreenState extends State<DecisionCenterScreen> {
         listenable: store,
         builder: (context, _) {
           final all = RenewalIntelligence.decisions(store.items);
-          final items = _filter == null
-              ? all
-              : all.where((item) => item.priority == _filter).toList();
-          final urgent = all
-              .where((item) => item.priority == DecisionPriority.urgent)
-              .length;
+          final duplicateGroups =
+              FinancialAssistant.indexDuplicateGroupsBySubscriptionId(
+                FinancialAssistant.findDuplicateGroups(store.items),
+              );
+          final items =
+              _filter == null
+                  ? all
+                  : all.where((item) => item.priority == _filter).toList();
+          final urgent =
+              all
+                  .where((item) => item.priority == DecisionPriority.urgent)
+                  .length;
           return ListView(
             padding: const EdgeInsetsDirectional.fromSTEB(
               V16Space.ml,
@@ -59,22 +68,24 @@ class _DecisionCenterScreenState extends State<DecisionCenterScreen> {
                     _FilterChip(
                       label: tr('ui_5858bf88ec0b'),
                       selected: _filter == DecisionPriority.urgent,
-                      onTap: () =>
-                          setState(() => _filter = DecisionPriority.urgent),
+                      onTap:
+                          () =>
+                              setState(() => _filter = DecisionPriority.urgent),
                     ),
                     const SizedBox(width: V16Space.xs),
                     _FilterChip(
                       label: tr('ui_d0ac893de481'),
                       selected: _filter == DecisionPriority.high,
-                      onTap: () =>
-                          setState(() => _filter = DecisionPriority.high),
+                      onTap:
+                          () => setState(() => _filter = DecisionPriority.high),
                     ),
                     const SizedBox(width: V16Space.xs),
                     _FilterChip(
                       label: tr('ui_573fb812710c'),
                       selected: _filter == DecisionPriority.normal,
-                      onTap: () =>
-                          setState(() => _filter = DecisionPriority.normal),
+                      onTap:
+                          () =>
+                              setState(() => _filter = DecisionPriority.normal),
                     ),
                   ],
                 ),
@@ -86,7 +97,11 @@ class _DecisionCenterScreenState extends State<DecisionCenterScreen> {
                 for (var index = 0; index < items.length; index++) ...[
                   FadeSlideIn(
                     delayMs: index * 35,
-                    child: _DecisionCard(insight: items[index]),
+                    child: _DecisionCard(
+                      insight: items[index],
+                      duplicateGroup:
+                          duplicateGroups[items[index].subscription.id],
+                    ),
                   ),
                   const SizedBox(height: V16Space.sm),
                 ],
@@ -106,9 +121,10 @@ class _DecisionHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final detail = total == 0
-        ? tr('ui_92a21744db1f')
-        : tr('ui_23f338c9231e', {'value0': total, 'value1': urgent});
+    final detail =
+        total == 0
+            ? tr('ui_92a21744db1f')
+            : tr('ui_23f338c9231e', {'value0': total, 'value1': urgent});
     return Semantics(
       container: true,
       label: '${tr('ui_2374a9a65ea0')}. $detail',
@@ -152,11 +168,7 @@ class _DecisionHero extends StatelessWidget {
               if (largeText || constraints.maxWidth < 330) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    copy,
-                    const SizedBox(height: V16Space.md),
-                    count,
-                  ],
+                  children: [copy, const SizedBox(height: V16Space.md), count],
                 );
               }
               return Row(
@@ -223,8 +235,9 @@ class _FilterChip extends StatelessWidget {
 
 class _DecisionCard extends StatelessWidget {
   final DecisionInsight insight;
+  final DuplicateSubscriptionGroup? duplicateGroup;
 
-  const _DecisionCard({required this.insight});
+  const _DecisionCard({required this.insight, this.duplicateGroup});
 
   Future<void> _recordUsage(BuildContext context) async {
     await SubscriptionStore.instance.recordUsage(insight.subscription.id);
@@ -295,6 +308,14 @@ class _DecisionCard extends StatelessWidget {
             Row(
               children: [
                 RenewalBadge(days: item.daysUntilRenewal()),
+                if (duplicateGroup case final group?) ...[
+                  const SizedBox(width: V16Space.xs),
+                  Flexible(
+                    child: PotentialDuplicateBadge(
+                      onTap: () => openPotentialDuplicateReview(context, group),
+                    ),
+                  ),
+                ],
                 const Spacer(),
                 if (insight.kind == DecisionKind.neverUsed ||
                     insight.kind == DecisionKind.renewalSoon)
