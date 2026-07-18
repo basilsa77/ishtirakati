@@ -97,6 +97,8 @@
   "cloudRestoreTimeout": "استغرقت الاستعادة وقتًا طويلًا. حاول مجددًا بعد لحظات.",
   "cloudRestoreUnknown": "تعذرت استعادة النسخة السحابية، ولم تتغير بيانات جهازك.",
   "cloudAccountSyncUnknown": "تعذرت مزامنة الحساب، ولم تتغير بيانات جهازك.",
+  "cloudAccountMismatch": "بيانات هذا الجهاز مرتبطة بحساب آخر. سجّل الدخول بالحساب السابق أو احذف بيانات الجهاز قبل تبديل الحساب.",
+  "cloudAccountBindingUnavailable": "تعذّر التحقق من حساب البيانات المحلية. أُوقفت المزامنة لحماية بياناتك.",
   "aiProviderGemini": "Google Gemini — مجاني",
   "aiProviderGroq": "Groq — مجاني وسريع",
   "aiInvalidKey": "مفتاح API غير صالح. راجعه في الإعدادات.",

@@ -228,7 +228,6 @@ void main() {
       CloudSync.failureForFirebaseCode('not-found'),
       CloudSyncFailure.configuration,
     );
-    expect(CloudSync.databaseId, '(default)');
     expect(
       CloudSync.isFirestoreDatabaseMissingMessage(
         'Database (default) was not found.',

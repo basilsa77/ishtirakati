@@ -6,10 +6,19 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == uid;
     }
 
+    function isCompactAesGcmEnvelope(value) {
+      // SecureDataCodec emits this exact compact JSON field order. AES-GCM uses
+      // a 12-byte nonce (16 Base64URL chars) and a 16-byte authentication tag
+      // (22 Base64URL chars plus "==" padding). Rules validate the envelope
+      // syntax; GCM authenticity remains fail-closed in client decryption.
+      return value.matches('^[{]"v":1,"n":"[A-Za-z0-9_-]{16}","c":"(?:[A-Za-z0-9_-]{4})*(?:[A-Za-z0-9_-]{4}|[A-Za-z0-9_-]{2}==|[A-Za-z0-9_-]{3}=)","m":"[A-Za-z0-9_-]{22}=="[}]$');
+    }
+
     function hasValidBackupPayload() {
       return request.resource.data.backup is string
           && request.resource.data.backup.size() > 0
           && request.resource.data.backup.size() <= 850000
+          && isCompactAesGcmEnvelope(request.resource.data.backup)
           && request.resource.data.updatedAt == request.time;
     }
 

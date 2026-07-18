@@ -3,8 +3,11 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:ishtirakati/models/subscription.dart';
 import 'package:ishtirakati/services/account_deletion_service.dart';
 import 'package:ishtirakati/services/ai_consent_service.dart';
+import 'package:ishtirakati/services/email_identity_store.dart';
+import 'package:ishtirakati/services/notification_service.dart';
 import 'package:ishtirakati/services/safe_url.dart';
 import 'package:ishtirakati/services/secure_data_codec.dart';
 import 'package:ishtirakati/services/subscription_store.dart';
@@ -15,7 +18,7 @@ class _FakeKeyStore implements SecureKeyStore {
   bool deleted = false;
 
   _FakeKeyStore({List<String>? values, this.allowWrites = true})
-      : values = values ?? [];
+    : values = values ?? [];
 
   @override
   Future<List<String>> readAll(String key) async => List.of(values);
@@ -42,6 +45,41 @@ class _FailingDecryptCodec extends SecureDataCodec {
       throw const SecureDataException('فشل اختباري');
 }
 
+class _FailingEncryptCodec extends SecureDataCodec {
+  _FailingEncryptCodec() : super(keyStore: _FakeKeyStore());
+
+  @override
+  Future<String> encrypt(String plainText) async =>
+      throw const SecureDataException('test encryption failure');
+}
+
+class _FailingReadKeyStore implements SecureKeyStore {
+  @override
+  Future<void> deleteAll(String key) async {}
+
+  @override
+  Future<List<String>> readAll(String key) async =>
+      throw StateError('test Keychain read failure');
+
+  @override
+  Future<bool> writeAll(String key, String value) async => false;
+}
+
+class _UndeletableKeyStore implements SecureKeyStore {
+  final List<String> values;
+
+  _UndeletableKeyStore(String value) : values = [value];
+
+  @override
+  Future<void> deleteAll(String key) async {}
+
+  @override
+  Future<List<String>> readAll(String key) async => List.of(values);
+
+  @override
+  Future<bool> writeAll(String key, String value) async => true;
+}
+
 class _DeletionCodec extends SecureDataCodec {
   bool deleted = false;
 
@@ -51,6 +89,26 @@ class _DeletionCodec extends SecureDataCodec {
   Future<void> deleteAllKeys() async {
     deleted = true;
   }
+}
+
+class _DeletionEmailKeychain implements EmailIdentityKeychain {
+  String? canonical = 'owner@example.com';
+  final List<String> legacy = ['legacy@example.com'];
+
+  @override
+  Future<void> deleteCanonical() async => canonical = null;
+
+  @override
+  Future<void> deleteLegacy() async => legacy.clear();
+
+  @override
+  Future<String?> readCanonical() async => canonical;
+
+  @override
+  Future<List<String>> readLegacy() async => List.of(legacy);
+
+  @override
+  Future<void> writeCanonical(String email) async => canonical = email;
 }
 
 void main() {
@@ -101,7 +159,10 @@ void main() {
         keyStore: _FakeKeyStore(allowWrites: false),
       );
 
-      await expectLater(codec.encrypt('لن تحفظ'), throwsA(isA<SecureDataException>()));
+      await expectLater(
+        codec.encrypt('لن تحفظ'),
+        throwsA(isA<SecureDataException>()),
+      );
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString(SecureDataCodec.mirrorPreferenceKey), isNull);
     });
@@ -132,8 +193,7 @@ void main() {
     test('يحذف المرآة بعد نجاح Keychain فقط', () async {
       const value = 'legacy-ai-key';
       SharedPreferences.setMockInitialValues({
-        'ishtirakati_ai_api_key_mirror':
-            base64Url.encode(utf8.encode(value)),
+        'ishtirakati_ai_api_key_mirror': base64Url.encode(utf8.encode(value)),
       });
       final keyStore = _FakeKeyStore();
       final store = SubscriptionStore.testing(
@@ -187,6 +247,133 @@ void main() {
     expect(prefs.getString('ishtirakati_subs_v2_backup'), encrypted);
   });
 
+  test('أي فشل إقلاع غير متوقع يقفل التخزين قبل متابعة التطبيق', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = SubscriptionStore.testing(
+      dataCodec: SecureDataCodec(keyStore: _FakeKeyStore()),
+      secretStore: _FailingReadKeyStore(),
+    );
+
+    await expectLater(store.load(), throwsStateError);
+
+    expect(store.isLoaded, isTrue);
+    expect(store.storageHealthy, isFalse);
+    await expectLater(store.clearAll(), throwsA(isA<SecureDataException>()));
+  });
+
+  test('الاستيراد التالف لا يترك سجلات جزئية في الذاكرة', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = SubscriptionStore.testing(
+      dataCodec: SecureDataCodec(keyStore: _FakeKeyStore()),
+      secretStore: _FakeKeyStore(),
+    );
+    await store.load();
+
+    final result = await store.importJson(
+      jsonEncode({
+        'defaultCurrency': 'SAR',
+        'monthlyBudget': 250,
+        'subscriptions': [
+          _validImportedSubscription(),
+          'malformed-later-record',
+        ],
+      }),
+    );
+
+    expect(result, -1);
+    expect(store.items, isEmpty);
+    expect(store.monthlyBudget, 0);
+  });
+
+  test('فشل حفظ الاستيراد يعيد الإعدادات ويبقي الذاكرة كما هي', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = SubscriptionStore.testing(
+      dataCodec: _FailingEncryptCodec(),
+      secretStore: _FakeKeyStore(),
+    );
+    await store.load();
+
+    final result = await store.importJson(
+      jsonEncode({
+        'defaultCurrency': 'AED',
+        'monthlyBudget': 400,
+        'subscriptions': [_validImportedSubscription()],
+      }),
+    );
+
+    expect(result, -1);
+    expect(store.items, isEmpty);
+    expect(store.monthlyBudget, 0);
+    expect(store.defaultCurrency, 'SAR');
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getDouble('ishtirakati_monthly_budget'), isNull);
+    expect(prefs.getString('ishtirakati_default_currency'), isNull);
+  });
+
+  test('فشل التحقق من حذف مفتاح AI لا يعلن أن المفتاح مُحي', () async {
+    SharedPreferences.setMockInitialValues({});
+    final secretStore = _UndeletableKeyStore('api-key-that-remains');
+    final store = SubscriptionStore.testing(
+      dataCodec: SecureDataCodec(keyStore: _FakeKeyStore()),
+      secretStore: secretStore,
+    );
+    await store.load();
+
+    await expectLater(
+      store.setAiApiKey(''),
+      throwsA(isA<SecureDataException>()),
+    );
+
+    expect(store.aiApiKey, 'api-key-that-remains');
+    expect(secretStore.values, isNotEmpty);
+  });
+
+  test('حذف الحساب يحاول كل المخازن ثم يصعّد فشل الإشعارات', () async {
+    SharedPreferences.setMockInitialValues({'sensitive': 'value'});
+    final codec = _DeletionCodec();
+    final secretStore = _FakeKeyStore(values: ['ai-key']);
+    final emailKeychain = _DeletionEmailKeychain();
+    final store = SubscriptionStore.testing(
+      dataCodec: codec,
+      secretStore: secretStore,
+      emailIdentityStore: EmailIdentityStore(keychain: emailKeychain),
+      cancelNotificationsForDeletion: () async {
+        throw StateError('test notification cancellation failure');
+      },
+    );
+
+    await expectLater(store.clearLocalForAccountDeletion(), throwsStateError);
+
+    expect(codec.deleted, isTrue);
+    expect(secretStore.deleted, isTrue);
+    expect(emailKeychain.canonical, isNull);
+    expect((await SharedPreferences.getInstance()).getKeys(), isEmpty);
+  });
+
+  test('حذف الإشعارات يفشل مغلقاً إن تعذرت التهيئة أو بقي طلب', () async {
+    var ready = false;
+    await expectLater(
+      NotificationService.cancelAllForDeletionWith(
+        initialize: () async {},
+        isReady: () => ready,
+        cancel: () async {},
+        pendingCount: () async => 0,
+      ),
+      throwsStateError,
+    );
+
+    ready = true;
+    await expectLater(
+      NotificationService.cancelAllForDeletionWith(
+        initialize: () async {},
+        isReady: () => ready,
+        cancel: () async {},
+        pendingCount: () async => 1,
+      ),
+      throwsStateError,
+    );
+  });
+
   test('حذف الحساب مرتب ولا يمسح المحلي عند فشل السحابة', () async {
     final calls = <String>[];
 
@@ -218,18 +405,26 @@ void main() {
   });
 
   test('مسح الحساب المحلي يصفر المفاتيح والتفضيلات', () async {
-    SharedPreferences.setMockInitialValues({'sensitive': 'value'});
+    SharedPreferences.setMockInitialValues({
+      'sensitive': 'value',
+      EmailIdentityStore.legacyPreferenceKey: 'legacy@example.com',
+    });
     final codec = _DeletionCodec();
     final secretStore = _FakeKeyStore(values: ['ai-key']);
+    final emailKeychain = _DeletionEmailKeychain();
     final store = SubscriptionStore.testing(
       dataCodec: codec,
       secretStore: secretStore,
+      emailIdentityStore: EmailIdentityStore(keychain: emailKeychain),
+      cancelNotificationsForDeletion: () async {},
     );
 
     await store.clearLocalForAccountDeletion();
 
     expect(codec.deleted, isTrue);
     expect(secretStore.deleted, isTrue);
+    expect(emailKeychain.canonical, isNull);
+    expect(emailKeychain.legacy, isEmpty);
     expect((await SharedPreferences.getInstance()).getKeys(), isEmpty);
     expect(store.aiApiKey, isEmpty);
     expect(store.hasOnboarded, isFalse);
@@ -251,3 +446,12 @@ void main() {
     expect(normalizedHttpsUri('https://user@example.com'), isNull);
   });
 }
+
+Map<String, dynamic> _validImportedSubscription() => {
+  'id': 'import-candidate',
+  'name': 'Secure import',
+  'price': 25,
+  'currency': currencySymbols.keys.first,
+  'cycle': BillingCycle.monthly.index,
+  'anchor': DateTime.utc(2026, 1, 1).toIso8601String(),
+};

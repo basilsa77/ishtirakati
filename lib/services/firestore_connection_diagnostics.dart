@@ -9,10 +9,10 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import 'firestore_retry.dart';
+import 'firestore_config.dart';
 
 const _firestoreHost = 'firestore.googleapis.com';
 const _firebaseProjectId = 'ishtirakati-260f7';
-const _firestoreDatabaseId = '(default)';
 const _diagnosticTimeout = Duration(seconds: 30);
 
 const firebaseCoreVersion = '4.11.0';
@@ -49,6 +49,7 @@ enum FirestoreRestOutcome {
 class FirestoreRestDiagnostic {
   final FirestoreRestOutcome outcome;
   final int? httpStatus;
+  final int? commitHttpStatus;
   final bool dnsSucceeded;
   final bool connectionSucceeded;
   final Duration elapsed;
@@ -57,6 +58,7 @@ class FirestoreRestDiagnostic {
   const FirestoreRestDiagnostic({
     required this.outcome,
     required this.httpStatus,
+    this.commitHttpStatus,
     required this.dnsSucceeded,
     required this.connectionSucceeded,
     required this.elapsed,
@@ -220,7 +222,7 @@ class FirestoreConnectionDiagnostics {
       final uri = Uri.https(
         _firestoreHost,
         '/v1/projects/$_firebaseProjectId/databases/'
-        '$_firestoreDatabaseId/documents/users/${Uri.encodeComponent(uid)}',
+        '${FirestoreConfig.databaseId}/documents/users/${Uri.encodeComponent(uid)}',
       );
       final client = http.Client();
       try {
@@ -229,10 +231,35 @@ class FirestoreConnectionDiagnostics {
         final response = await client.send(request).timeout(_diagnosticTimeout);
         connectionSucceeded = true;
         await response.stream.drain<void>().timeout(_diagnosticTimeout);
+        int? commitHttpStatus;
+        var outcome = outcomeForHttpStatus(response.statusCode);
+        if (response.statusCode == HttpStatus.notFound) {
+          final commitRequest = http.Request(
+            'POST',
+            Uri.https(
+              _firestoreHost,
+              '/v1/projects/$_firebaseProjectId/databases/'
+              '${FirestoreConfig.databaseId}/documents:commit',
+            ),
+          )
+            ..headers[HttpHeaders.authorizationHeader] = 'Bearer $idToken'
+            ..headers[HttpHeaders.contentTypeHeader] = 'application/json'
+            ..body = '{"writes":[]}';
+          final commitResponse = await client
+              .send(commitRequest)
+              .timeout(_diagnosticTimeout);
+          commitHttpStatus = commitResponse.statusCode;
+          await commitResponse.stream.drain<void>().timeout(_diagnosticTimeout);
+          outcome = outcomeForProbeStatuses(
+            documentStatus: response.statusCode,
+            commitStatus: commitHttpStatus,
+          );
+        }
         watch.stop();
         return FirestoreRestDiagnostic(
-          outcome: outcomeForHttpStatus(response.statusCode),
+          outcome: outcome,
           httpStatus: response.statusCode,
+          commitHttpStatus: commitHttpStatus,
           dnsSucceeded: true,
           connectionSucceeded: true,
           elapsed: watch.elapsed,
@@ -313,7 +340,7 @@ class FirestoreConnectionDiagnostics {
     try {
       final snapshot = await FirestoreRetry.run(
         operation: 'diagnostic-native-read',
-        action: () => FirebaseFirestore.instance
+        action: () => FirestoreConfig.instance
             .collection('users')
             .doc(uid)
             .get(const GetOptions(source: Source.server)),
@@ -391,6 +418,31 @@ class FirestoreConnectionDiagnostics {
     if (statusCode == 429) return FirestoreRestOutcome.rateLimited;
     if (statusCode >= 500) return FirestoreRestOutcome.serviceFailure;
     return FirestoreRestOutcome.unexpectedFailure;
+  }
+
+  @visibleForTesting
+  static FirestoreRestOutcome outcomeForProbeStatuses({
+    required int documentStatus,
+    required int commitStatus,
+  }) {
+    if (documentStatus != HttpStatus.notFound) {
+      return outcomeForHttpStatus(documentStatus);
+    }
+    if (commitStatus == HttpStatus.notFound ||
+        commitStatus == HttpStatus.badRequest) {
+      return FirestoreRestOutcome.invalidTarget;
+    }
+    if (commitStatus == HttpStatus.unauthorized) {
+      return FirestoreRestOutcome.unauthenticated;
+    }
+    if (commitStatus == HttpStatus.forbidden) {
+      return FirestoreRestOutcome.permissionDenied;
+    }
+    if (commitStatus == HttpStatus.tooManyRequests) {
+      return FirestoreRestOutcome.rateLimited;
+    }
+    if (commitStatus >= 500) return FirestoreRestOutcome.serviceFailure;
+    return FirestoreRestOutcome.missingDocument;
   }
 
   @visibleForTesting

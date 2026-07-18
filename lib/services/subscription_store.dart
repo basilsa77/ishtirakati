@@ -15,18 +15,34 @@ import 'ai_extractor.dart';
 import 'notification_service.dart';
 import 'remote_catalog.dart';
 import 'cloud_sync.dart';
+import 'email_identity_store.dart';
 import 'secure_data_codec.dart';
 
 class SubscriptionStore extends ChangeNotifier {
-  SubscriptionStore._({SecureDataCodec? dataCodec, SecureKeyStore? secretStore})
-    : _dataCodec = dataCodec ?? SecureDataCodec(),
-      _secretStore = secretStore ?? const IosSecureKeyStore();
+  SubscriptionStore._({
+    SecureDataCodec? dataCodec,
+    SecureKeyStore? secretStore,
+    EmailIdentityStore? emailIdentityStore,
+    Future<void> Function()? cancelNotificationsForDeletion,
+  }) : _dataCodec = dataCodec ?? SecureDataCodec(),
+       _secretStore = secretStore ?? const IosSecureKeyStore(),
+       _emailIdentityStore = emailIdentityStore ?? EmailIdentityStore.instance,
+       _cancelNotificationsForDeletion =
+           cancelNotificationsForDeletion ??
+           NotificationService.instance.cancelAllForDeletion;
 
   @visibleForTesting
   SubscriptionStore.testing({
     SecureDataCodec? dataCodec,
     SecureKeyStore? secretStore,
-  }) : this._(dataCodec: dataCodec, secretStore: secretStore);
+    EmailIdentityStore? emailIdentityStore,
+    Future<void> Function()? cancelNotificationsForDeletion,
+  }) : this._(
+         dataCodec: dataCodec,
+         secretStore: secretStore,
+         emailIdentityStore: emailIdentityStore,
+         cancelNotificationsForDeletion: cancelNotificationsForDeletion,
+       );
 
   static final SubscriptionStore instance = SubscriptionStore._();
 
@@ -65,6 +81,8 @@ class SubscriptionStore extends ChangeNotifier {
   bool _storageHealthy = true;
   final SecureDataCodec _dataCodec;
   final SecureKeyStore _secretStore;
+  final EmailIdentityStore _emailIdentityStore;
+  final Future<void> Function() _cancelNotificationsForDeletion;
 
   List<Subscription> get items => List.unmodifiable(_items);
   String get defaultCurrency => _defaultCurrency;
@@ -82,6 +100,20 @@ class SubscriptionStore extends ChangeNotifier {
   String? get storageError => _storageError;
 
   Future<void> load() async {
+    _storageHealthy = false;
+    _storageError = tr('secureStorageLocked');
+    try {
+      await _loadFromStorage();
+    } catch (_) {
+      _storageHealthy = false;
+      _storageError = tr('secureStorageLocked');
+      _loaded = true;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> _loadFromStorage() async {
     final prefs = await SharedPreferences.getInstance();
     _defaultCurrency = prefs.getString(_currencyKey) ?? 'SAR';
     _monthlyBudget = prefs.getDouble(_budgetKey) ?? 0;
@@ -179,17 +211,22 @@ class SubscriptionStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _persist() async {
+  Future<void> _persist() => _persistItems(_items);
+
+  Future<void> _persistItems(List<Subscription> items) async {
     _ensureWritable();
     final prefs = await SharedPreferences.getInstance();
-    final plain = jsonEncode(_items.map((s) => s.toJson()).toList());
+    final plain = jsonEncode(items.map((s) => s.toJson()).toList());
     final encrypted = await _dataCodec.encrypt(plain);
-    await prefs.setString(_encryptedSubsKey, encrypted);
+    if (!await prefs.setString(_encryptedSubsKey, encrypted) ||
+        prefs.getString(_encryptedSubsKey) != encrypted) {
+      throw SecureDataException(tr('secureStorageLocked'));
+    }
     await prefs.remove(_legacySubsKey);
     // إعادة جدولة الإشعارات مع كل تغيير (لا ننتظرها).
     // ignore: unawaited_futures
     NotificationService.instance.rescheduleAll(
-      _items,
+      items,
       enabled: _notificationsEnabled,
       privateContent: _privateNotifications,
     );
@@ -237,8 +274,15 @@ class SubscriptionStore extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     if (next.isEmpty) {
       await _secretStore.deleteAll(_aiKeyKey);
+      if ((await _secretStore.readAll(_aiKeyKey)).isNotEmpty) {
+        throw SecureDataException(tr('secureStorageLocked'));
+      }
       await prefs.remove('${_aiKeyKey}_mirror');
       await prefs.remove(_aiKeyKey);
+      if (prefs.containsKey('${_aiKeyKey}_mirror') ||
+          prefs.containsKey(_aiKeyKey)) {
+        throw SecureDataException(tr('secureStorageLocked'));
+      }
     } else {
       final keychainReady = await _secretStore.writeAll(_aiKeyKey, next);
       if (!keychainReady) {
@@ -340,10 +384,8 @@ class SubscriptionStore extends ChangeNotifier {
 
   Future<int> reclassifyUnknownsWithAi() async {
     _ensureWritable();
-    final names = _items
-        .where((s) => s.category == 'أخرى')
-        .map((s) => s.name)
-        .toList();
+    final names =
+        _items.where((s) => s.category == 'أخرى').map((s) => s.name).toList();
     if (names.isEmpty || _aiApiKey.trim().isEmpty) return 0;
     final categories = await AiExtractor.classifyNames(
       names,
@@ -476,29 +518,65 @@ class SubscriptionStore extends ChangeNotifier {
       if (data is! Map<String, dynamic>) return -1;
       final list = data['subscriptions'];
       if (list is! List || list.length > _maxImportRecords) return -1;
+      final candidateItems = List<Subscription>.of(_items);
       var count = 0;
       for (final e in list) {
-        if (e is Map<String, dynamic>) {
-          final sub = Subscription.fromJson(e);
-          final index = _items.indexWhere((s) => s.id == sub.id);
-          if (index >= 0) {
-            _items[index] = sub;
-          } else {
-            _items.add(sub);
-          }
-          count += 1;
+        if (e is! Map<String, dynamic>) return -1;
+        final sub = Subscription.fromJson(e);
+        final index = candidateItems.indexWhere((s) => s.id == sub.id);
+        if (index >= 0) {
+          candidateItems[index] = sub;
+        } else {
+          candidateItems.add(sub);
         }
+        count += 1;
       }
+      var candidateBudget = _monthlyBudget;
       final budget = (data['monthlyBudget'] as num?)?.toDouble();
-      if (budget != null && budget >= 0) _monthlyBudget = budget;
+      if (budget != null) {
+        if (!budget.isFinite || budget < 0) return -1;
+        candidateBudget = budget;
+      }
+      var candidateCurrency = _defaultCurrency;
       final currency = data['defaultCurrency'] as String?;
       if (currency != null && currency.isNotEmpty) {
-        _defaultCurrency = currency;
+        if (!currencySymbols.containsKey(currency)) return -1;
+        candidateCurrency = currency;
       }
-      await _persist();
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setDouble(_budgetKey, _monthlyBudget);
-      await prefs.setString(_currencyKey, _defaultCurrency);
+      final previousBudget = prefs.getDouble(_budgetKey);
+      final previousCurrency = prefs.getString(_currencyKey);
+      final budgetSaved = await prefs.setDouble(_budgetKey, candidateBudget);
+      final currencySaved = await prefs.setString(
+        _currencyKey,
+        candidateCurrency,
+      );
+      if (!budgetSaved ||
+          !currencySaved ||
+          prefs.getDouble(_budgetKey) != candidateBudget ||
+          prefs.getString(_currencyKey) != candidateCurrency) {
+        await _restoreImportPreferences(
+          prefs,
+          budget: previousBudget,
+          currency: previousCurrency,
+        );
+        return -1;
+      }
+      try {
+        await _persistItems(candidateItems);
+      } catch (_) {
+        await _restoreImportPreferences(
+          prefs,
+          budget: previousBudget,
+          currency: previousCurrency,
+        );
+        rethrow;
+      }
+      _items
+        ..clear()
+        ..addAll(candidateItems);
+      _monthlyBudget = candidateBudget;
+      _defaultCurrency = candidateCurrency;
       notifyListeners();
       return count;
     } catch (_) {
@@ -506,13 +584,52 @@ class SubscriptionStore extends ChangeNotifier {
     }
   }
 
+  Future<void> _restoreImportPreferences(
+    SharedPreferences prefs, {
+    required double? budget,
+    required String? currency,
+  }) async {
+    if (budget == null) {
+      await prefs.remove(_budgetKey);
+    } else {
+      await prefs.setDouble(_budgetKey, budget);
+    }
+    if (currency == null) {
+      await prefs.remove(_currencyKey);
+    } else {
+      await prefs.setString(_currencyKey, currency);
+    }
+  }
+
   /// يمحو بيانات هذا التثبيت بعد نجاح حذف الحساب والسحابة.
   Future<void> clearLocalForAccountDeletion() async {
-    await NotificationService.instance.cancelAll();
-    await _dataCodec.deleteAllKeys();
-    await _secretStore.deleteAll(_aiKeyKey);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    Object? firstError;
+    StackTrace? firstStackTrace;
+
+    Future<void> attempt(Future<void> Function() action) async {
+      try {
+        await action();
+      } catch (error, stackTrace) {
+        firstError ??= error;
+        firstStackTrace ??= stackTrace;
+      }
+    }
+
+    await attempt(_cancelNotificationsForDeletion);
+    await attempt(_emailIdentityStore.forget);
+    await attempt(_dataCodec.deleteAllKeys);
+    await attempt(() async {
+      await _secretStore.deleteAll(_aiKeyKey);
+      if ((await _secretStore.readAll(_aiKeyKey)).isNotEmpty) {
+        throw SecureDataException(tr('secureStorageLocked'));
+      }
+    });
+    await attempt(() async {
+      final prefs = await SharedPreferences.getInstance();
+      if (!await prefs.clear() || prefs.getKeys().isNotEmpty) {
+        throw SecureDataException(tr('secureStorageLocked'));
+      }
+    });
     _items.clear();
     _defaultCurrency = 'SAR';
     _monthlyBudget = 0;
@@ -526,6 +643,9 @@ class SubscriptionStore extends ChangeNotifier {
     _storageHealthy = true;
     _storageError = null;
     notifyListeners();
+    if (firstError != null) {
+      Error.throwWithStackTrace(firstError!, firstStackTrace!);
+    }
   }
 
   // ------------------------- إحصائيات -------------------------
@@ -603,8 +723,9 @@ class SubscriptionStore extends ChangeNotifier {
 
   /// التجارب المجانية النشطة مرتبة بالأقرب انتهاءً.
   List<Subscription> get activeTrials {
-    final list = _items.where((s) => !s.isPaused && s.isTrialActive()).toList()
-      ..sort((a, b) => a.trialEndDate!.compareTo(b.trialEndDate!));
+    final list =
+        _items.where((s) => !s.isPaused && s.isTrialActive()).toList()
+          ..sort((a, b) => a.trialEndDate!.compareTo(b.trialEndDate!));
     return list;
   }
 

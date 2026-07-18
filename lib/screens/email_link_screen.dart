@@ -2,11 +2,11 @@
 library;
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/email_identity_store.dart';
 import '../services/email_import_service.dart';
 import '../theme.dart';
 import '../widgets/ios_controls.dart';
@@ -27,8 +27,6 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
   bool _remember = true;
   String? _error;
 
-  static const String _emailKey = 'ishtirakati_linked_email_v2';
-  static const String _legacyEmailKey = 'ishtirakati_linked_email';
   static const String _hostKey = 'ishtirakati_linked_host';
 
   @override
@@ -38,36 +36,21 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
   }
 
   Future<void> _restore() async {
-    final prefs = await SharedPreferences.getInstance();
-    const secure = FlutterSecureStorage(
-      iOptions: IOSOptions(
-        accessibility: KeychainAccessibility.unlocked_this_device,
-      ),
-    );
-    var savedEmail = await secure.read(key: _emailKey) ?? '';
-    if (savedEmail.isEmpty) {
-      const legacySecure = FlutterSecureStorage();
-      final legacyKeychain = await legacySecure.read(key: _emailKey) ?? '';
-      if (legacyKeychain.isNotEmpty) {
-        savedEmail = legacyKeychain;
-        await secure.write(key: _emailKey, value: legacyKeychain);
+    try {
+      final savedEmail = await EmailIdentityStore.instance.readAndMigrate();
+      final prefs = await SharedPreferences.getInstance();
+      final savedHost = prefs.getString(_hostKey) ?? '';
+      if (savedEmail != null && savedEmail.isNotEmpty && mounted) {
+        setState(() {
+          _email.text = savedEmail;
+          _provider = kEmailProviders.firstWhere(
+            (p) => p.host == savedHost,
+            orElse: () => kEmailProviders.first,
+          );
+        });
       }
-    }
-    final legacyEmail = prefs.getString(_legacyEmailKey) ?? '';
-    if (savedEmail.isEmpty && legacyEmail.isNotEmpty) {
-      await secure.write(key: _emailKey, value: legacyEmail);
-      await prefs.remove(_legacyEmailKey);
-      savedEmail = legacyEmail;
-    }
-    final savedHost = prefs.getString(_hostKey) ?? '';
-    if (savedEmail.isNotEmpty && mounted) {
-      setState(() {
-        _email.text = savedEmail;
-        _provider = kEmailProviders.firstWhere(
-          (p) => p.host == savedHost,
-          orElse: () => kEmailProviders.first,
-        );
-      });
+    } on EmailIdentityStorageException {
+      if (mounted) setState(() => _error = tr('secureStorageLocked'));
     }
   }
 
@@ -97,20 +80,10 @@ class _EmailLinkScreenState extends State<EmailLinkScreen> {
       );
       if (_remember) {
         final prefs = await SharedPreferences.getInstance();
-        const secure = FlutterSecureStorage(
-          iOptions: IOSOptions(
-            accessibility: KeychainAccessibility.unlocked_this_device,
-          ),
-        );
-        await secure.write(key: _emailKey, value: email);
+        await EmailIdentityStore.instance.remember(email);
         await prefs.setString(_hostKey, _provider.host);
       } else {
-        const secure = FlutterSecureStorage(
-          iOptions: IOSOptions(
-            accessibility: KeychainAccessibility.unlocked_this_device,
-          ),
-        );
-        await secure.delete(key: _emailKey);
+        await EmailIdentityStore.instance.forget();
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove(_hostKey);
       }

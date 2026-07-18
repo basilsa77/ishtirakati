@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
@@ -26,8 +27,7 @@ class NotificationService {
       try {
         // يدعم إصدارات flutter_timezone القديمة (String) والجديدة (TimezoneInfo).
         final dynamic info = await FlutterTimezone.getLocalTimezone();
-        final String name =
-            info is String ? info : (info.identifier as String);
+        final String name = info is String ? info : (info.identifier as String);
         tz.setLocalLocation(tz.getLocation(name));
       } catch (_) {
         // نبقى على المنطقة الافتراضية إن تعذر الاكتشاف.
@@ -49,11 +49,17 @@ class NotificationService {
   Future<bool> requestPermission() async {
     if (!_ready) return false;
     try {
-      final ios = _plugin.resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>();
+      final ios =
+          _plugin
+              .resolvePlatformSpecificImplementation<
+                IOSFlutterLocalNotificationsPlugin
+              >();
       if (ios != null) {
-        final ok =
-            await ios.requestPermissions(alert: true, badge: true, sound: true);
+        final ok = await ios.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
         return ok ?? false;
       }
       return true;
@@ -67,6 +73,31 @@ class NotificationService {
     try {
       await _plugin.cancelAll();
     } catch (_) {}
+  }
+
+  /// Account deletion must not report success while financial notifications
+  /// remain scheduled. Unlike normal best-effort scheduling, this path throws.
+  Future<void> cancelAllForDeletion() => cancelAllForDeletionWith(
+    initialize: init,
+    isReady: () => _ready,
+    cancel: _plugin.cancelAll,
+    pendingCount:
+        () async => (await _plugin.pendingNotificationRequests()).length,
+  );
+
+  @visibleForTesting
+  static Future<void> cancelAllForDeletionWith({
+    required Future<void> Function() initialize,
+    required bool Function() isReady,
+    required Future<void> Function() cancel,
+    required Future<int> Function() pendingCount,
+  }) async {
+    if (!isReady()) await initialize();
+    if (!isReady()) throw StateError('Notification storage is unavailable.');
+    await cancel();
+    if (await pendingCount() != 0) {
+      throw StateError('Scheduled notifications remain after deletion.');
+    }
   }
 
   /// يعيد جدولة كل الإشعارات من الصفر بناءً على الاشتراكات الحالية.
@@ -106,9 +137,7 @@ class NotificationService {
       title,
       body,
       tz.TZDateTime.from(when, tz.local),
-      const NotificationDetails(
-        iOS: DarwinNotificationDetails(),
-      ),
+      const NotificationDetails(iOS: DarwinNotificationDetails()),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
     );
   }

@@ -61,6 +61,13 @@ class AuthService {
 
   static String get userEmail => currentUser?.email ?? '';
 
+  /// Returns an App Check token for Firebase REST calls when enforcement is
+  /// enabled. Callers must fail closed when this returns no token or throws.
+  static Future<String?> getAppCheckToken(bool forceRefresh) {
+    if (!appCheckEnabled || !isAvailable) return Future.value(null);
+    return FirebaseAppCheck.instance.getToken(forceRefresh);
+  }
+
   /// تُستدعى عند الإقلاع — آمنة تمامًا إن لم يكتمل الإعداد.
   static Future<void> init() async {
     if (_initialized || !DefaultFirebaseOptions.isConfigured) return;

@@ -13,9 +13,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
 import 'auth_service.dart';
+import 'cloud_account_binding.dart';
 import 'secure_data_codec.dart';
 import 'subscription_store.dart';
 import 'firebase_build_config.dart';
+import 'firebase_rest_auth.dart';
+import 'firestore_config.dart';
 import 'firestore_rest_fallback.dart';
 import 'firestore_retry.dart';
 
@@ -39,6 +42,7 @@ enum CloudSyncFailure {
   offline,
   permissionDenied,
   configuration,
+  accountMismatch,
   serviceUnavailable,
   appNotAuthorized,
   conflict,
@@ -169,6 +173,27 @@ class CloudSyncResult {
   const CloudSyncResult.queued() : this._(success: false, queued: true);
 }
 
+enum CloudRestRestoreOutcome { restored, missing, failed }
+
+class CloudRestRestoreResult {
+  final CloudRestRestoreOutcome outcome;
+  final int imported;
+  final CloudSyncFailure failure;
+
+  const CloudRestRestoreResult.restored(this.imported)
+    : outcome = CloudRestRestoreOutcome.restored,
+      failure = CloudSyncFailure.none;
+
+  const CloudRestRestoreResult.missing()
+    : outcome = CloudRestRestoreOutcome.missing,
+      imported = 0,
+      failure = CloudSyncFailure.none;
+
+  const CloudRestRestoreResult.failed(this.failure)
+    : outcome = CloudRestRestoreOutcome.failed,
+      imported = 0;
+}
+
 class CloudSync {
   CloudSync._();
 
@@ -180,13 +205,12 @@ class CloudSync {
   static const _legacySchemaVersion = 1;
   static const _encryption = 'AES-256-GCM';
 
-  /// The production project uses Firestore's default database. Named database
-  /// instances must not be used for this path.
-  static const databaseId = '(default)';
   static const _maxBackupBytes = 850000;
-  static const _revisionKeyPrefix = 'ishtirakati_cloud_revision_v15_';
+  static const _revisionKeyPrefix = CloudAccountBinding.revisionKeyPrefix;
   static const _pendingRevisionKeyPrefix =
-      'ishtirakati_cloud_pending_revision_v15_';
+      CloudAccountBinding.pendingRevisionKeyPrefix;
+  static FirebaseTokenProvider? get _appCheckTokenProvider =>
+      FirebaseBuildConfig.appCheckEnabled ? AuthService.getAppCheckToken : null;
   static final ValueNotifier<CloudSyncStatus> status = ValueNotifier(
     const CloudSyncStatus(CloudSyncPhase.idle),
   );
@@ -194,7 +218,7 @@ class CloudSync {
   static DocumentReference<Map<String, dynamic>>? _doc() {
     final user = AuthService.currentUser;
     if (user == null) return null;
-    return FirebaseFirestore.instance.collection('users').doc(user.uid);
+    return FirestoreConfig.instance.collection('users').doc(user.uid);
   }
 
   static const _safeDocumentPath = 'users/<uid>';
@@ -209,6 +233,29 @@ class CloudSync {
           : CloudSyncDelivery.failed,
     );
     return false;
+  }
+
+  static Future<bool> _ensureAccountBinding(String uid) async {
+    try {
+      final binding = await CloudAccountBinding.ensureBound(uid);
+      if (binding == CloudAccountBindingResult.mismatch) {
+        return _fail(
+          CloudSyncFailure.accountMismatch,
+          tr('cloudAccountMismatch'),
+        );
+      }
+      return true;
+    } on CloudAccountBindingException {
+      return _fail(
+        CloudSyncFailure.storageLocked,
+        tr('cloudAccountBindingUnavailable'),
+      );
+    } catch (_) {
+      return _fail(
+        CloudSyncFailure.storageLocked,
+        tr('cloudAccountBindingUnavailable'),
+      );
+    }
   }
 
   static void _setSyncing() {
@@ -412,7 +459,7 @@ class CloudSync {
 
   static String _safeFirebaseTarget() {
     final options = Firebase.app().options;
-    return 'project=${options.projectId} database=$databaseId '
+    return 'project=${options.projectId} database=${FirestoreConfig.databaseId} '
         'document=$_safeDocumentPath';
   }
 
@@ -448,23 +495,27 @@ class CloudSync {
 
   static Future<int> _localRevision(String uid) async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt('$_revisionKeyPrefix$uid') ?? 0;
+    final fingerprint = await CloudAccountBinding.fingerprint(uid);
+    return prefs.getInt('$_revisionKeyPrefix$fingerprint') ?? 0;
   }
 
   static Future<void> _saveLocalRevision(String uid, int revision) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('$_revisionKeyPrefix$uid', revision);
-    await prefs.remove('$_pendingRevisionKeyPrefix$uid');
+    final fingerprint = await CloudAccountBinding.fingerprint(uid);
+    await prefs.setInt('$_revisionKeyPrefix$fingerprint', revision);
+    await prefs.remove('$_pendingRevisionKeyPrefix$fingerprint');
   }
 
   static Future<void> _savePendingRevision(String uid, int revision) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('$_pendingRevisionKeyPrefix$uid', revision);
+    final fingerprint = await CloudAccountBinding.fingerprint(uid);
+    await prefs.setInt('$_pendingRevisionKeyPrefix$fingerprint', revision);
   }
 
   static Future<void> _clearPendingRevision(String uid) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('$_pendingRevisionKeyPrefix$uid');
+    final fingerprint = await CloudAccountBinding.fingerprint(uid);
+    await prefs.remove('$_pendingRevisionKeyPrefix$fingerprint');
     await _pendingConfirmationSubscription?.cancel();
     _pendingConfirmationSubscription = null;
   }
@@ -488,6 +539,28 @@ class CloudSync {
     required int localRevision,
     required FirestoreRestReadOutcome probeOutcome,
   }) => localRevision == 0 && probeOutcome == FirestoreRestReadOutcome.missing;
+
+  @visibleForTesting
+  static Future<CloudSyncResult> restoreAndPushViaRest({
+    required Future<CloudRestRestoreResult> Function() restore,
+    required Future<bool> Function() upload,
+    required CloudSyncFailure Function() uploadFailure,
+  }) async {
+    final restoreResult = await restore();
+    if (restoreResult.outcome == CloudRestRestoreOutcome.failed) {
+      return CloudSyncResult.failed(restoreResult.failure);
+    }
+
+    final uploaded = await upload();
+    if (!uploaded) {
+      return CloudSyncResult.failed(uploadFailure());
+    }
+    return CloudSyncResult.success(
+      imported: restoreResult.outcome == CloudRestRestoreOutcome.restored
+          ? restoreResult.imported
+          : 0,
+    );
+  }
 
   static Future<bool> _hasPendingFirstCreate(
     DocumentReference<Map<String, dynamic>> doc,
@@ -519,6 +592,7 @@ class CloudSync {
       return _fail(CloudSyncFailure.storageLocked, tr('cloudStorageLocked'));
     }
     if (doc == null || uid == null) return false;
+    if (!await _ensureAccountBinding(uid)) return false;
     _setSyncing();
     var firebaseOperation = 'firestore.prepare-encrypted-backup';
     try {
@@ -687,7 +761,7 @@ class CloudSync {
     );
     _logFirebaseOperation('firestore.transaction-update');
     final revision = await _runFirestoreOperation(
-      () => FirebaseFirestore.instance.runTransaction<int>((transaction) async {
+      () => FirestoreConfig.instance.runTransaction<int>((transaction) async {
         final snapshot = await transaction.get(doc);
         final remoteRevision =
             (snapshot.data()?['revision'] as num?)?.toInt() ?? 0;
@@ -730,6 +804,7 @@ class CloudSync {
     final probe = await FirestoreRestFallback.readEncryptedBackup(
       uid: user.uid,
       tokenProvider: user.getIdToken,
+      appCheckTokenProvider: _appCheckTokenProvider,
     );
     _recordRestResult(
       httpStatus: probe.httpStatus,
@@ -780,6 +855,7 @@ class CloudSync {
       uid: user.uid,
       backup: backup,
       tokenProvider: user.getIdToken,
+      appCheckTokenProvider: _appCheckTokenProvider,
     );
     _recordRestResult(
       httpStatus: create.httpStatus,
@@ -849,6 +925,7 @@ class CloudSync {
     final probe = await FirestoreRestFallback.readEncryptedBackup(
       uid: user.uid,
       tokenProvider: user.getIdToken,
+      appCheckTokenProvider: _appCheckTokenProvider,
     );
     _recordRestResult(
       httpStatus: probe.httpStatus,
@@ -887,6 +964,7 @@ class CloudSync {
       nextRevision: nextRevision,
       remoteUpdateTime: remote.updateTime,
       tokenProvider: user.getIdToken,
+      appCheckTokenProvider: _appCheckTokenProvider,
     );
     _recordRestResult(
       httpStatus: update.httpStatus,
@@ -1042,6 +1120,7 @@ class CloudSync {
       uid: user.uid,
       backup: backup,
       tokenProvider: user.getIdToken,
+      appCheckTokenProvider: _appCheckTokenProvider,
     );
     _recordRestResult(
       httpStatus: rest.httpStatus,
@@ -1100,6 +1179,7 @@ class CloudSync {
       return -1;
     }
     if (uid == null) return -1;
+    if (!await _ensureAccountBinding(uid)) return -1;
     _setSyncing();
     try {
       final snap = await _runFirestoreOperation(doc.get);
@@ -1153,16 +1233,22 @@ class CloudSync {
     }
   }
 
-  static Future<int> _pullViaRest() async {
+  static Future<CloudRestRestoreResult> _pullViaRest() async {
     final user = AuthService.currentUser;
     if (user == null) {
       _fail(CloudSyncFailure.unauthenticated, tr('cloudSignInToRestore'));
-      return -1;
+      return const CloudRestRestoreResult.failed(
+        CloudSyncFailure.unauthenticated,
+      );
+    }
+    if (!await _ensureAccountBinding(user.uid)) {
+      return CloudRestRestoreResult.failed(status.value.failure);
     }
     _setSyncing();
     final result = await FirestoreRestFallback.readEncryptedBackup(
       uid: user.uid,
       tokenProvider: user.getIdToken,
+      appCheckTokenProvider: _appCheckTokenProvider,
     );
     _recordRestResult(
       httpStatus: result.httpStatus,
@@ -1178,14 +1264,13 @@ class CloudSync {
     if (result.outcome != FirestoreRestReadOutcome.found ||
         result.document == null) {
       if (result.outcome == FirestoreRestReadOutcome.missing) {
-        _fail(CloudSyncFailure.configuration, tr('cloudSyncDocumentNotFound'));
-        return -1;
+        return const CloudRestRestoreResult.missing();
       }
       try {
         _throwRestReadFailure(result);
       } on FirebaseException catch (error, stackTrace) {
         _failFirebase(error, stackTrace, operation: 'rest-restore');
-        return -1;
+        return CloudRestRestoreResult.failed(status.value.failure);
       }
     }
     final remote = result.document!;
@@ -1194,7 +1279,9 @@ class CloudSync {
         utf8.encode(remote.backup).length > _maxBackupBytes ||
         !FirestoreRestFallback.isEncryptedBackupEnvelope(remote.backup)) {
       _fail(CloudSyncFailure.invalidBackup, tr('cloudInvalidBackup'));
-      return -1;
+      return const CloudRestRestoreResult.failed(
+        CloudSyncFailure.invalidBackup,
+      );
     }
     try {
       final count = await SubscriptionStore.instance.importEncryptedCloudBackup(
@@ -1205,7 +1292,9 @@ class CloudSync {
           CloudSyncFailure.storageLocked,
           tr('cloudEncryptedRestoreFailed'),
         );
-        return -1;
+        return const CloudRestRestoreResult.failed(
+          CloudSyncFailure.storageLocked,
+        );
       }
       await _saveLocalRevision(user.uid, remote.revision);
       status.value = status.value.copyWith(
@@ -1215,29 +1304,32 @@ class CloudSync {
         delivery: CloudSyncDelivery.serverConfirmed,
         hasPendingWrites: false,
       );
-      return count;
+      return CloudRestRestoreResult.restored(count);
     } on SecureDataException {
       _fail(CloudSyncFailure.storageLocked, tr('cloudStorageLocked'));
-      return -1;
+      return const CloudRestRestoreResult.failed(
+        CloudSyncFailure.storageLocked,
+      );
     }
   }
 
   /// Restores a backup before uploading the latest local state.
   static Future<CloudSyncResult> restoreAndPush() async {
     final doc = _doc();
+    final uid = AuthService.currentUser?.uid;
     if (doc == null) {
       _fail(CloudSyncFailure.unauthenticated, tr('cloudSignInToSync'));
       return const CloudSyncResult.failed(CloudSyncFailure.unauthenticated);
     }
+    if (uid == null || !await _ensureAccountBinding(uid)) {
+      return CloudSyncResult.failed(status.value.failure);
+    }
     if (FirebaseBuildConfig.restUpdateFallbackEnabled) {
-      final restored = await _pullViaRest();
-      if (restored < 0) {
-        return CloudSyncResult.failed(status.value.failure);
-      }
-      final uploaded = await push();
-      return uploaded
-          ? CloudSyncResult.success(imported: restored)
-          : CloudSyncResult.failed(status.value.failure);
+      return restoreAndPushViaRest(
+        restore: _pullViaRest,
+        upload: push,
+        uploadFailure: () => status.value.failure,
+      );
     }
     try {
       final exists = (await _runFirestoreOperation(
@@ -1294,23 +1386,26 @@ class CloudSync {
     final doc = _doc();
     final uid = AuthService.currentUser?.uid;
     if (doc == null) throw StateError('No authenticated cloud document.');
+    if (uid == null || !await _ensureAccountBinding(uid)) {
+      throw StateError('Cloud account binding rejected the deletion.');
+    }
     try {
       await _runFirestoreOperation(doc.delete);
     } on FirebaseException catch (error, stackTrace) {
       _failFirebase(error, stackTrace, operation: 'firestore.delete-document');
       rethrow;
     }
-    if (uid != null) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('$_revisionKeyPrefix$uid');
-      await prefs.remove('$_pendingRevisionKeyPrefix$uid');
-    }
+    final prefs = await SharedPreferences.getInstance();
+    final fingerprint = await CloudAccountBinding.fingerprint(uid);
+    await prefs.remove('$_revisionKeyPrefix$fingerprint');
+    await prefs.remove('$_pendingRevisionKeyPrefix$fingerprint');
     status.value = const CloudSyncStatus(CloudSyncPhase.idle);
   }
 
   /// رفع مؤجل بعد كل تعديل (يجمع التعديلات المتتابعة في رفعة واحدة).
   static void schedulePush() {
-    if (!AuthService.isSignedIn ||
+    final scheduledUid = AuthService.currentUser?.uid;
+    if (scheduledUid == null ||
         !SubscriptionStore.instance.storageHealthy ||
         _pushQueued) {
       return;
@@ -1318,6 +1413,7 @@ class CloudSync {
     _pushQueued = true;
     Future.delayed(const Duration(seconds: 4), () async {
       _pushQueued = false;
+      if (AuthService.currentUser?.uid != scheduledUid) return;
       await push();
     });
   }

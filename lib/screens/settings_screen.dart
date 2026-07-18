@@ -12,6 +12,7 @@ import '../services/auth_service.dart';
 import '../services/cloud_sync.dart';
 import '../services/firebase_build_config.dart';
 import '../services/firestore_connection_diagnostics.dart';
+import '../services/firestore_config.dart';
 import '../services/firestore_rest_fallback.dart';
 import '../services/notification_service.dart';
 import '../services/subscription_store.dart';
@@ -655,7 +656,7 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
           ),
           _DiagnosticLine(
             label: tr('firestoreDiagnosticDatabase'),
-            value: FirestoreRestFallback.databaseId,
+            value: FirestoreConfig.databaseId,
           ),
           _DiagnosticLine(
             label: tr('firestoreDiagnosticSdkVersions'),
@@ -705,7 +706,9 @@ class _FirestoreDiagnosticPanel extends StatelessWidget {
           const SizedBox(height: 6),
           _DiagnosticLine(
             label: tr('firestoreDiagnosticHttpStatus'),
-            value: rest.httpStatus?.toString() ?? '-',
+            value: rest.commitHttpStatus == null
+                ? rest.httpStatus?.toString() ?? '-'
+                : 'GET ${rest.httpStatus} | commit ${rest.commitHttpStatus}',
           ),
           _DiagnosticLine(
             label: tr('firestoreDiagnosticDns'),

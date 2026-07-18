@@ -1,4 +1,4 @@
-# اشتراكاتي 16.0.0+44 — Release Checklist
+# اشتراكاتي 16.0.1+45 — Release Checklist
 
 لا يُعد الإصدار جاهزًا للتوزيع العام حتى تكتمل البنود الخارجية أدناه. لا تُسجل UID أو email أو token أو backup أو مفتاح في أي لقطة أو سجل.
 
@@ -9,7 +9,7 @@
 - [x] `flutter test` — 154/154.
 - [x] `npm ci --ignore-scripts` — نجح؛ 5 تنبيهات moderate في أدوات التطوير تحتاج ترقية مخططة دون كسر القفل.
 - [x] `npm run test:rules`
-- [ ] نجاح GitHub Actions وإنتاج `Ishtirakati-16.0.0-build44-<SHA>-unsigned.ipa`.
+- [ ] نجاح GitHub Actions وإنتاج `Ishtirakati-16.0.1-build45-<SHA>-unsigned.ipa`.
 - [ ] تطابق SHA في About مع اسم artifact.
 
 ## مصفوفة الواجهة
