@@ -20,4 +20,33 @@ void main() {
     expect(credentials, greaterThan(testRules));
     expect(deploy, greaterThan(credentials));
   });
+
+  test('Git ignores credential material and generated Firebase logs', () {
+    final ignore = File('.gitignore').readAsStringSync();
+    for (final pattern in <String>[
+      '**/GoogleService-Info.plist',
+      '**/google-services.json',
+      '.env.*',
+      '*.p8',
+      '*.p12',
+      '*.mobileprovision',
+      '*.jks',
+      'firebase-service-account*.json',
+      'firebase-debug.log*',
+      'firestore-debug.log*',
+    ]) {
+      expect(ignore, contains(pattern), reason: 'missing ignore: $pattern');
+    }
+  });
+
+  test('publishing helper requires explicit staging and a review branch', () {
+    final helper = File('push_to_github.bat').readAsStringSync();
+    expect(helper, isNot(contains('git add .')));
+    expect(helper, isNot(contains('git branch -M main')));
+    expect(helper, isNot(contains('git push -u origin main')));
+    expect(helper, contains('git branch --show-current'));
+    expect(helper, contains('Direct publication from main is forbidden'));
+    expect(helper, contains('git diff --cached --name-only'));
+    expect(helper, contains('git push -u origin "%CURRENT_BRANCH%"'));
+  });
 }

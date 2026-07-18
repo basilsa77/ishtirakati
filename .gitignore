@@ -20,5 +20,32 @@ web/
 .vscode/
 
 # Firebase client configuration is restored in CI from GitHub Actions Secrets.
-GoogleService-Info.plist
+**/GoogleService-Info.plist
+**/google-services.json
 lib/firebase_options.dart
+
+# Firebase CLI state and emulator logs
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+
+# Credentials and signing material
+.env
+.env.*
+!.env.example
+*.p8
+*.p12
+*.mobileprovision
+*.jks
+*.keystore
+firebase-service-account*.json
+service-account*.json
+*serviceAccount*.json
+
+# Release, coverage, and symbol artifacts
+coverage/
+*.ipa
+*.dSYM/
+symbols/
+split-debug-info/
