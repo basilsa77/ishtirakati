@@ -67,7 +67,7 @@ class InsightsScreen extends StatelessWidget {
               const SizedBox(height: V16Space.md),
               FadeSlideIn(
                 delayMs: 40,
-                child: _ForecastCard(snapshot: assistant),
+                child: ForecastCard(snapshot: assistant),
               ),
               const SizedBox(height: V16Space.md),
               _MetricsGrid(
@@ -106,10 +106,10 @@ class InsightsScreen extends StatelessWidget {
   }
 }
 
-class _ForecastCard extends StatelessWidget {
+class ForecastCard extends StatelessWidget {
   final FinancialAssistantSnapshot snapshot;
 
-  const _ForecastCard({required this.snapshot});
+  const ForecastCard({super.key, required this.snapshot});
 
   @override
   Widget build(BuildContext context) {
@@ -158,48 +158,69 @@ class _ForecastCard extends StatelessWidget {
           ),
           const SizedBox(height: V16Space.md),
           SizedBox(
-            height: 116,
+            height: 128,
             child: ListView.separated(
+              key: const Key('forecast-chart-scroll'),
               scrollDirection: Axis.horizontal,
+              padding: const EdgeInsetsDirectional.symmetric(
+                horizontal: V16Space.xs,
+              ),
               itemCount: snapshot.forecast.length,
               separatorBuilder: (_, __) => const SizedBox(width: V16Space.xs),
               itemBuilder: (context, index) {
                 final item = snapshot.forecast[index];
                 final ratio = maxValue <= 0 ? 0.0 : item.total / maxValue;
-                return SizedBox(
-                  width: 48,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        item.total <= 0 ? '0' : item.total.toStringAsFixed(0),
-                        maxLines: 1,
-                        overflow: TextOverflow.fade,
-                        style: TextStyle(
-                          color: p.textMuted,
-                          fontSize: V16Type.captionSmall,
-                          fontWeight: V16Type.semibold,
+                final fullAmount = fmtMoneyWithCurrency(
+                  item.total,
+                  snapshot.currency,
+                );
+                return Tooltip(
+                  triggerMode: TooltipTriggerMode.tap,
+                  message: fullAmount,
+                  child: SizedBox(
+                    key: ValueKey('forecast-month-${item.month.month}'),
+                    width: 52,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          localizedCompactNumber(item.total),
+                          maxLines: 1,
+                          overflow: TextOverflow.fade,
+                          style: TextStyle(
+                            color: p.textMuted,
+                            fontSize: V16Type.captionSmall,
+                            fontWeight: V16Type.semibold,
+                          ),
                         ),
-                      ),
-                      Text(
-                        tr('ui_4e55769aaac7', {'value0': item.paymentCount}),
-                        maxLines: 1,
-                        style: TextStyle(
-                          color: p.textMuted,
-                          fontSize: V16Type.captionSmall,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            tr('ui_4e55769aaac7', {
+                              'value0': item.paymentCount,
+                            }),
+                            maxLines: 1,
+                            style: TextStyle(
+                              color: p.textMuted,
+                              fontSize: V16Type.captionSmall,
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: V16Space.xxs),
-                      _ForecastBar(ratio: ratio, highlighted: index == 0),
-                      const SizedBox(height: V16Space.xxs),
-                      Text(
-                        _monthName(item.month.month),
-                        style: TextStyle(
-                          color: p.textMuted,
-                          fontSize: V16Type.captionSmall,
+                        const SizedBox(height: V16Space.xxs),
+                        _ForecastBar(ratio: ratio, highlighted: index == 0),
+                        const SizedBox(height: V16Space.xxs),
+                        Text(
+                          _monthName(item.month.month),
+                          maxLines: 1,
+                          overflow: TextOverflow.visible,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: p.textMuted,
+                            fontSize: V16Type.captionSmall,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               },

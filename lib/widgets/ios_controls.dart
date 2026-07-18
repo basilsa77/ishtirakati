@@ -1,8 +1,105 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../l10n/app_localizations.dart';
 import '../theme.dart';
+
+Future<T?> showIosModalSheet<T>({
+  required BuildContext context,
+  required String title,
+  required WidgetBuilder builder,
+}) {
+  final barrierColor = context.palette.shadow.withValues(alpha: .5);
+  HapticFeedback.selectionClick();
+  return showModalBottomSheet<T>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: false,
+    backgroundColor: V16Colors.transparent,
+    barrierColor: barrierColor,
+    builder:
+        (sheetContext) =>
+            _IosModalSheet(title: title, child: builder(sheetContext)),
+  );
+}
+
+class _IosModalSheet extends StatelessWidget {
+  final String title;
+  final Widget child;
+
+  const _IosModalSheet({required this.title, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final palette = context.palette;
+    final availableHeight =
+        media.size.height - media.viewInsets.bottom - media.padding.top;
+    return AnimatedPadding(
+      duration: reduceMotion(context) ? Duration.zero : V16Motion.quick,
+      curve: V16Motion.standardCurve,
+      padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+      child: SafeArea(
+        top: false,
+        child: Material(
+          key: const Key('ios-modal-sheet-surface'),
+          color: palette.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(V16Radius.signature),
+            ),
+            side: BorderSide(color: palette.stroke),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: availableHeight * .78),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(
+                    V16Space.md,
+                    V16Space.sm,
+                    V16Space.md,
+                    V16Space.sm,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: V16Space.xxs,
+                          decoration: BoxDecoration(
+                            color: palette.stroke,
+                            borderRadius: BorderRadius.circular(V16Radius.pill),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: V16Space.md),
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: palette.text,
+                          fontSize: V16Type.titleSmall,
+                          fontWeight: V16Type.semibold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(height: 1, color: palette.stroke),
+                Flexible(child: child),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 Future<T?> showIosPicker<T>({
   required BuildContext context,
@@ -14,31 +111,35 @@ Future<T?> showIosPicker<T>({
   HapticFeedback.selectionClick();
   return showCupertinoModalPopup<T>(
     context: context,
-    builder: (sheetContext) => CupertinoActionSheet(
-      title: Text(title),
-      actions: [
-        for (final value in values)
-          CupertinoActionSheetAction(
-            onPressed: () => Navigator.pop(sheetContext, value),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: V16Space.lg,
-                  child: value == selected
-                      ? const Icon(CupertinoIcons.check_mark, size: 18)
-                      : null,
+    builder:
+        (sheetContext) => CupertinoActionSheet(
+          title: Text(title),
+          actions: [
+            for (final value in values)
+              CupertinoActionSheetAction(
+                onPressed: () => Navigator.pop(sheetContext, value),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: V16Space.lg,
+                      child:
+                          value == selected
+                              ? const Icon(CupertinoIcons.check_mark, size: 18)
+                              : null,
+                    ),
+                    const SizedBox(width: V16Space.xs),
+                    Expanded(
+                      child: Text(label(value), textAlign: TextAlign.start),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: V16Space.xs),
-                Expanded(child: Text(label(value), textAlign: TextAlign.start)),
-              ],
-            ),
+              ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(sheetContext),
+            child: Text(tr('ui_9a30dc2a96b8')),
           ),
-      ],
-      cancelButton: CupertinoActionSheetAction(
-        onPressed: () => Navigator.pop(sheetContext),
-        child: Text(tr('ui_9a30dc2a96b8')),
-      ),
-    ),
+        ),
   );
 }
 
@@ -51,21 +152,22 @@ Future<bool> showIosConfirmation({
 }) async {
   final result = await showCupertinoDialog<bool>(
     context: context,
-    builder: (dialogContext) => CupertinoAlertDialog(
-      title: Text(title),
-      content: Text(message),
-      actions: [
-        CupertinoDialogAction(
-          onPressed: () => Navigator.pop(dialogContext, false),
-          child: Text(tr('ui_9a30dc2a96b8')),
+    builder:
+        (dialogContext) => CupertinoAlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(tr('ui_9a30dc2a96b8')),
+            ),
+            CupertinoDialogAction(
+              isDestructiveAction: destructive,
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(confirmLabel ?? tr('ui_8f7d74ac0eac')),
+            ),
+          ],
         ),
-        CupertinoDialogAction(
-          isDestructiveAction: destructive,
-          onPressed: () => Navigator.pop(dialogContext, true),
-          child: Text(confirmLabel ?? tr('ui_8f7d74ac0eac')),
-        ),
-      ],
-    ),
   );
   return result ?? false;
 }

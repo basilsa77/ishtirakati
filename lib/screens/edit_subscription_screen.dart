@@ -138,104 +138,76 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
   }
 
   Future<void> _openPresetPicker() async {
-    await showCupertinoModalPopup<void>(
+    await showIosModalSheet<void>(
       context: context,
+      title: tr('ui_b0ae1da4a56b'),
       builder:
-          (ctx) => SafeArea(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.sizeOf(ctx).height * .78,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      tr('ui_b0ae1da4a56b'),
-                      style: TextStyle(
-                        fontSize: V16Type.titleSmall,
-                        fontWeight: V16Type.semibold,
-                        color: ctx.palette.text,
+          (ctx) => SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: const EdgeInsets.all(V16Space.md),
+            child: Wrap(
+              spacing: V16Space.xs,
+              runSpacing: V16Space.xs,
+              children: [
+                // خدمات القاعدة المحدّثة عن بُعد (بأسعار تقريبية).
+                for (final r in RemoteCatalog.instance.services)
+                  InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () {
+                      _applyRemote(r);
+                      Navigator.pop(ctx);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 9,
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Flexible(
-                      child: SingleChildScrollView(
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            // خدمات القاعدة المحدّثة عن بُعد (بأسعار تقريبية).
-                            for (final r in RemoteCatalog.instance.services)
-                              InkWell(
-                                borderRadius: BorderRadius.circular(14),
-                                onTap: () {
-                                  _applyRemote(r);
-                                  Navigator.pop(ctx);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 9,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: ctx.palette.accentSoft,
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: ctx.palette.accentStrong,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    r.priceHint == null
-                                        ? '${r.emoji} ${r.name}'
-                                        : '${r.emoji} ${r.name} • ${fmtMoney(r.priceHint!, 'SAR')}',
-                                    style: TextStyle(
-                                      fontWeight: V16Type.semibold,
-                                      fontSize: V16Type.label,
-                                      color: ctx.palette.text,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            for (final p in kPresets)
-                              if (RemoteCatalog.instance.byName(p.name) == null)
-                                InkWell(
-                                  borderRadius: BorderRadius.circular(14),
-                                  onTap: () {
-                                    _applyPreset(p);
-                                    Navigator.pop(ctx);
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 9,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: ctx.palette.surfaceAlt,
-                                      borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(
-                                        color: ctx.palette.stroke,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      '${p.emoji} ${p.name}',
-                                      style: TextStyle(
-                                        fontWeight: V16Type.semibold,
-                                        fontSize: V16Type.label,
-                                        color: ctx.palette.text,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                          ],
+                      decoration: BoxDecoration(
+                        color: ctx.palette.accentSoft,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: ctx.palette.accentStrong),
+                      ),
+                      child: Text(
+                        r.priceHint == null
+                            ? '${r.emoji} ${r.name}'
+                            : '${r.emoji} ${r.name} • ${fmtMoney(r.priceHint!, 'SAR')}',
+                        style: TextStyle(
+                          fontWeight: V16Type.semibold,
+                          fontSize: V16Type.label,
+                          color: ctx.palette.text,
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                for (final p in kPresets)
+                  if (RemoteCatalog.instance.byName(p.name) == null)
+                    InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () {
+                        _applyPreset(p);
+                        Navigator.pop(ctx);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 9,
+                        ),
+                        decoration: BoxDecoration(
+                          color: ctx.palette.surfaceAlt,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: ctx.palette.stroke),
+                        ),
+                        child: Text(
+                          '${p.emoji} ${p.name}',
+                          style: TextStyle(
+                            fontWeight: V16Type.semibold,
+                            fontSize: V16Type.label,
+                            color: ctx.palette.text,
+                          ),
+                        ),
+                      ),
+                    ),
+              ],
             ),
           ),
     );
@@ -565,6 +537,7 @@ class _EditSubscriptionScreenState extends State<EditSubscriptionScreen> {
                           borderRadius: BorderRadius.circular(
                             V16Radius.standard,
                           ),
+                          key: const Key('open-popular-services'),
                           onPressed: _openPresetPicker,
                           child: Text(
                             tr('ui_d44a8c5f24e0'),

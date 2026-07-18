@@ -386,9 +386,35 @@ class _CalendarHeader extends StatelessWidget {
   const _CalendarHeader({required this.totals, required this.itemCount});
 
   @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      AppPageIntro(
+        title: tr('ui_43268af638e5'),
+        description: tr('ui_dfba2e3d71cb'),
+      ),
+      const SizedBox(height: V16Space.md),
+      RenewalsSummaryCard(totals: totals, itemCount: itemCount),
+    ],
+  );
+}
+
+@visibleForTesting
+class RenewalsSummaryCard extends StatelessWidget {
+  final Map<String, double> totals;
+  final int itemCount;
+
+  const RenewalsSummaryCard({
+    super.key,
+    required this.totals,
+    required this.itemCount,
+  });
+
+  @override
   Widget build(BuildContext context) {
     final countLabel = Text(
       tr('ui_c594d3d42dde', {'value0': itemCount}),
+      key: const Key('renewals-summary-count'),
       style: const TextStyle(
         color: V16Colors.white,
         fontWeight: V16Type.semibold,
@@ -401,6 +427,7 @@ class _CalendarHeader extends StatelessWidget {
       children: [
         for (final entry in totals.entries)
           AnimatedMoney(
+            key: ValueKey('renewals-summary-amount-${entry.key}'),
             value: entry.value,
             currency: entry.key,
             style: const TextStyle(
@@ -410,53 +437,37 @@ class _CalendarHeader extends StatelessWidget {
           ),
       ],
     );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        AppPageIntro(
-          title: tr('ui_43268af638e5'),
-          description: tr('ui_dfba2e3d71cb'),
-        ),
-        const SizedBox(height: V16Space.md),
-        AppCard(
-          tone: AppCardTone.accent,
-          padding: const EdgeInsets.all(V16Space.lg),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final stack =
-                  constraints.maxWidth < 360 ||
-                  MediaQuery.textScalerOf(context).scale(1) > 1.3;
-              final heading = Row(
-                children: [
-                  const Icon(
-                    Icons.event_available_rounded,
-                    color: V16Colors.white,
-                  ),
-                  const SizedBox(width: V16Space.sm),
-                  Expanded(child: countLabel),
-                ],
-              );
-              if (stack) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    heading,
-                    const SizedBox(height: V16Space.sm),
-                    amounts,
-                  ],
-                );
-              }
-              return Row(
-                children: [
-                  Expanded(child: heading),
-                  const SizedBox(width: V16Space.sm),
-                  Flexible(child: amounts),
-                ],
-              );
-            },
-          ),
-        ),
-      ],
+    return AppCard(
+      key: const Key('renewals-summary-card'),
+      tone: AppCardTone.accent,
+      padding: const EdgeInsets.all(V16Space.lg),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stack =
+              constraints.maxWidth < 360 ||
+              MediaQuery.textScalerOf(context).scale(1) > 1.3;
+          final heading = Row(
+            children: [
+              const Icon(Icons.event_available_rounded, color: V16Colors.white),
+              const SizedBox(width: V16Space.sm),
+              Expanded(child: countLabel),
+            ],
+          );
+          if (stack) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [heading, const SizedBox(height: V16Space.sm), amounts],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(child: heading),
+              const SizedBox(width: V16Space.sm),
+              Flexible(child: amounts),
+            ],
+          );
+        },
+      ),
     );
   }
 }

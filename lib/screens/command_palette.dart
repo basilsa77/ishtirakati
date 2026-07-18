@@ -178,6 +178,7 @@ class _CommandPaletteState extends State<_CommandPalette> {
               ),
               const SizedBox(height: V16Space.sm),
               CupertinoSearchTextField(
+                key: const Key('command-palette-search'),
                 controller: _controller,
                 autofocus: true,
                 onChanged: (value) => setState(() => _query = value),
@@ -201,6 +202,7 @@ class _CommandPaletteState extends State<_CommandPalette> {
               ),
               const SizedBox(height: V16Space.md),
               Expanded(
+                key: const Key('command-palette-content'),
                 child:
                     visible.isEmpty
                         ? Semantics(
@@ -235,6 +237,9 @@ class _CommandPaletteState extends State<_CommandPalette> {
                           ),
                         )
                         : ListView.separated(
+                          key: const Key('command-palette-results'),
+                          padding: EdgeInsets.zero,
+                          primary: false,
                           keyboardDismissBehavior:
                               ScrollViewKeyboardDismissBehavior.onDrag,
                           itemCount: visible.length,
