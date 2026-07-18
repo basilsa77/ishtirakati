@@ -93,6 +93,20 @@ class SubscriptionStore extends ChangeNotifier {
   String? get storageError => _storageError;
 
   Future<void> load() async {
+    _storageHealthy = false;
+    _storageError = tr('secureStorageLocked');
+    try {
+      await _loadFromStorage();
+    } catch (_) {
+      _storageHealthy = false;
+      _storageError = tr('secureStorageLocked');
+      _loaded = true;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> _loadFromStorage() async {
     final prefs = await SharedPreferences.getInstance();
     _defaultCurrency = prefs.getString(_currencyKey) ?? 'SAR';
     _monthlyBudget = prefs.getDouble(_budgetKey) ?? 0;
@@ -190,17 +204,22 @@ class SubscriptionStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _persist() async {
+  Future<void> _persist() => _persistItems(_items);
+
+  Future<void> _persistItems(List<Subscription> items) async {
     _ensureWritable();
     final prefs = await SharedPreferences.getInstance();
-    final plain = jsonEncode(_items.map((s) => s.toJson()).toList());
+    final plain = jsonEncode(items.map((s) => s.toJson()).toList());
     final encrypted = await _dataCodec.encrypt(plain);
-    await prefs.setString(_encryptedSubsKey, encrypted);
+    if (!await prefs.setString(_encryptedSubsKey, encrypted) ||
+        prefs.getString(_encryptedSubsKey) != encrypted) {
+      throw SecureDataException(tr('secureStorageLocked'));
+    }
     await prefs.remove(_legacySubsKey);
     // إعادة جدولة الإشعارات مع كل تغيير (لا ننتظرها).
     // ignore: unawaited_futures
     NotificationService.instance.rescheduleAll(
-      _items,
+      items,
       enabled: _notificationsEnabled,
       privateContent: _privateNotifications,
     );
@@ -351,10 +370,8 @@ class SubscriptionStore extends ChangeNotifier {
 
   Future<int> reclassifyUnknownsWithAi() async {
     _ensureWritable();
-    final names = _items
-        .where((s) => s.category == 'أخرى')
-        .map((s) => s.name)
-        .toList();
+    final names =
+        _items.where((s) => s.category == 'أخرى').map((s) => s.name).toList();
     if (names.isEmpty || _aiApiKey.trim().isEmpty) return 0;
     final categories = await AiExtractor.classifyNames(
       names,
@@ -487,33 +504,86 @@ class SubscriptionStore extends ChangeNotifier {
       if (data is! Map<String, dynamic>) return -1;
       final list = data['subscriptions'];
       if (list is! List || list.length > _maxImportRecords) return -1;
+      final candidateItems = List<Subscription>.of(_items);
       var count = 0;
       for (final e in list) {
-        if (e is Map<String, dynamic>) {
-          final sub = Subscription.fromJson(e);
-          final index = _items.indexWhere((s) => s.id == sub.id);
-          if (index >= 0) {
-            _items[index] = sub;
-          } else {
-            _items.add(sub);
-          }
-          count += 1;
+        if (e is! Map<String, dynamic>) return -1;
+        final sub = Subscription.fromJson(e);
+        final index = candidateItems.indexWhere((s) => s.id == sub.id);
+        if (index >= 0) {
+          candidateItems[index] = sub;
+        } else {
+          candidateItems.add(sub);
         }
+        count += 1;
       }
+      var candidateBudget = _monthlyBudget;
       final budget = (data['monthlyBudget'] as num?)?.toDouble();
-      if (budget != null && budget >= 0) _monthlyBudget = budget;
+      if (budget != null) {
+        if (!budget.isFinite || budget < 0) return -1;
+        candidateBudget = budget;
+      }
+      var candidateCurrency = _defaultCurrency;
       final currency = data['defaultCurrency'] as String?;
       if (currency != null && currency.isNotEmpty) {
-        _defaultCurrency = currency;
+        if (!currencySymbols.containsKey(currency)) return -1;
+        candidateCurrency = currency;
       }
-      await _persist();
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setDouble(_budgetKey, _monthlyBudget);
-      await prefs.setString(_currencyKey, _defaultCurrency);
+      final previousBudget = prefs.getDouble(_budgetKey);
+      final previousCurrency = prefs.getString(_currencyKey);
+      final budgetSaved = await prefs.setDouble(_budgetKey, candidateBudget);
+      final currencySaved = await prefs.setString(
+        _currencyKey,
+        candidateCurrency,
+      );
+      if (!budgetSaved ||
+          !currencySaved ||
+          prefs.getDouble(_budgetKey) != candidateBudget ||
+          prefs.getString(_currencyKey) != candidateCurrency) {
+        await _restoreImportPreferences(
+          prefs,
+          budget: previousBudget,
+          currency: previousCurrency,
+        );
+        return -1;
+      }
+      try {
+        await _persistItems(candidateItems);
+      } catch (_) {
+        await _restoreImportPreferences(
+          prefs,
+          budget: previousBudget,
+          currency: previousCurrency,
+        );
+        rethrow;
+      }
+      _items
+        ..clear()
+        ..addAll(candidateItems);
+      _monthlyBudget = candidateBudget;
+      _defaultCurrency = candidateCurrency;
       notifyListeners();
       return count;
     } catch (_) {
       return -1;
+    }
+  }
+
+  Future<void> _restoreImportPreferences(
+    SharedPreferences prefs, {
+    required double? budget,
+    required String? currency,
+  }) async {
+    if (budget == null) {
+      await prefs.remove(_budgetKey);
+    } else {
+      await prefs.setDouble(_budgetKey, budget);
+    }
+    if (currency == null) {
+      await prefs.remove(_currencyKey);
+    } else {
+      await prefs.setString(_currencyKey, currency);
     }
   }
 
@@ -615,8 +685,9 @@ class SubscriptionStore extends ChangeNotifier {
 
   /// التجارب المجانية النشطة مرتبة بالأقرب انتهاءً.
   List<Subscription> get activeTrials {
-    final list = _items.where((s) => !s.isPaused && s.isTrialActive()).toList()
-      ..sort((a, b) => a.trialEndDate!.compareTo(b.trialEndDate!));
+    final list =
+        _items.where((s) => !s.isPaused && s.isTrialActive()).toList()
+          ..sort((a, b) => a.trialEndDate!.compareTo(b.trialEndDate!));
     return list;
   }
 

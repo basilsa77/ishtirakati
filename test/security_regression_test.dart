@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:ishtirakati/models/subscription.dart';
 import 'package:ishtirakati/services/account_deletion_service.dart';
 import 'package:ishtirakati/services/ai_consent_service.dart';
 import 'package:ishtirakati/services/email_identity_store.dart';
@@ -16,7 +17,7 @@ class _FakeKeyStore implements SecureKeyStore {
   bool deleted = false;
 
   _FakeKeyStore({List<String>? values, this.allowWrites = true})
-      : values = values ?? [];
+    : values = values ?? [];
 
   @override
   Future<List<String>> readAll(String key) async => List.of(values);
@@ -41,6 +42,26 @@ class _FailingDecryptCodec extends SecureDataCodec {
   @override
   Future<String> decrypt(String payload) async =>
       throw const SecureDataException('فشل اختباري');
+}
+
+class _FailingEncryptCodec extends SecureDataCodec {
+  _FailingEncryptCodec() : super(keyStore: _FakeKeyStore());
+
+  @override
+  Future<String> encrypt(String plainText) async =>
+      throw const SecureDataException('test encryption failure');
+}
+
+class _FailingReadKeyStore implements SecureKeyStore {
+  @override
+  Future<void> deleteAll(String key) async {}
+
+  @override
+  Future<List<String>> readAll(String key) async =>
+      throw StateError('test Keychain read failure');
+
+  @override
+  Future<bool> writeAll(String key, String value) async => false;
 }
 
 class _DeletionCodec extends SecureDataCodec {
@@ -122,7 +143,10 @@ void main() {
         keyStore: _FakeKeyStore(allowWrites: false),
       );
 
-      await expectLater(codec.encrypt('لن تحفظ'), throwsA(isA<SecureDataException>()));
+      await expectLater(
+        codec.encrypt('لن تحفظ'),
+        throwsA(isA<SecureDataException>()),
+      );
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString(SecureDataCodec.mirrorPreferenceKey), isNull);
     });
@@ -153,8 +177,7 @@ void main() {
     test('يحذف المرآة بعد نجاح Keychain فقط', () async {
       const value = 'legacy-ai-key';
       SharedPreferences.setMockInitialValues({
-        'ishtirakati_ai_api_key_mirror':
-            base64Url.encode(utf8.encode(value)),
+        'ishtirakati_ai_api_key_mirror': base64Url.encode(utf8.encode(value)),
       });
       final keyStore = _FakeKeyStore();
       final store = SubscriptionStore.testing(
@@ -206,6 +229,69 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('ishtirakati_subs_v2_encrypted'), encrypted);
     expect(prefs.getString('ishtirakati_subs_v2_backup'), encrypted);
+  });
+
+  test('أي فشل إقلاع غير متوقع يقفل التخزين قبل متابعة التطبيق', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = SubscriptionStore.testing(
+      dataCodec: SecureDataCodec(keyStore: _FakeKeyStore()),
+      secretStore: _FailingReadKeyStore(),
+    );
+
+    await expectLater(store.load(), throwsStateError);
+
+    expect(store.isLoaded, isTrue);
+    expect(store.storageHealthy, isFalse);
+    await expectLater(store.clearAll(), throwsA(isA<SecureDataException>()));
+  });
+
+  test('الاستيراد التالف لا يترك سجلات جزئية في الذاكرة', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = SubscriptionStore.testing(
+      dataCodec: SecureDataCodec(keyStore: _FakeKeyStore()),
+      secretStore: _FakeKeyStore(),
+    );
+    await store.load();
+
+    final result = await store.importJson(
+      jsonEncode({
+        'defaultCurrency': 'SAR',
+        'monthlyBudget': 250,
+        'subscriptions': [
+          _validImportedSubscription(),
+          'malformed-later-record',
+        ],
+      }),
+    );
+
+    expect(result, -1);
+    expect(store.items, isEmpty);
+    expect(store.monthlyBudget, 0);
+  });
+
+  test('فشل حفظ الاستيراد يعيد الإعدادات ويبقي الذاكرة كما هي', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = SubscriptionStore.testing(
+      dataCodec: _FailingEncryptCodec(),
+      secretStore: _FakeKeyStore(),
+    );
+    await store.load();
+
+    final result = await store.importJson(
+      jsonEncode({
+        'defaultCurrency': 'AED',
+        'monthlyBudget': 400,
+        'subscriptions': [_validImportedSubscription()],
+      }),
+    );
+
+    expect(result, -1);
+    expect(store.items, isEmpty);
+    expect(store.monthlyBudget, 0);
+    expect(store.defaultCurrency, 'SAR');
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getDouble('ishtirakati_monthly_budget'), isNull);
+    expect(prefs.getString('ishtirakati_default_currency'), isNull);
   });
 
   test('حذف الحساب مرتب ولا يمسح المحلي عند فشل السحابة', () async {
@@ -279,3 +365,12 @@ void main() {
     expect(normalizedHttpsUri('https://user@example.com'), isNull);
   });
 }
+
+Map<String, dynamic> _validImportedSubscription() => {
+  'id': 'import-candidate',
+  'name': 'Secure import',
+  'price': 25,
+  'currency': currencySymbols.keys.first,
+  'cycle': BillingCycle.monthly.index,
+  'anchor': DateTime.utc(2026, 1, 1).toIso8601String(),
+};
