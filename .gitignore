@@ -49,3 +49,13 @@ coverage/
 *.dSYM/
 symbols/
 split-debug-info/
+
+# لوحة تحكم المشرف — ملفات حساسة لا تُرفع أبدًا
+admin/.admin-auth.json
+admin/stats.json
+*serviceAccount*.json
+*service-account*.json
+
+serviceAccount.json
+admin/audit.log
+admin/backups/
