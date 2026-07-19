@@ -1,0 +1,826 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>اشتراكاتي — لوحة تحكم المشرف</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F4F1E9; --card:#FFFFFF; --ink:#1E2C28; --ink-2:#64736D;
+  --sea:#2E6E62; --sea-2:#4FA08F; --sea-deep:#1F5248; --sea-soft:#E1EDE9;
+  --sand:#D9C7A7; --sand-soft:#F2EADB;
+  --danger:#B4483E; --danger-soft:#F7E6E4;
+  --line:#E7E1D2; --hover:#FAF8F2;
+  --grad:linear-gradient(135deg,#2E6E62,#4FA08F);
+  --grad-deep:linear-gradient(175deg,#1F5248 0%,#153B34 60%,#102E28 100%);
+  --radius:16px;
+  --shadow:0 1px 2px rgba(30,44,40,.06),0 6px 20px rgba(30,44,40,.07);
+  --shadow-lg:0 8px 30px rgba(30,44,40,.14);
+}
+body.dark{
+  --bg:#101614; --card:#1A2320; --ink:#E9E5D9; --ink-2:#95A49D;
+  --sea:#3E8A7B; --sea-2:#5FB3A1; --sea-deep:#8FD0C0; --sea-soft:#1F2E2A;
+  --sand:#5C5236; --sand-soft:#282318;
+  --danger:#D66A5F; --danger-soft:#37201D;
+  --line:#26312D; --hover:#1F2A26;
+  --grad:linear-gradient(135deg,#3E8A7B,#5FB3A1);
+  --grad-deep:linear-gradient(175deg,#132320 0%,#0E1B18 60%,#0A1512 100%);
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 6px 20px rgba(0,0,0,.3);
+  --shadow-lg:0 8px 30px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'IBM Plex Sans Arabic',-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;transition:background .3s,color .3s}
+
+/* ====== الهيكل: شريط جانبي + محتوى ====== */
+.layout{display:flex;min-height:100vh}
+aside{width:236px;flex:none;background:var(--grad-deep);color:#EAF2EE;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;padding:22px 14px 16px}
+.brand{display:flex;align-items:center;gap:12px;padding:0 10px 20px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:16px}
+.brand .mark{width:44px;height:44px;border-radius:14px;background:var(--grad);display:grid;place-items:center;font-size:22px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.brand b{font-size:16.5px;letter-spacing:.2px}
+.brand small{display:block;font-size:10.5px;opacity:.65;font-weight:400}
+.navi{display:flex;flex-direction:column;gap:4px;flex:1;overflow-y:auto}
+.navi button{display:flex;align-items:center;gap:11px;width:100%;text-align:right;background:transparent;border:none;color:#C9D8D2;font:inherit;font-size:14px;font-weight:600;padding:11px 14px;border-radius:12px;cursor:pointer;transition:all .18s}
+.navi button:hover{background:rgba(255,255,255,.07);color:#fff;transform:translateX(-2px)}
+.navi button.active{background:rgba(255,255,255,.13);color:#fff;box-shadow:inset 3px 0 0 var(--sea-2)}
+.navi .ico{font-size:17px;width:22px;text-align:center}
+.aside-foot{display:flex;gap:8px;padding-top:14px;border-top:1px solid rgba(255,255,255,.1)}
+.aside-foot button{flex:1;background:rgba(255,255,255,.08);border:none;color:#EAF2EE;font:inherit;font-size:12.5px;font-weight:600;padding:9px;border-radius:10px;cursor:pointer;transition:background .18s}
+.aside-foot button:hover{background:rgba(255,255,255,.16)}
+
+.content{flex:1;min-width:0;padding:26px 32px 70px;max-width:1160px}
+.topbar{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+.topbar h1{font-size:22px;font-weight:700;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.topbar .meta{margin-inline-start:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{background:var(--card);border:1px solid var(--line);border-radius:99px;padding:6px 14px;font-size:12px;color:var(--ink-2);box-shadow:var(--shadow)}
+.pill b{color:var(--sea);font-weight:700}
+
+/* ====== مكونات ====== */
+section.tab{display:none}
+section.tab.show{display:block;animation:fadeUp .35s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.grid{display:grid;gap:16px}
+.grid.cols-4{grid-template-columns:repeat(auto-fit,minmax(195px,1fr))}
+.grid.cols-2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 22px;transition:transform .2s,box-shadow .2s}
+.card.lift:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.card h3{font-size:13px;color:var(--ink-2);font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.kico{width:34px;height:34px;border-radius:10px;background:var(--sea-soft);display:grid;place-items:center;font-size:16px;flex:none}
+.kpi{font-size:32px;font-weight:700;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2}
+.kpi small{font-size:13px;-webkit-text-fill-color:var(--ink-2);font-weight:500}
+.muted{color:var(--ink-2);font-size:13px;line-height:1.75}
+.notice{background:var(--sand-soft);border:1px solid var(--sand);border-radius:var(--radius);padding:14px 18px;font-size:13.5px;line-height:1.9;margin-bottom:18px}
+.notice.green{background:var(--sea-soft);border-color:transparent}
+h2.sec{font-size:16px;margin:24px 0 12px;color:var(--sea-deep)}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.toolbar input[type=search],.toolbar select{font:inherit;font-size:13.5px;padding:10px 15px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);transition:border .15s}
+.toolbar input[type=search]:focus,.toolbar select:focus{outline:none;border-color:var(--sea)}
+.toolbar input[type=search]{min-width:210px;flex:1}
+.btn{font:inherit;font-size:13.5px;font-weight:700;padding:10px 19px;border-radius:12px;border:none;cursor:pointer;background:var(--grad);color:#fff;box-shadow:0 3px 10px rgba(46,110,98,.3);transition:all .18s}
+.btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn:active{transform:none}
+.btn.ghost{background:var(--card);color:var(--sea);border:1px solid var(--line);box-shadow:none}
+.btn.ghost:hover{border-color:var(--sea)}
+.btn.danger{background:linear-gradient(135deg,#B4483E,#D0655A);box-shadow:0 3px 10px rgba(180,72,62,.3)}
+.btn.sm{padding:6px 13px;font-size:12px;border-radius:9px}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+th{background:var(--sea-soft);color:var(--sea-deep);font-size:12px;text-align:right;padding:11px 14px;white-space:nowrap}
+td{padding:11px 14px;border-top:1px solid var(--line);font-size:13px;vertical-align:middle}
+tr{transition:background .12s}
+tr:hover td{background:var(--hover)}
+.emoji{font-size:20px}
+.chip{display:inline-block;background:var(--sea-soft);color:var(--sea);border-radius:99px;padding:2.5px 11px;font-size:11px;font-weight:700}
+.chip.red{background:var(--danger-soft);color:var(--danger)}
+.chip.sand{background:var(--sand-soft);color:#8A7648}
+.num{font-feature-settings:'tnum';direction:ltr;display:inline-block}
+.bars .row{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:12.5px}
+.bars .lbl{width:150px;color:var(--ink-2)}
+.bars .track{flex:1;background:var(--line);border-radius:99px;height:10px;overflow:hidden}
+.bars .fill{height:100%;background:var(--grad);border-radius:99px;width:0;transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.bars .val{width:34px;font-weight:700;color:var(--sea)}
+dialog{border:none;border-radius:20px;box-shadow:var(--shadow-lg);padding:0;width:min(480px,92vw);background:var(--card);color:var(--ink)}
+dialog::backdrop{background:rgba(16,26,23,.55);backdrop-filter:blur(3px)}
+.dlg{padding:26px}
+.dlg h3{font-size:16px;color:var(--sea-deep);margin-bottom:16px}
+.field{margin-bottom:13px}
+.field label{display:block;font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;font:inherit;font-size:14px;padding:10px 13px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--ink)}
+.field textarea{min-height:90px;resize:vertical}
+.field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--sea);box-shadow:0 0 0 3px color-mix(in srgb,var(--sea) 18%,transparent)}
+.err{color:var(--danger);font-size:12px;margin-top:3px;display:none}
+.dlg .actions{display:flex;gap:10px;margin-top:18px}
+.badge-dirty{background:var(--danger-soft);color:var(--danger);border-radius:99px;padding:5px 13px;font-size:12px;font-weight:700;display:none}
+.check{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.check input{margin-top:4px;accent-color:var(--sea);width:16px;height:16px}
+.check.done label{text-decoration:line-through;color:var(--ink-2)}
+.progress{background:var(--line);border-radius:99px;height:12px;overflow:hidden;margin:10px 0 4px}
+.progress .fill{height:100%;background:var(--grad);transition:width .5s}
+code{background:var(--sand-soft);padding:2px 8px;border-radius:7px;font-size:12px;direction:ltr;display:inline-block}
+.toast{position:fixed;bottom:26px;right:50%;transform:translateX(50%) translateY(20px);background:var(--sea-deep);color:var(--bg);padding:12px 24px;border-radius:99px;font-size:13.5px;box-shadow:var(--shadow-lg);opacity:0;transition:all .3s;pointer-events:none;z-index:99;max-width:90vw}
+body.dark .toast{background:#EAF2EE;color:#12201C}
+.toast.on{opacity:1;transform:translateX(50%) translateY(0)}
+.ann{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;background:var(--card);transition:transform .15s}
+.ann:hover{transform:translateX(-2px)}
+.ann .t{font-weight:700;color:var(--sea-deep);font-size:14px}
+.ann .b{font-size:13px;margin:5px 0;line-height:1.7}
+.ann .m{font-size:11px;color:var(--ink-2);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.hcard{display:flex;align-items:center;gap:10px;font-size:13.5px;padding:9px 0;border-bottom:1px solid var(--line)}
+.hcard:last-child{border-bottom:none}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--danger);flex:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--danger) 20%,transparent)}
+.dot.ok{background:#3E8A7B;box-shadow:0 0 0 3px color-mix(in srgb,#3E8A7B 20%,transparent)}
+.filedrop{border:2px dashed var(--line);border-radius:var(--radius);padding:26px;text-align:center;color:var(--ink-2);font-size:13.5px;cursor:pointer;transition:all .2s}
+.filedrop:hover{border-color:var(--sea);color:var(--sea)}
+
+/* شاشة القفل */
+#lock{position:fixed;inset:0;background:var(--grad-deep);display:none;align-items:center;justify-content:center;z-index:50}
+#lock.on{display:flex}
+#lock .box{background:var(--card);border-radius:24px;padding:40px;width:min(400px,90vw);text-align:center;box-shadow:0 30px 90px rgba(0,0,0,.45);animation:fadeUp .4s ease}
+#lock .mark{width:66px;height:66px;border-radius:20px;background:var(--grad);display:grid;place-items:center;font-size:32px;margin:0 auto 16px;box-shadow:0 8px 24px rgba(46,110,98,.4)}
+#lock h2{color:var(--sea-deep);font-size:19px;margin-bottom:4px}
+#lock p{font-size:12.5px;color:var(--ink-2);margin-bottom:20px}
+#lock input{width:100%;font:inherit;font-size:15px;padding:12px 15px;border:1px solid var(--line);border-radius:12px;text-align:center;margin-bottom:12px;background:var(--card);color:var(--ink)}
+#lock input:focus{outline:none;border-color:var(--sea)}
+#lock .lerr{color:var(--danger);font-size:12.5px;min-height:18px;margin-bottom:8px}
+
+@media(max-width:920px){
+  .layout{flex-direction:column}
+  aside{width:100%;height:auto;position:static;flex-direction:row;align-items:center;padding:12px 14px;gap:8px}
+  .brand{border:none;padding:0;margin:0}
+  .brand small{display:none}
+  .navi{flex-direction:row;overflow-x:auto;padding:0 6px}
+  .navi button{white-space:nowrap;padding:8px 12px}
+  .navi .ico{width:auto}
+  .aside-foot{border:none;padding:0}
+  .content{padding:18px 14px 60px}
+}
+</style>
+</head>
+<body>
+
+<!-- شاشة القفل -->
+<div id="lock">
+  <div class="box">
+    <div class="mark">⚓️</div>
+    <h2>لوحة تحكم اشتراكاتي</h2>
+    <p>الوصول مقصور على المشرف — أدخل كلمة المرور</p>
+    <form id="lock-form">
+      <input type="password" id="lock-pw" placeholder="كلمة المرور" autocomplete="current-password" autofocus>
+      <div class="lerr" id="lock-err"></div>
+      <button class="btn" style="width:100%">دخول</button>
+    </form>
+  </div>
+</div>
+
+<div class="layout">
+<aside>
+  <div class="brand">
+    <div class="mark">⚓️</div>
+    <div><b>اشتراكاتي</b><small>لوحة المشرف · v3</small></div>
+  </div>
+  <nav class="navi" id="nav">
+    <button data-tab="overview" class="active"><span class="ico">🏠</span>نظرة عامة</button>
+    <button data-tab="people"><span class="ico">👥</span>المستخدمون</button>
+    <button data-tab="notify"><span class="ico">📣</span>الإشعارات</button>
+    <button data-tab="catalog"><span class="ico">🗂</span>كتالوج الخدمات</button>
+    <button data-tab="release"><span class="ico">🚀</span>الإصدار والإطلاق</button>
+    <button data-tab="audit"><span class="ico">📜</span>سجل التدقيق</button>
+    <button data-tab="health"><span class="ico">🩺</span>الصحة والإعدادات</button>
+  </nav>
+  <div class="aside-foot">
+    <button id="btn-theme">🌙 داكن</button>
+    <button id="btn-logout" style="display:none">🔒 خروج</button>
+  </div>
+</aside>
+
+<main class="content">
+<div class="topbar">
+  <h1 id="page-title">نظرة عامة</h1>
+  <div class="meta">
+    <span class="pill" id="git-pill" style="display:none">فرع <b id="git-branch">—</b> · <span id="git-changes">—</span></span>
+    <span class="pill">الإصدار <b class="num">17.0.0+46</b></span>
+  </div>
+</div>
+
+<!-- ============ نظرة عامة ============ -->
+<section class="tab show" id="tab-overview">
+  <div class="notice green">🔐 بيانات اشتراكات المستخدمين مشفّرة من طرف إلى طرف (AES-256-GCM بمفتاح Keychain) — اللوحة تعرض هوية الحساب ونشاط الدخول والمزامنة فقط. اللوحة محمية بكلمة مرور وجلسات مؤقتة وتعمل على جهازك حصرًا (127.0.0.1).</div>
+  <div class="grid cols-4">
+    <div class="card lift"><h3><span class="kico">👥</span>إجمالي المستخدمين</h3><div class="kpi" id="ov-users">—</div><div class="muted" id="ov-users-note">من Firebase Auth</div></div>
+    <div class="card lift"><h3><span class="kico">⚡️</span>نشطون آخر 7 أيام</h3><div class="kpi" id="ov-active">—</div><div class="muted">دخول أو مزامنة</div></div>
+    <div class="card lift"><h3><span class="kico">🗂</span>خدمات الكتالوج</h3><div class="kpi" id="ov-count">—</div><div class="muted">نسخة <span id="ov-ver" class="num">—</span> · <span id="ov-upd" class="num">—</span></div></div>
+    <div class="card lift"><h3><span class="kico">📣</span>إعلانات منشورة</h3><div class="kpi" id="ov-anns">—</div><div class="muted" id="ov-anns-note">آخر نشر —</div></div>
+  </div>
+  <h2 class="sec">توزيع الخدمات حسب التصنيف</h2>
+  <div class="card bars" id="ov-bars"></div>
+</section>
+
+<!-- ============ المستخدمون ============ -->
+<section class="tab" id="tab-people">
+  <div class="notice" id="people-offline" style="display:none">⚠️ هذا القسم يتطلب تشغيل الخادم: <code>node admin/server.mjs serviceAccount.json</code> ثم فتح <code>http://127.0.0.1:8791</code></div>
+  <div id="people-online" style="display:none">
+    <div class="grid cols-4" style="margin-bottom:16px">
+      <div class="card lift"><h3><span class="kico">👥</span>إجمالي الحسابات</h3><div class="kpi" id="p-total">—</div></div>
+      <div class="card lift"><h3><span class="kico">🌅</span>نشطون آخر 24 ساعة</h3><div class="kpi" id="p-24h">—</div></div>
+      <div class="card lift"><h3><span class="kico">📅</span>نشطون آخر 7 أيام</h3><div class="kpi" id="p-7d">—</div></div>
+      <div class="card lift"><h3><span class="kico">🔄</span>إجمالي المزامنات</h3><div class="kpi" id="p-syncs">—</div></div>
+    </div>
+    <div class="toolbar">
+      <input type="search" id="p-search" placeholder="🔍 ابحث بالبريد أو المعرّف…">
+      <select id="p-sort">
+        <option value="lastRefresh">الأحدث استخدامًا</option>
+        <option value="lastSignIn">الأحدث دخولًا</option>
+        <option value="lastSync">الأحدث مزامنة</option>
+        <option value="createdAt">الأحدث تسجيلًا</option>
+        <option value="revision">الأكثر مزامنة</option>
+      </select>
+      <button class="btn ghost" id="p-refresh">🔄 تحديث</button>
+      <button class="btn ghost" id="p-export">⬇️ CSV</button>
+    </div>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th>الحساب</th><th>المزوّد</th><th>سُجّل</th><th>آخر دخول</th><th>آخر استخدام</th><th>آخر مزامنة</th><th>المزامنات</th><th>النسخة</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+      <tbody id="p-body"></tbody>
+    </table>
+    </div>
+    <div class="muted" style="margin-top:8px">«آخر استخدام» = آخر تحديث لرمز الجلسة — أدق مؤشر متاح دون تتبّع داخل التطبيق، حفاظًا على الخصوصية.</div>
+  </div>
+</section>
+
+<!-- ============ الإشعارات ============ -->
+<section class="tab" id="tab-notify">
+  <div class="notice" id="notify-offline" style="display:none">⚠️ هذا القسم يتطلب تشغيل الخادم المحلي.</div>
+  <div id="notify-online" style="display:none">
+    <div class="grid cols-2">
+      <div class="card">
+        <h3><span class="kico">✍️</span>رسالة جديدة</h3>
+        <div class="field"><label>العنوان *</label><input id="n-title" maxlength="80" placeholder="مثال: الإصدار 17 متاح الآن"></div>
+        <div class="field"><label>النص *</label><textarea id="n-body" maxlength="400" placeholder="النص الذي سيظهر للمستخدمين…"></textarea></div>
+        <div class="field"><label>رابط (اختياري)</label><input id="n-link" placeholder="https://…" style="direction:ltr"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn" id="n-push">📲 إشعار فوري (push)</button>
+          <button class="btn ghost" id="n-send">📝 إضافة للمسودة</button>
+        </div>
+        <div class="muted" style="margin-top:10px">الفوري يصل لحظيًا لكل الأجهزة (موضوع «all»). المسودة تظهر داخل التطبيق بعد النشر والدفع إلى GitHub.</div>
+      </div>
+      <div class="card">
+        <h3><span class="kico">📝</span>المسودة <span class="muted">(لا تصل للمستخدمين)</span></h3>
+        <div id="n-draft"><div class="muted">لا مسودات</div></div>
+        <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn" id="n-publish">🚀 نشر المسودة</button>
+          <button class="btn ghost" id="n-rollback">↩️ استرجاع سابق</button>
+        </div>
+        <h3 style="margin-top:20px"><span class="kico">🌍</span>المنشور حاليًا <span class="chip" id="n-pubver">v0</span></h3>
+        <div id="n-list"><div class="muted">لا إعلانات منشورة</div></div>
+      </div>
+    </div>
+    <div class="notice" style="margin-top:16px">📲 الإشعار الفوري يتطلب مرة واحدة رفع مفتاح APNs في Firebase Console، ويصل لبناءات TestFlight/App Store (لا يصل لبناءات Sideloadly بقيود Apple).</div>
+  </div>
+</section>
+
+<!-- ============ الكتالوج ============ -->
+<section class="tab" id="tab-catalog">
+  <div class="toolbar">
+    <input type="search" id="cat-search" placeholder="🔍 ابحث بالاسم أو النطاق…">
+    <select id="cat-filter"><option value="">كل التصنيفات</option></select>
+    <span class="badge-dirty" id="dirty">تعديلات غير محفوظة</span>
+    <button class="btn" id="btn-add">＋ خدمة جديدة</button>
+  </div>
+  <div class="toolbar">
+    <button class="btn" id="btn-save-repo" style="display:none">💾 حفظ في المستودع</button>
+    <button class="btn" id="btn-git-publish" style="display:none">⬆️ نشر إلى GitHub</button>
+    <button class="btn ghost" id="btn-import">📂 فتح ملف</button>
+    <button class="btn ghost" id="btn-export">⬇️ تصدير ملف</button>
+  </div>
+  <input type="file" id="file-catalog" accept=".json" hidden>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th></th><th>الخدمة</th><th>التصنيف</th><th>النطاق</th><th>السعر التقريبي</th><th>الإدارة</th><th></th></tr></thead>
+    <tbody id="cat-body"></tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ============ الإصدار ============ -->
+<section class="tab" id="tab-release">
+  <div class="grid cols-2">
+    <div class="card">
+      <h3><span class="kico">📦</span>حالة الإصدار</h3>
+      <div class="kpi num">17.0.0+46</div>
+      <div class="muted" style="margin:8px 0">Firestore: <code>default</code> · AES-256-GCM · App Check: App Attest</div>
+      <button class="btn ghost" id="btn-remote-ver">🔄 فحص النسخة على GitHub</button>
+      <div class="muted" id="remote-ver-out" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h3><span class="kico">✅</span>تقدم قائمة الإطلاق</h3>
+      <div class="progress"><div class="fill" id="rel-fill" style="width:0%"></div></div>
+      <div class="muted"><span id="rel-done">0</span> من <span id="rel-total">0</span> مكتمل — يُحفظ محليًا</div>
+      <button class="btn sm ghost" id="btn-rel-reset" style="margin-top:10px">إعادة تعيين</button>
+    </div>
+  </div>
+  <h2 class="sec">قائمة ما قبل إطلاق App Store</h2>
+  <div class="card" id="rel-list"></div>
+</section>
+
+<!-- ============ سجل التدقيق ============ -->
+<section class="tab" id="tab-audit">
+  <div class="notice">سجل ملحق فقط لكل العمليات الإدارية — لا يمكن تعديله أو حذفه من الواجهة. محفوظ في <code>admin/audit.log</code> خارج Git.</div>
+  <div class="toolbar">
+    <input type="search" id="a-search" placeholder="🔍 ابحث (عملية، مورد، نتيجة…)">
+    <button class="btn ghost" id="a-refresh">🔄 تحديث</button>
+    <button class="btn ghost" id="a-export">⬇️ JSON</button>
+  </div>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>الوقت</th><th>العملية</th><th>المورد</th><th>النتيجة</th><th>تفاصيل</th><th>Req</th></tr></thead>
+    <tbody id="a-body"><tr><td colspan="6" style="text-align:center;color:var(--ink-2)">شغّل الخادم لعرض السجل</td></tr></tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ============ الصحة والإعدادات ============ -->
+<section class="tab" id="tab-health">
+  <div class="toolbar"><button class="btn ghost" id="h-refresh">🔄 فحص الآن</button></div>
+  <div class="grid cols-2">
+    <div class="card"><h3><span class="kico">🩺</span>الخدمات</h3><div id="h-checks"><div class="muted">اضغط «فحص الآن»</div></div></div>
+    <div class="card"><h3><span class="kico">🖥</span>الخادم</h3><div id="h-meta" class="muted">—</div></div>
+    <div class="card">
+      <h3><span class="kico">🔑</span>تغيير كلمة مرور اللوحة</h3>
+      <div class="field"><label>الكلمة الحالية</label><input type="password" id="pw-cur"></div>
+      <div class="field"><label>الكلمة الجديدة (12+ حرفًا)</label><input type="password" id="pw-new"></div>
+      <button class="btn" id="pw-change">تغيير — يعيد تسجيل الدخول</button>
+    </div>
+    <div class="card">
+      <h3><span class="kico">🛡</span>الحماية المفعّلة</h3>
+      <div class="muted">scrypt + ملح عشوائي · جلسات HttpOnly تنتهي بعد 30 دقيقة · قفل بعد 5 محاولات · استماع 127.0.0.1 حصرًا · CSP وX-Frame وnosniff · فحص Origin · حد 240 طلبًا/دقيقة · إعادة مصادقة للعمليات الحساسة · سجل تدقيق ملحق فقط · نسخ احتياطية تلقائية قبل كل نشر.</div>
+    </div>
+  </div>
+</section>
+</main>
+</div>
+
+<!-- حوار تحرير خدمة -->
+<dialog id="dlg">
+  <form class="dlg" method="dialog" id="dlg-form">
+    <h3 id="dlg-title">خدمة جديدة</h3>
+    <div class="field"><label>اسم الخدمة *</label><input id="f-name" required><div class="err" id="e-name"></div></div>
+    <div class="field"><label>الرمز التعبيري *</label><input id="f-emoji" placeholder="🎬" required></div>
+    <div class="field"><label>التصنيف *</label><select id="f-category"></select></div>
+    <div class="field"><label>النطاق (domain) *</label><input id="f-domain" placeholder="netflix.com" style="direction:ltr" required><div class="err" id="e-domain"></div></div>
+    <div class="field"><label>رابط إدارة الاشتراك *</label><input id="f-manageUrl" placeholder="https://…" style="direction:ltr" required><div class="err" id="e-url"></div></div>
+    <div class="field"><label>السعر التقريبي (ر.س) — اختياري</label><input id="f-price" type="number" step="0.01" min="0" style="direction:ltr"><div class="err" id="e-price"></div></div>
+    <div class="actions">
+      <button class="btn" type="submit">حفظ</button>
+      <button class="btn ghost" type="button" onclick="dlg.close()">إلغاء</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ====== البيانات المضمّنة (تُحقن من catalog/services.json) ====== */
+const EMBEDDED_CATALOG = {"version": 3, "updatedAt": "2026-07-10", "services": [{"name": "شاهد VIP", "emoji": "🎬", "category": "ترفيه ومشاهدة", "domain": "shahid.mbc.net", "manageUrl": "https://shahid.mbc.net/ar/my-account", "priceHint": 24.99}, {"name": "Netflix", "emoji": "🍿", "category": "ترفيه ومشاهدة", "domain": "netflix.com", "manageUrl": "https://www.netflix.com/account", "priceHint": 55.99}, {"name": "Spotify Premium", "emoji": "🎧", "category": "موسيقى وبودكاست", "domain": "spotify.com", "manageUrl": "https://www.spotify.com/account/subscription/", "priceHint": 21.99}, {"name": "أنغامي بلس", "emoji": "🎵", "category": "موسيقى وبودكاست", "domain": "anghami.com", "manageUrl": "https://www.anghami.com/account", "priceHint": 19.99}, {"name": "YouTube Premium", "emoji": "▶️", "category": "ترفيه ومشاهدة", "domain": "youtube.com", "manageUrl": "https://www.youtube.com/paid_memberships", "priceHint": 23.99}, {"name": "iCloud+ 50GB", "emoji": "☁️", "category": "تخزين سحابي", "domain": "icloud.com", "manageUrl": "https://support.apple.com/HT202039", "priceHint": 3.99}, {"name": "iCloud+ 200GB", "emoji": "☁️", "category": "تخزين سحابي", "domain": "icloud.com", "manageUrl": "https://support.apple.com/HT202039", "priceHint": 11.99}, {"name": "ChatGPT Plus", "emoji": "🤖", "category": "إنتاجية وذكاء اصطناعي", "domain": "openai.com", "manageUrl": "https://chatgpt.com/#settings/Subscription", "priceHint": 75.0}, {"name": "Claude Pro", "emoji": "✨", "category": "إنتاجية وذكاء اصطناعي", "domain": "claude.ai", "manageUrl": "https://claude.ai/settings/billing", "priceHint": 75.0}, {"name": "Xbox Game Pass Ultimate", "emoji": "🕹️", "category": "ألعاب", "domain": "xbox.com", "manageUrl": "https://account.microsoft.com/services", "priceHint": 59.99}, {"name": "PlayStation Plus Essential", "emoji": "🎮", "category": "ألعاب", "domain": "playstation.com", "manageUrl": "https://www.playstation.com/acct/management", "priceHint": 29.99}, {"name": "Amazon Prime", "emoji": "📦", "category": "تسوق وتوصيل", "domain": "amazon.sa", "manageUrl": "https://www.amazon.sa/mc", "priceHint": 16.0}, {"name": "Snapchat+", "emoji": "👻", "category": "ترفيه ومشاهدة", "domain": "snapchat.com", "manageUrl": "https://accounts.snapchat.com", "priceHint": 14.99}, {"name": "Duolingo Super", "emoji": "🦉", "category": "تعليم", "domain": "duolingo.com", "manageUrl": "https://www.duolingo.com/settings/super", "priceHint": 36.99}, {"name": "Calm", "emoji": "🧘", "category": "رياضة وصحة", "domain": "calm.com", "manageUrl": "https://www.calm.com/account", "priceHint": 18.99}, {"name": "OSN+", "emoji": "🎞️", "category": "ترفيه ومشاهدة", "domain": "osnplus.com", "manageUrl": "https://stream.osnplus.com/settings", "priceHint": 30.0}, {"name": "stc tv", "emoji": "📺", "category": "ترفيه ومشاهدة", "domain": "stctv.com", "manageUrl": "https://stctv.com/account", "priceHint": 20.0}, {"name": "Jawwy TV", "emoji": "📡", "category": "ترفيه ومشاهدة", "domain": "jawwy.tv", "manageUrl": "https://jawwy.tv", "priceHint": 15.0}, {"name": "TOD", "emoji": "⚽", "category": "ترفيه ومشاهدة", "domain": "tod.tv", "manageUrl": "https://tod.tv/account", "priceHint": 34.99}, {"name": "Yango Play", "emoji": "🎥", "category": "ترفيه ومشاهدة", "domain": "yangoplay.com", "manageUrl": "https://yangoplay.com", "priceHint": 19.99}, {"name": "Disney+", "emoji": "🏰", "category": "ترفيه ومشاهدة", "domain": "disneyplus.com", "manageUrl": "https://disneyplus.com/account", "priceHint": 29.99}, {"name": "STARZPLAY", "emoji": "⭐", "category": "ترفيه ومشاهدة", "domain": "starzplay.com", "manageUrl": "https://starzplay.com/account", "priceHint": 24.99}, {"name": "Crunchyroll", "emoji": "🍥", "category": "ترفيه ومشاهدة", "domain": "crunchyroll.com", "manageUrl": "https://crunchyroll.com/account", "priceHint": 29.99}, {"name": "Apple Music", "emoji": "🎶", "category": "موسيقى وبودكاست", "domain": "music.apple.com", "manageUrl": "https://support.apple.com/HT202039", "priceHint": 21.99}, {"name": "Apple TV+", "emoji": "🍏", "category": "ترفيه ومشاهدة", "domain": "tv.apple.com", "manageUrl": "https://support.apple.com/HT202039", "priceHint": 29.99}, {"name": "Apple One", "emoji": "🅰️", "category": "إنتاجية وذكاء اصطناعي", "domain": "apple.com", "manageUrl": "https://support.apple.com/HT202039", "priceHint": 36.95}, {"name": "Apple Arcade", "emoji": "🕹️", "category": "ألعاب", "domain": "apple.com", "manageUrl": "https://support.apple.com/HT202039", "priceHint": 24.99}, {"name": "iCloud+ 2TB", "emoji": "☁️", "category": "تخزين سحابي", "domain": "icloud.com", "manageUrl": "https://support.apple.com/HT202039", "priceHint": 34.99}, {"name": "Google One", "emoji": "🗂️", "category": "تخزين سحابي", "domain": "one.google.com", "manageUrl": "https://one.google.com/settings", "priceHint": 9.99}, {"name": "Microsoft 365", "emoji": "📊", "category": "إنتاجية وذكاء اصطناعي", "domain": "microsoft.com", "manageUrl": "https://account.microsoft.com/services", "priceHint": 29.99}, {"name": "Canva Pro", "emoji": "🎨", "category": "إنتاجية وذكاء اصطناعي", "domain": "canva.com", "manageUrl": "https://canva.com/settings/billing", "priceHint": 40.0}, {"name": "Adobe Creative Cloud", "emoji": "🖌️", "category": "إنتاجية وذكاء اصطناعي", "domain": "adobe.com", "manageUrl": "https://account.adobe.com/plans", "priceHint": 120.0}, {"name": "Notion Plus", "emoji": "🗒️", "category": "إنتاجية وذكاء اصطناعي", "domain": "notion.so", "manageUrl": "https://notion.so/my-account", "priceHint": 45.0}, {"name": "Dropbox Plus", "emoji": "📦", "category": "تخزين سحابي", "domain": "dropbox.com", "manageUrl": "https://dropbox.com/account/plan", "priceHint": 45.0}, {"name": "LinkedIn Premium", "emoji": "💼", "category": "إنتاجية وذكاء اصطناعي", "domain": "linkedin.com", "manageUrl": "https://linkedin.com/premium/manage", "priceHint": 110.0}, {"name": "Telegram Premium", "emoji": "✈️", "category": "إنتاجية وذكاء اصطناعي", "domain": "telegram.org", "manageUrl": "https://t.me/premium", "priceHint": 18.99}, {"name": "X Premium", "emoji": "✖️", "category": "أخبار ومجلات", "domain": "x.com", "manageUrl": "https://x.com/settings/subscriptions", "priceHint": 32.0}, {"name": "Discord Nitro", "emoji": "🎙️", "category": "ألعاب", "domain": "discord.com", "manageUrl": "https://discord.com/settings/subscriptions", "priceHint": 37.99}, {"name": "Twitch Turbo", "emoji": "🟣", "category": "ترفيه ومشاهدة", "domain": "twitch.tv", "manageUrl": "https://twitch.tv/settings/subscriptions", "priceHint": 44.99}, {"name": "Careem Plus", "emoji": "🛵", "category": "تسوق وتوصيل", "domain": "careem.com", "manageUrl": "https://careem.com", "priceHint": 19.0}, {"name": "طلبات برو", "emoji": "🛍️", "category": "تسوق وتوصيل", "domain": "talabat.com", "manageUrl": "https://talabat.com", "priceHint": 14.99}, {"name": "نون VIP", "emoji": "🟡", "category": "تسوق وتوصيل", "domain": "noon.com", "manageUrl": "https://noon.com", "priceHint": 12.0}, {"name": "HungerStation Plus", "emoji": "🍔", "category": "تسوق وتوصيل", "domain": "hungerstation.com", "manageUrl": "https://hungerstation.com", "priceHint": 15.0}, {"name": "وقت اللياقة", "emoji": "🏋️", "category": "رياضة وصحة", "domain": "fitnesstime.com.sa", "manageUrl": "https://fitnesstime.com.sa", "priceHint": 250.0}, {"name": "Headspace", "emoji": "🧠", "category": "رياضة وصحة", "domain": "headspace.com", "manageUrl": "https://headspace.com/settings", "priceHint": 24.99}, {"name": "Coursera Plus", "emoji": "🎓", "category": "تعليم", "domain": "coursera.org", "manageUrl": "https://coursera.org/account-settings", "priceHint": 222.0}, {"name": "NordVPN", "emoji": "🔒", "category": "اتصالات وإنترنت", "domain": "nordvpn.com", "manageUrl": "https://my.nordaccount.com", "priceHint": 47.0}, {"name": "1Password", "emoji": "🔑", "category": "إنتاجية وذكاء اصطناعي", "domain": "1password.com", "manageUrl": "https://my.1password.com", "priceHint": 11.0}, {"name": "PlayStation Plus Extra", "emoji": "🎮", "category": "ألعاب", "domain": "playstation.com", "manageUrl": "https://playstation.com/acct/management", "priceHint": 44.99}, {"name": "Shahid VIP سنوي", "emoji": "🎬", "category": "ترفيه ومشاهدة", "domain": "shahid.mbc.net", "manageUrl": "https://shahid.mbc.net/ar/my-account", "priceHint": 249.0}]};
+
+/* ====== حالة ====== */
+let catalog = JSON.parse(JSON.stringify(EMBEDDED_CATALOG));
+let dirty = false, editIndex = -1, serverMode = false, allUsers = [], auditEntries = [];
+const $ = id => document.getElementById(id);
+const dlg = $('dlg');
+const AR_CATEGORIES = ['ترفيه ومشاهدة','موسيقى وبودكاست','تخزين سحابي','إنتاجية وذكاء اصطناعي','ألعاب','تسوق وتوصيل','تعليم','رياضة وصحة','أخبار ومجلات','اتصالات وإنترنت','أخرى'];
+const TITLES = {overview:'نظرة عامة', people:'المستخدمون والنشاط', notify:'الإشعارات', catalog:'كتالوج الخدمات', release:'الإصدار والإطلاق', audit:'سجل التدقيق', health:'الصحة والإعدادات'};
+
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),3000);}
+function setDirty(v){dirty=v;$('dirty').style.display=v?'inline-block':'none';}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function countUp(el, target){
+  if(typeof target!=='number'||!isFinite(target)){el.textContent=target;return;}
+  const t0=performance.now(), dur=650, from=0;
+  const step=now=>{const p=Math.min(1,(now-t0)/dur), v=Math.round(from+(target-from)*(1-Math.pow(1-p,3)));el.textContent=v;if(p<1)requestAnimationFrame(step);};
+  requestAnimationFrame(step);
+}
+
+/* ====== تنقل ====== */
+$('nav').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('.navi button').forEach(x=>x.classList.toggle('active',x===b));
+  document.querySelectorAll('section.tab').forEach(s=>s.classList.toggle('show',s.id==='tab-'+b.dataset.tab));
+  $('page-title').textContent = TITLES[b.dataset.tab]||'';
+  if(serverMode){
+    if(b.dataset.tab==='audit') loadAudit();
+    if(b.dataset.tab==='health') loadHealth();
+  }
+});
+
+/* ====== القفل والجلسة ====== */
+async function initSession(){
+  try{
+    const r = await fetch('/api/session');
+    if(!r.ok) throw 0;
+    serverMode = true;
+    $('btn-logout').style.display='block';
+    $('btn-save-repo').style.display='inline-block';
+    $('btn-git-publish').style.display='inline-block';
+    const {authed} = await r.json();
+    if(!authed){ $('lock').classList.add('on'); $('lock-pw').focus(); }
+    else afterAuth();
+  }catch{
+    serverMode = false;
+    $('people-offline').style.display='block';
+    $('notify-offline').style.display='block';
+    $('ov-users-note').textContent='شغّل الخادم لعرض المستخدمين';
+  }
+}
+$('lock-form').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('lock-pw').value})});
+  const d = await r.json().catch(()=>({}));
+  if(r.ok){ $('lock').classList.remove('on'); $('lock-pw').value=''; $('lock-err').textContent=''; afterAuth(); }
+  else if(r.status===429) $('lock-err').textContent='قُفل الدخول مؤقتًا — أعد المحاولة بعد '+(d.minutes??15)+' دقيقة';
+  else $('lock-err').textContent='كلمة مرور خاطئة'+(d.remaining!=null?' — المتبقي '+d.remaining+' محاولات':'');
+});
+$('btn-logout').onclick = async ()=>{ await fetch('/api/logout',{method:'POST'}); location.reload(); };
+
+function afterAuth(){
+  $('people-online').style.display='block';
+  $('notify-online').style.display='block';
+  loadUsers(); loadAnnouncements(); loadGit(); loadCatalogFresh();
+}
+async function api(path, opts){
+  const r = await fetch(path, opts);
+  if(r.status===401){ $('lock').classList.add('on'); throw new Error('انتهت الجلسة — سجّل الدخول مجددًا'); }
+  if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error(d.error||('خطأ '+r.status)); }
+  return r.json();
+}
+
+/* ====== Git ====== */
+async function loadGit(){
+  try{
+    const d = await api('/api/git/status');
+    if(!d.branch) return;
+    $('git-pill').style.display='inline-block';
+    $('git-branch').textContent = d.branch;
+    $('git-changes').textContent = d.changes.length? d.changes.length+' تغيير غير مدفوع':'كل شيء مدفوع ✓';
+  }catch{/* صامت */}
+}
+$('btn-git-publish').onclick = async ()=>{
+  const pw = prompt('نشر ملفات catalog إلى GitHub (commit + push).\nأدخل كلمة مرور اللوحة:');
+  if(!pw) return;
+  const msg = prompt('رسالة الـ commit (اختياري):') || '';
+  try{
+    const r = await api('/api/git/publish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw,message:msg})});
+    toast(r.nothing? 'لا تغييرات للنشر':'⬆️ نُشر إلى GitHub بنجاح'); loadGit();
+  }catch(e){ toast('⚠️ '+e.message); }
+};
+
+/* ====== المستخدمون ====== */
+const fmtRel = iso=>{
+  if(!iso) return '<span class="chip sand">—</span>';
+  const d=(Date.now()-new Date(iso))/36e5;
+  const txt = d<1? 'قبل دقائق' : d<24? 'قبل '+Math.round(d)+' س' : d<24*30? 'قبل '+Math.round(d/24)+' يوم' : new Date(iso).toISOString().slice(0,10);
+  const cls = d<24? 'chip' : d<24*7? 'chip sand' : 'chip red';
+  return `<span class="${cls}" title="${iso.slice(0,16).replace('T',' ')}">${txt}</span>`;
+};
+async function loadUsers(){
+  try{
+    const {users} = await api('/api/users');
+    allUsers = users;
+    const now=Date.now(), h24=now-864e5, d7=now-7*864e5;
+    const act = u => Math.max(...['lastRefresh','lastSignIn','lastSync'].map(k=>u[k]?+new Date(u[k]):0));
+    countUp($('p-total'), users.length);
+    countUp($('p-24h'), users.filter(u=>act(u)>h24).length);
+    countUp($('p-7d'), users.filter(u=>act(u)>d7).length);
+    countUp($('p-syncs'), users.reduce((s,u)=>s+u.revision,0));
+    countUp($('ov-users'), users.length);
+    countUp($('ov-active'), users.filter(u=>act(u)>d7).length);
+    $('ov-users-note').textContent='من Firebase Auth مباشرة';
+    renderUsers();
+  }catch(e){ toast('⚠️ '+e.message); }
+}
+function renderUsers(){
+  const q=$('p-search').value.trim().toLowerCase(), sort=$('p-sort').value;
+  const rows=[...allUsers]
+    .filter(u=>!q||((u.email||'').toLowerCase().includes(q)||u.uid.toLowerCase().includes(q)))
+    .sort((a,b)=> sort==='revision'? b.revision-a.revision : (+new Date(b[sort]||0))-(+new Date(a[sort]||0)));
+  $('p-body').innerHTML = rows.map(u=>`<tr>
+    <td><strong>${esc(u.email||'بدون بريد')}</strong><div class="muted num" style="font-size:10.5px">${esc(u.uid.slice(0,10))}…</div></td>
+    <td><span class="chip">${u.provider==='apple.com'?' Apple':esc(u.provider)}</span></td>
+    <td class="num">${u.createdAt? u.createdAt.slice(0,10):'—'}</td>
+    <td>${fmtRel(u.lastSignIn)}</td>
+    <td>${fmtRel(u.lastRefresh)}</td>
+    <td>${fmtRel(u.lastSync)}</td>
+    <td class="num">${u.revision}</td>
+    <td class="num">${u.backupKB? u.backupKB+' KB':'—'}</td>
+    <td>${u.disabled? '<span class="chip red">معطّل</span>':'<span class="chip">نشط</span>'}</td>
+    <td style="white-space:nowrap">
+      <button class="btn sm ghost" onclick="userStatus('${u.uid}',${!u.disabled})">${u.disabled?'تفعيل':'تعطيل'}</button>
+      <button class="btn sm ghost" onclick="userRevoke('${u.uid}')">إبطال الجلسات</button>
+      <button class="btn sm danger" onclick="userDelete('${u.uid}','${esc(u.email||u.uid)}')">حذف</button>
+    </td>
+  </tr>`).join('') || '<tr><td colspan="10" style="text-align:center;color:var(--ink-2)">لا نتائج</td></tr>';
+}
+$('p-search').addEventListener('input', renderUsers);
+$('p-sort').addEventListener('change', renderUsers);
+$('p-refresh').onclick = loadUsers;
+$('p-export').onclick = ()=>{
+  const head='uid,email,provider,createdAt,lastSignIn,lastRefresh,lastSync,revision,backupKB,disabled';
+  const csv=[head,...allUsers.map(u=>[u.uid,u.email,u.provider,u.createdAt,u.lastSignIn,u.lastRefresh,u.lastSync,u.revision,u.backupKB,u.disabled].map(v=>'"'+String(v??'')+'"').join(','))].join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv'})); a.download='ishtirakati-users.csv'; a.click();
+  toast('صُدّر CSV — يحوي بيانات حسابات، تعامل معه بحذر');
+};
+window.userStatus = async (uid, disabled)=>{
+  if(!confirm(disabled?'تعطيل هذا الحساب؟ لن يستطيع تسجيل الدخول.':'إعادة تفعيل هذا الحساب؟')) return;
+  try{ await api('/api/users/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid,disabled})}); toast(disabled?'عُطّل الحساب':'فُعّل الحساب'); loadUsers(); }
+  catch(e){ toast('⚠️ '+e.message); }
+};
+window.userRevoke = async uid=>{
+  if(!confirm('إبطال كل جلسات هذا الحساب؟ سيُطلب منه الدخول مجددًا.')) return;
+  try{ await api('/api/users/revoke',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid})}); toast('أُبطلت الجلسات'); }
+  catch(e){ toast('⚠️ '+e.message); }
+};
+window.userDelete = async (uid, email)=>{
+  const confirmEmail = prompt('⚠️ حذف نهائي للحساب وبياناته المشفّرة.\nاكتب بريد الحساب كاملًا للتأكيد:\n'+email);
+  if(confirmEmail===null) return;
+  const pw = prompt('أدخل كلمة مرور اللوحة (إعادة مصادقة):');
+  if(!pw) return;
+  try{
+    await api('/api/users/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid,confirmEmail:confirmEmail.trim(),password:pw})});
+    toast('حُذف الحساب نهائيًا'); loadUsers();
+  }catch(e){ toast('⚠️ '+e.message); }
+};
+
+/* ====== الإشعارات ====== */
+function annCard(a, deletable){
+  return `<div class="ann">
+    <div class="t">${esc(a.title)}</div>
+    <div class="b">${esc(a.body)}</div>
+    <div class="m"><span class="num">${a.publishedAt}</span>${a.link?`<a href="${esc(a.link)}" target="_blank" rel="noopener" style="color:var(--sea)">الرابط ↗</a>`:''}
+      ${deletable?`<button class="btn sm danger" style="margin-inline-start:auto" onclick="delAnn('${a.id}')">حذف</button>`:''}</div>
+  </div>`;
+}
+async function loadAnnouncements(){
+  try{
+    const d = await api('/api/announcements');
+    $('n-draft').innerHTML = d.draft?.announcements?.length? d.draft.announcements.map(a=>annCard(a,true)).join('') : '<div class="muted">لا مسودات</div>';
+    $('n-list').innerHTML = d.published?.announcements?.length? d.published.announcements.map(a=>annCard(a,false)).join('') : '<div class="muted">لا إعلانات منشورة</div>';
+    $('n-pubver').textContent = 'v'+(d.published?.version??0);
+    $('n-rollback').disabled = !d.backups?.length;
+    countUp($('ov-anns'), d.published?.announcements?.length??0);
+    $('ov-anns-note').textContent = 'نسخة v'+(d.published?.version??0);
+  }catch(e){ /* صامت */ }
+}
+$('n-send').onclick = async ()=>{
+  const title=$('n-title').value.trim(), body=$('n-body').value.trim(), link=$('n-link').value.trim();
+  if(!title||!body) return toast('⚠️ العنوان والنص مطلوبان');
+  if(link && !/^https:\/\//.test(link)) return toast('⚠️ الرابط يجب أن يبدأ بـ https://');
+  try{
+    await api('/api/announce',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,body,link})});
+    $('n-title').value=$('n-body').value=$('n-link').value='';
+    loadAnnouncements();
+    toast('📝 أُضيف إلى المسودة — لن يصل للمستخدمين قبل النشر');
+  }catch(e){ toast('⚠️ '+e.message); }
+};
+$('n-push').onclick = async ()=>{
+  const title=$('n-title').value.trim(), body=$('n-body').value.trim(), link=$('n-link').value.trim();
+  if(!title||!body) return toast('⚠️ العنوان والنص مطلوبان');
+  if(!confirm('إرسال إشعار فوري الآن لكل أجهزة المستخدمين؟\n\n«'+title+'»\n'+body)) return;
+  try{
+    const r = await api('/api/push',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,body,link})});
+    toast('📲 أُرسل الإشعار الفوري بنجاح');
+  }catch(e){ toast('⚠️ '+e.message); }
+};
+$('n-publish').onclick = async ()=>{
+  const pw = prompt('النشر سيجعل المسودة مرئية للمستخدمين بعد الدفع إلى GitHub.\nأدخل كلمة مرور اللوحة:');
+  if(!pw) return;
+  try{
+    const r = await api('/api/announce/publish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+    loadAnnouncements(); loadGit();
+    toast('🚀 نُشرت v'+r.version+' — اضغط «نشر إلى GitHub» في الكتالوج أو ادفع يدويًا');
+  }catch(e){ toast('⚠️ '+e.message); }
+};
+$('n-rollback').onclick = async ()=>{
+  const pw = prompt('استرجاع آخر نسخة منشورة سابقة. أدخل كلمة مرور اللوحة:');
+  if(!pw) return;
+  try{
+    const r = await api('/api/announce/rollback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+    loadAnnouncements(); loadGit();
+    toast('↩️ استُرجعت النسخة السابقة (v'+r.version+')');
+  }catch(e){ toast('⚠️ '+e.message); }
+};
+window.delAnn = async id=>{
+  if(!confirm('حذف هذا الإعلان من المسودة؟')) return;
+  try{ await api('/api/announce/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}); loadAnnouncements(); }
+  catch(e){ toast('⚠️ '+e.message); }
+};
+
+/* ====== سجل التدقيق ====== */
+async function loadAudit(){
+  try{
+    const d = await api('/api/audit?limit=500&q='+encodeURIComponent($('a-search').value.trim()));
+    auditEntries = d.entries;
+    const cls = r=> r==='success'?'chip':(r==='failed'||r==='denied'?'chip red':'chip sand');
+    $('a-body').innerHTML = d.entries.length? d.entries.map(e=>`<tr>
+      <td class="num" style="font-size:11px">${esc((e.ts||'').slice(0,19).replace('T',' '))}</td>
+      <td><code>${esc(e.action)}</code></td>
+      <td style="max-width:170px;overflow:hidden;text-overflow:ellipsis"><span class="num" style="font-size:11px">${esc(e.resource)}</span></td>
+      <td><span class="${cls(e.result)}">${esc(e.result)}</span></td>
+      <td class="muted" style="font-size:11px;max-width:250px">${esc(JSON.stringify(e.details??{}))}</td>
+      <td class="num" style="font-size:10.5px">${esc(e.reqId||'-')}</td>
+    </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--ink-2)">السجل فارغ</td></tr>';
+  }catch(e){ toast('⚠️ '+e.message); }
+}
+$('a-refresh').onclick = loadAudit;
+let auditTimer; $('a-search').addEventListener('input',()=>{clearTimeout(auditTimer);auditTimer=setTimeout(loadAudit,350);});
+$('a-export').onclick = ()=>{
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(auditEntries,null,2)],{type:'application/json'}));
+  a.download='ishtirakati-audit.json'; a.click();
+};
+
+/* ====== الصحة والإعدادات ====== */
+async function loadHealth(){
+  $('h-checks').innerHTML='<div class="muted">جارٍ الفحص…</div>';
+  try{
+    const d = await api('/api/health');
+    const names = {auth:'Firebase Auth', firestore:'Firestore (default)', catalog:'ملف الكتالوج', announcements:'ملف الإعلانات', auditLog:'سجل التدقيق'};
+    $('h-checks').innerHTML = Object.entries(d.checks).map(([k,v])=>
+      `<div class="hcard"><span class="dot ${v.ok?'ok':''}"></span>${names[k]||k}
+       <span class="muted" style="margin-inline-start:auto">${v.ms!=null? v.ms+' ms':''}${v.error? ' — '+esc(v.error):''}</span></div>`).join('');
+    $('h-meta').innerHTML = `إصدار اللوحة: <code>${esc(d.panelVersion)}</code> · التطبيق: <code>${esc(d.appVersion)}</code> · Node: <code>${esc(d.node)}</code><br>
+      مدة التشغيل: <span class="num">${d.uptimeMinutes}</span> دقيقة · الجلسات: ${d.sessions} · النسخ الاحتياطية: ${d.backups}`;
+  }catch(e){ $('h-checks').innerHTML='<div class="muted">⚠️ '+esc(e.message)+'</div>'; }
+}
+$('h-refresh').onclick = loadHealth;
+$('pw-change').onclick = async ()=>{
+  const current=$('pw-cur').value, next=$('pw-new').value;
+  if(next.length<12) return toast('⚠️ الكلمة الجديدة 12 حرفًا فأكثر');
+  if(!confirm('تغيير كلمة المرور؟ ستُبطل كل الجلسات وتسجل الدخول مجددًا.')) return;
+  try{
+    await api('/api/password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({current,next})});
+    toast('🔑 غُيّرت كلمة المرور'); setTimeout(()=>location.reload(), 1200);
+  }catch(e){ toast('⚠️ '+e.message); }
+};
+
+/* ====== نظرة عامة ====== */
+function renderOverview(){
+  const svcs = catalog.services;
+  countUp($('ov-count'), svcs.length);
+  $('ov-ver').textContent = catalog.version;
+  $('ov-upd').textContent = catalog.updatedAt;
+  const cats = {};
+  svcs.forEach(s=>{cats[s.category]=(cats[s.category]||0)+1;});
+  renderBars($('ov-bars'), cats);
+}
+function renderBars(el, obj){
+  const entries = Object.entries(obj).sort((a,b)=>b[1]-a[1]);
+  const max = Math.max(...entries.map(e=>e[1]),1);
+  el.innerHTML = entries.map(([k,v])=>
+    `<div class="row"><div class="lbl">${esc(k)}</div><div class="track"><div class="fill" data-w="${(v/max*100).toFixed(0)}"></div></div><div class="val num">${v}</div></div>`).join('');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>el.querySelectorAll('.fill').forEach(f=>f.style.width=f.dataset.w+'%')));
+}
+
+/* ====== الكتالوج ====== */
+async function loadCatalogFresh(){
+  try{
+    const d = await api('/api/catalog');
+    if(Array.isArray(d.services) && d.services.length){ catalog = d; setDirty(false); renderCatalog(); renderOverview(); }
+  }catch{/* يبقى المضمّن */}
+}
+function renderCatalog(){
+  const q = $('cat-search').value.trim().toLowerCase();
+  const f = $('cat-filter').value;
+  const rows = catalog.services.map((s,i)=>({s,i}))
+    .filter(({s})=>(!f||s.category===f)&&(!q||s.name.toLowerCase().includes(q)||s.domain.toLowerCase().includes(q)));
+  $('cat-body').innerHTML = rows.map(({s,i})=>`<tr>
+    <td class="emoji">${s.emoji}</td>
+    <td><strong>${esc(s.name)}</strong></td>
+    <td><span class="chip">${esc(s.category)}</span></td>
+    <td><code>${esc(s.domain)}</code></td>
+    <td class="num">${s.priceHint!=null?Number(s.priceHint).toFixed(2):'—'}</td>
+    <td><a href="${esc(s.manageUrl)}" target="_blank" rel="noopener" style="color:var(--sea);font-size:12px">فتح ↗</a></td>
+    <td style="white-space:nowrap">
+      <button class="btn sm ghost" onclick="openEdit(${i})">تعديل</button>
+      <button class="btn sm danger" onclick="removeService(${i})">حذف</button>
+    </td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--ink-2)">لا نتائج</td></tr>';
+  const cats = [...new Set(catalog.services.map(s=>s.category))];
+  const cur = $('cat-filter').value;
+  $('cat-filter').innerHTML = '<option value="">كل التصنيفات</option>'+cats.map(c=>`<option ${c===cur?'selected':''}>${esc(c)}</option>`).join('');
+}
+$('cat-search').addEventListener('input', renderCatalog);
+$('cat-filter').addEventListener('change', renderCatalog);
+
+window.openEdit = function(i){
+  editIndex = i;
+  const s = i>=0? catalog.services[i] : {name:'',emoji:'',category:AR_CATEGORIES[0],domain:'',manageUrl:'',priceHint:null};
+  $('dlg-title').textContent = i>=0? 'تعديل: '+s.name : 'خدمة جديدة';
+  $('f-category').innerHTML = AR_CATEGORIES.map(c=>`<option ${c===s.category?'selected':''}>${esc(c)}</option>`).join('');
+  $('f-name').value=s.name; $('f-emoji').value=s.emoji; $('f-domain').value=s.domain;
+  $('f-manageUrl').value=s.manageUrl; $('f-price').value=s.priceHint??'';
+  document.querySelectorAll('.err').forEach(e=>e.style.display='none');
+  dlg.showModal();
+};
+$('btn-add').onclick = ()=>openEdit(-1);
+window.removeService = function(i){
+  if(!confirm('حذف «'+catalog.services[i].name+'» من الكتالوج؟')) return;
+  catalog.services.splice(i,1); setDirty(true); renderCatalog(); renderOverview(); toast('حُذفت الخدمة — لا تنسَ الحفظ');
+};
+$('dlg-form').addEventListener('submit', e=>{
+  const name=$('f-name').value.trim(), emoji=$('f-emoji').value.trim(),
+        category=$('f-category').value, domain=$('f-domain').value.trim().toLowerCase(),
+        url=$('f-manageUrl').value.trim(), priceRaw=$('f-price').value.trim();
+  let ok=true;
+  const show=(id,msg)=>{const el=$(id);el.textContent=msg;el.style.display='block';ok=false;};
+  document.querySelectorAll('.err').forEach(x=>x.style.display='none');
+  const dup = catalog.services.findIndex((s,i)=>i!==editIndex && s.name.trim()===name);
+  if(dup>=0) show('e-name','يوجد خدمة بهذا الاسم مسبقًا');
+  if(!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(domain)) show('e-domain','نطاق غير صالح — مثال: netflix.com');
+  if(!/^https:\/\/.+/.test(url)) show('e-url','يجب أن يبدأ الرابط بـ https://');
+  let priceHint=null;
+  if(priceRaw!==''){ priceHint=parseFloat(priceRaw); if(!(priceHint>0)) show('e-price','السعر يجب أن يكون أكبر من صفر'); }
+  if(!ok){ e.preventDefault(); return; }
+  const svc={name,emoji:emoji||'💳',category,domain,manageUrl:url,priceHint};
+  if(editIndex>=0) catalog.services[editIndex]=svc; else catalog.services.push(svc);
+  setDirty(true); renderCatalog(); renderOverview(); toast(editIndex>=0?'حُدّثت الخدمة — لا تنسَ الحفظ':'أُضيفت الخدمة — لا تنسَ الحفظ');
+});
+$('btn-save-repo').onclick = async ()=>{
+  try{
+    const r = await api('/api/catalog/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({catalog})});
+    catalog.version = r.version; setDirty(false); renderOverview(); loadGit();
+    toast('💾 حُفظ في المستودع (نسخة '+r.version+') — اضغط «نشر إلى GitHub» ليصل للمستخدمين');
+  }catch(e){ toast('⚠️ '+e.message); }
+};
+$('btn-export').onclick = ()=>{
+  const out = { version: catalog.version + (dirty?1:0), updatedAt: new Date().toISOString().slice(0,10), services: catalog.services };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(out,null,2)+'\n'],{type:'application/json'}));
+  a.download='services.json'; a.click();
+  toast('⬇️ صُدّر ملف services.json');
+};
+$('btn-import').onclick = ()=>$('file-catalog').click();
+$('file-catalog').addEventListener('change', async e=>{
+  try{
+    const data = JSON.parse(await e.target.files[0].text());
+    if(!Array.isArray(data.services)) throw 0;
+    catalog = data; setDirty(true); renderCatalog(); renderOverview();
+    toast('حُمّل كتالوج ('+data.services.length+' خدمة) — احفظه في المستودع لاعتماده');
+  }catch{ toast('⚠️ ملف غير صالح'); }
+  e.target.value='';
+});
+
+/* ====== الإصدار والإطلاق ====== */
+$('btn-remote-ver').onclick = async ()=>{
+  $('remote-ver-out').textContent = 'جارٍ الفحص…';
+  try{
+    const r = await fetch('https://raw.githubusercontent.com/basilsa77/ishtirakati/main/pubspec.yaml');
+    const m = (await r.text()).match(/^version:\s*(\S+)/m);
+    $('remote-ver-out').innerHTML = m? 'النسخة على GitHub: <code>'+esc(m[1])+'</code>'+(m[1]==='17.0.0+46'?' ✅ مطابقة':' ⚠️ مختلفة عن المحلية 17.0.0+46') : 'تعذّر قراءة النسخة';
+  }catch{ $('remote-ver-out').textContent='تعذّر الاتصال بـ GitHub'; }
+};
+const CHECKLIST = [
+  'مزامنة رقم الإصدار 17.0.0+46 في pubspec وXcode ودليل البناء',
+  'تشغيل flutter analyze وflutter test بنجاح كامل',
+  'اختبار المزامنة على المحاكي: تعارض، انقطاع، استرجاع',
+  'التحقق من قواعد Firestore المنشورة مطابقة لـ firestore.rules دون إرخاء',
+  'التحقق من App Check (App Attest + DeviceCheck fallback) في الإنتاج',
+  'رفع مفتاح APNs (.p8) في Firebase Console لتفعيل الإشعارات الفورية',
+  'اختبار التصدير والاستيراد المشفّر واستعادة النسخة بمفتاح Keychain',
+  'اختبار تصدير CSV وظهور تحذير الخصوصية',
+  'اختبار حذف الحساب النهائي بالتأكيدين',
+  'دمج خدمة الإعلانات remote_announcements في واجهة التطبيق واختبارها',
+  'مراجعة الوضعين الفاتح والداكن على iPhone صغير وiPad والنص الكبير',
+  'التحقق من Reduce Motion واتجاه RTL في كل الشاشات',
+  'نشر catalog المحدّث إلى GitHub من اللوحة والتأكد من جلبه في التطبيق',
+  'تحديث لقطات App Store والوصف العربي والإنجليزي',
+  'تحديث رابط سياسة الخصوصية وPrivacy Nutrition Labels',
+  'بناء IPA بوضع release ورفعه عبر TestFlight واختباره على جهاز حقيقي'
+];
+const LS_KEY='ishtirakati_admin_checklist_v17';
+function renderChecklist(){
+  const saved = JSON.parse(localStorage.getItem(LS_KEY)||'{}');
+  $('rel-list').innerHTML = CHECKLIST.map((c,i)=>
+    `<div class="check ${saved[i]?'done':''}"><input type="checkbox" id="ck${i}" ${saved[i]?'checked':''} onchange="toggleCheck(${i},this.checked)"><label for="ck${i}">${c}</label></div>`).join('');
+  const done = CHECKLIST.filter((_,i)=>saved[i]).length;
+  $('rel-done').textContent=done; $('rel-total').textContent=CHECKLIST.length;
+  $('rel-fill').style.width=(done/CHECKLIST.length*100)+'%';
+}
+window.toggleCheck = function(i,v){
+  const saved = JSON.parse(localStorage.getItem(LS_KEY)||'{}');
+  saved[i]=v; localStorage.setItem(LS_KEY,JSON.stringify(saved)); renderChecklist();
+};
+$('btn-rel-reset').onclick=()=>{ if(confirm('إعادة تعيين قائمة الإطلاق؟')){localStorage.removeItem(LS_KEY);renderChecklist();} };
+
+/* ====== الوضع الداكن ====== */
+const THEME_KEY='ish_admin_theme';
+function applyTheme(t){ document.body.classList.toggle('dark',t==='dark'); $('btn-theme').textContent = t==='dark'?'☀️ فاتح':'🌙 داكن'; }
+let theme = localStorage.getItem(THEME_KEY) || (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+applyTheme(theme);
+$('btn-theme').onclick = ()=>{ theme = theme==='dark'?'light':'dark'; localStorage.setItem(THEME_KEY,theme); applyTheme(theme); };
+
+/* ====== تشغيل ====== */
+renderOverview(); renderCatalog(); renderChecklist(); initSession();
+</script>
+</body>
+</html>
